@@ -1,7 +1,7 @@
 # AI Social MVP - Database Schema Design
 
 ## Schema Overview
-**5 tables supporting AI chat → social content transformation**
+**5 tables supporting AI chat → social content transformation with threaded discussions**
 
 ```sql
 -- User management with social profiles
@@ -34,13 +34,14 @@ CREATE TABLE messages (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Published social content with discovery metadata
+-- Published social content with discovery metadata and threading support
 CREATE TABLE posts (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     conversation_id INTEGER REFERENCES conversations(id) ON DELETE CASCADE,
+    parent_post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
     title VARCHAR(200) NOT NULL,
-    summary TEXT NOT NULL,
+    blog TEXT NOT NULL,
     tags VARCHAR(500), -- comma-separated: "ai,ethics,philosophy"
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -67,6 +68,12 @@ CREATE TABLE follows (
 - **Alternative Rejected**: Shared message references (complex queries)
 - **Trade-off**: Storage cost vs. query simplicity and data isolation
 - **Lineage Tracking**: `forked_from` field maintains conversation history
+
+### **Content Threading**
+- **Approach**: Self-referencing `parent_post_id` for threaded discussions
+- **Tree Structure**: Posts can reply to other posts creating conversation threads
+- **Depth Strategy**: Unlimited nesting depth (can be limited in application logic)
+- **Orphan Handling**: CASCADE deletes ensure clean thread cleanup when parent posts are deleted
 
 ### **Content Metadata**
 - **Tags**: Simple comma-separated strings for MVP
@@ -109,27 +116,56 @@ INSERT INTO messages (conversation_id, role, content)
 SELECT 2, role, content FROM messages WHERE conversation_id = 1;
 ```
 
-### **3. Social Publishing**
+### **3. Social Publishing & Threading**
 ```sql
--- Transform conversation to social post
-INSERT INTO posts (user_id, conversation_id, title, summary, tags)
-VALUES (1, 1, 'Exploring AI Ethics', 
-        'A deep dive into the moral implications...', 
+-- Transform conversation to social post (top-level post)
+INSERT INTO posts (user_id, conversation_id, parent_post_id, title, blog, tags)
+VALUES (1, 1, NULL, 'Exploring AI Ethics', 
+        'A deep dive into the moral implications of artificial intelligence...', 
         'ai,ethics,philosophy,technology');
+
+-- Reply to existing post (threaded discussion)
+INSERT INTO posts (user_id, conversation_id, parent_post_id, title, blog, tags)
+VALUES (2, 15, 1, 'Re: AI Ethics - A Counter-Perspective', 
+        'While I agree with the main points, I think we should also consider...', 
+        'ai,ethics,debate');
 ```
 
-### **4. Content Discovery**
+### **4. Content Discovery & Threading**
 ```sql
--- Feed generation (chronological with following filter)
+-- Feed generation (top-level posts only, chronological with following filter)
 SELECT p.*, u.username, u.display_name 
 FROM posts p 
 JOIN users u ON p.user_id = u.id
 WHERE p.user_id IN (
     SELECT following_id FROM follows WHERE follower_id = current_user_id
 )
+AND p.parent_post_id IS NULL  -- Only top-level posts in main feed
 ORDER BY p.created_at DESC;
 
--- Tag-based search
+-- Get threaded replies for a specific post
+SELECT p.*, u.username, u.display_name 
+FROM posts p 
+JOIN users u ON p.user_id = u.id
+WHERE p.parent_post_id = 123
+ORDER BY p.created_at ASC;
+
+-- Recursive thread traversal (get full discussion tree)
+WITH RECURSIVE thread_tree AS (
+    -- Base case: get the root post
+    SELECT id, user_id, parent_post_id, title, blog, 0 as depth
+    FROM posts WHERE id = 123
+    
+    UNION ALL
+    
+    -- Recursive case: get all replies
+    SELECT p.id, p.user_id, p.parent_post_id, p.title, p.blog, tt.depth + 1
+    FROM posts p
+    JOIN thread_tree tt ON p.parent_post_id = tt.id
+)
+SELECT * FROM thread_tree ORDER BY depth, created_at;
+
+-- Tag-based search (works across all posts)
 SELECT * FROM posts 
 WHERE tags LIKE '%ai%' OR tags LIKE '%ethics%'
 ORDER BY created_at DESC;
@@ -143,11 +179,16 @@ ORDER BY created_at DESC;
 CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
 CREATE INDEX idx_posts_created_at ON posts(created_at DESC);
 CREATE INDEX idx_posts_user_id ON posts(user_id);
+CREATE INDEX idx_posts_parent_id ON posts(parent_post_id);
 CREATE INDEX idx_conversations_user_id ON conversations(user_id);
 
 -- Social graph optimization  
 CREATE INDEX idx_follows_follower ON follows(follower_id);
 CREATE INDEX idx_follows_following ON follows(following_id);
+
+-- Threading and feed optimization
+CREATE INDEX idx_posts_parent_null ON posts(parent_post_id) WHERE parent_post_id IS NULL;
+CREATE INDEX idx_posts_thread_lookup ON posts(parent_post_id, created_at) WHERE parent_post_id IS NOT NULL;
 
 -- Search optimization (can be upgraded to full-text later)
 CREATE INDEX idx_posts_tags ON posts USING gin(to_tsvector('english', tags));
@@ -155,7 +196,9 @@ CREATE INDEX idx_posts_tags ON posts USING gin(to_tsvector('english', tags));
 
 ### **Query Patterns**
 - **Conversation Replay**: Single query by conversation_id, ordered by message.id
-- **Feed Generation**: Join posts + users with following filter
+- **Feed Generation**: Join posts + users with following filter (top-level posts only)
+- **Thread Display**: Parent-child queries for reply hierarchies
+- **Recursive Threading**: CTE queries for full discussion trees
 - **Search**: Tag-based filtering with text matching
 - **Fork Discovery**: Navigate conversation lineage via forked_from
 
@@ -215,14 +258,17 @@ CHECK (follower_id != following_id)
 - User (with profile fields)
 - Conversation (with forking relationship)  
 - Message (with role validation)
-- Post (with tag indexing)
+- Post (with threading and tag indexing)
 - Follow (composite primary key)
 
 ### **API Endpoint Implications**
 - GET /conversations/{id}/messages (paginated message history)
 - POST /conversations/{id}/fork (duplicate conversation for new user)
 - POST /conversations/{id}/publish (create post from conversation)
-- GET /feed (personalized post feed with following filter)
+- POST /posts/{id}/reply (create threaded reply to existing post)
+- GET /posts/{id}/thread (get full discussion tree for post)
+- GET /posts/{id}/replies (get direct replies to post)
+- GET /feed (personalized post feed with following filter, top-level only)
 - GET /search?tags=ai,ethics (tag-based content discovery)
 
 **Schema Status**: ✅ **LOCKED AND APPROVED**  
