@@ -119,13 +119,22 @@ async def get_conversation_messages(
             "id": 1,
             "role": "user", 
             "content": "What do you think about AI ethics?",
+            "is_blog": false,
             "created_at": "2025-01-15T10:30:00Z"
         },
         {
             "id": 2,
             "role": "assistant",
             "content": "AI ethics involves several key considerations...",
+            "is_blog": false,
             "created_at": "2025-01-15T10:30:15Z"
+        },
+        {
+            "id": 3,
+            "role": "assistant",
+            "content": "AI Ethics: A Deep Dive\n\nIn today's digital age...",
+            "is_blog": true,
+            "created_at": "2025-01-15T10:45:00Z"
         }
     ],
     "total_count": 124,
@@ -134,10 +143,11 @@ async def get_conversation_messages(
 ```
 
 **Implementation Notes**:
-- **Ordering**: Newest first (most recent messages at top)
+- **Ordering**: Chronological order (oldest first) for conversation flow
 - **Pagination**: 50 messages per page, use offset for older messages
 - **Authorization**: Verify user owns the conversation  
 - **Performance**: Simple offset-based pagination for MVP
+- **Blog Filtering**: Include `is_blog` field in response for UI handling
 
 **Error Responses**:
 - `401 Unauthorized`: Invalid JWT token
@@ -146,6 +156,124 @@ async def get_conversation_messages(
 
 ---
 
+### **4. Generate Blog Draft**
+**Endpoint**: `POST /conversations/{id}/blog`  
+**Use Case**: Generate AI blog draft from conversation history
+
+**Request**:
+```json
+POST /conversations/123/blog
+Authorization: Bearer <jwt_token>
+
+{
+    "prompt": "Create a blog post about the key insights from this conversation",
+    "style": "professional" // optional: "casual", "academic", "professional"
+}
+```
+
+**Response**:
+```json
+{
+    "message_id": 456,
+    "content": "AI Ethics: Key Considerations for Modern Technology\n\nIn our rapidly evolving digital landscape...",
+    "conversation_id": 123,
+    "created_at": "2025-01-15T10:45:00Z"
+}
+```
+
+**Implementation Notes**:
+- **AI Integration**: Uses conversation history as context for blog generation
+- **Storage**: Blog draft saved as message with `is_blog=TRUE`, `role='assistant'`
+- **Editability**: User can request new drafts or edit existing content
+- **Context Window**: Uses recent conversation messages (last 20-30 exchanges)
+- **Multiple Drafts**: Can generate multiple blog drafts per conversation
+
+**Error Responses**:
+- `401 Unauthorized`: Invalid JWT token
+- `403 Forbidden`: User doesn't own this conversation
+- `404 Not Found`: Conversation doesn't exist
+- `400 Bad Request`: Conversation too short to generate meaningful blog
+
+---
+
+### **5. Get Blog Drafts**
+**Endpoint**: `GET /conversations/{id}/blogs`  
+**Use Case**: Retrieve all blog drafts for a conversation
+
+**Response**:
+```json
+{
+    "blogs": [
+        {
+            "message_id": 456,
+            "content": "AI Ethics: Key Considerations...",
+            "created_at": "2025-01-15T10:45:00Z"
+        },
+        {
+            "message_id": 478,
+            "content": "Revised: AI Ethics in Practice...",
+            "created_at": "2025-01-15T11:15:00Z"
+        }
+    ],
+    "total_count": 2
+}
+```
+
+**Implementation Notes**:
+- **Query**: `SELECT * FROM messages WHERE conversation_id = ? AND is_blog = TRUE`
+- **Ordering**: Most recent drafts first
+- **Authorization**: Verify user owns the conversation
+
+---
+
+### **6. Publish Post**
+**Endpoint**: `POST /posts`  
+**Use Case**: Create social post from edited blog content
+
+**Request**:
+```json
+POST /posts
+Authorization: Bearer <jwt_token>
+
+{
+    "conversation_id": 123,
+    "title": "AI Ethics: A Developer's Perspective",
+    "content": "In our rapidly evolving digital landscape, we must consider...",
+    "tags": "ai,ethics,development,technology",
+    "parent_post_id": null // for threaded replies, optional
+}
+```
+
+**Response**:
+```json
+{
+    "id": 789,
+    "title": "AI Ethics: A Developer's Perspective",
+    "content": "In our rapidly evolving digital landscape...",
+    "tags": "ai,ethics,development,technology",
+    "conversation_id": 123,
+    "user_id": 456,
+    "parent_post_id": null,
+    "created_at": "2025-01-15T11:30:00Z"
+}
+```
+
+**Implementation Notes**:
+- **Content Flexibility**: Post content can be any text (edited from blog draft or original)
+- **Required Fields**: title, content, conversation_id
+- **Tag Validation**: Basic comma-separated string validation
+- **Threading Support**: Optional parent_post_id for replies
+- **Authorization**: User must own the referenced conversation
+
+**Error Responses**:
+- `401 Unauthorized`: Invalid JWT token
+- `403 Forbidden`: User doesn't own the referenced conversation
+- `400 Bad Request`: Missing required fields or invalid data
+- `404 Not Found`: Referenced conversation or parent_post doesn't exist
+
+---
+
 ## Next Endpoints to Design
-- `POST /conversations/{id}/summaries` - Generate AI summary
-- `POST /posts` - Publish conversation as social post
+- `GET /feed` - Personalized social feed
+- `GET /posts/{id}` - Get specific post with thread context
+- `POST /posts/{id}/reply` - Reply to existing post

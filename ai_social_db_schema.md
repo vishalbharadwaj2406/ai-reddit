@@ -25,12 +25,13 @@ CREATE TABLE conversations (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Chat messages (user/assistant pairs)
+-- Chat messages (user/assistant pairs) with blog drafts
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
     conversation_id INTEGER REFERENCES conversations(id) ON DELETE CASCADE,
     role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
     content TEXT NOT NULL,
+    is_blog BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -41,7 +42,7 @@ CREATE TABLE posts (
     conversation_id INTEGER REFERENCES conversations(id) ON DELETE CASCADE,
     parent_post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
     title VARCHAR(200) NOT NULL,
-    blog TEXT NOT NULL,
+    content TEXT NOT NULL,
     tags VARCHAR(500), -- comma-separated: "ai,ethics,philosophy"
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -62,6 +63,12 @@ CREATE TABLE follows (
 - **Approach**: Auto-incrementing `id` field for chronological ordering
 - **Rationale**: Simpler than timestamps for real-time streaming scenarios
 - **Query Pattern**: `ORDER BY id ASC` for conversation replay
+
+### **Blog Draft Management**
+- **Approach**: Blog drafts stored as special messages with `is_blog=TRUE`
+- **Rationale**: Keeps drafts in conversation context, easy to retrieve/edit
+- **Publishing Flow**: User can edit blog content before creating actual post
+- **Flexibility**: Posts can contain any text, not tied to specific message content
 
 ### **Conversation Forking Implementation**
 - **Approach**: Copy all messages to new conversation (data duplication)
@@ -98,6 +105,10 @@ VALUES (1, 'user', 'What do you think about AI ethics?');
 
 INSERT INTO messages (conversation_id, role, content) 
 VALUES (1, 'assistant', 'AI ethics involves considerations of...');
+
+-- Generate blog draft (saved as special message)
+INSERT INTO messages (conversation_id, role, content, is_blog) 
+VALUES (1, 'assistant', 'AI Ethics: Key Considerations for Modern Technology...', TRUE);
 ```
 
 ### **2. Conversation Forking**
@@ -119,13 +130,13 @@ SELECT 2, role, content FROM messages WHERE conversation_id = 1;
 ### **3. Social Publishing & Threading**
 ```sql
 -- Transform conversation to social post (top-level post)
-INSERT INTO posts (user_id, conversation_id, parent_post_id, title, blog, tags)
+INSERT INTO posts (user_id, conversation_id, parent_post_id, title, content, tags)
 VALUES (1, 1, NULL, 'Exploring AI Ethics', 
         'A deep dive into the moral implications of artificial intelligence...', 
         'ai,ethics,philosophy,technology');
 
 -- Reply to existing post (threaded discussion)
-INSERT INTO posts (user_id, conversation_id, parent_post_id, title, blog, tags)
+INSERT INTO posts (user_id, conversation_id, parent_post_id, title, content, tags)
 VALUES (2, 15, 1, 'Re: AI Ethics - A Counter-Perspective', 
         'While I agree with the main points, I think we should also consider...', 
         'ai,ethics,debate');
@@ -153,13 +164,13 @@ ORDER BY p.created_at ASC;
 -- Recursive thread traversal (get full discussion tree)
 WITH RECURSIVE thread_tree AS (
     -- Base case: get the root post
-    SELECT id, user_id, parent_post_id, title, blog, 0 as depth
+    SELECT id, user_id, parent_post_id, title, content, 0 as depth
     FROM posts WHERE id = 123
     
     UNION ALL
     
     -- Recursive case: get all replies
-    SELECT p.id, p.user_id, p.parent_post_id, p.title, p.blog, tt.depth + 1
+    SELECT p.id, p.user_id, p.parent_post_id, p.title, p.content, tt.depth + 1
     FROM posts p
     JOIN thread_tree tt ON p.parent_post_id = tt.id
 )
