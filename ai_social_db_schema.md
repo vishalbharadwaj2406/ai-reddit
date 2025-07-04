@@ -19,7 +19,7 @@ CREATE TABLE users (
 -- AI conversations with forking support
 CREATE TABLE conversations (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ,
     title VARCHAR(200),
     forked_from INTEGER REFERENCES conversations(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -28,7 +28,8 @@ CREATE TABLE conversations (
 -- Chat messages (user/assistant pairs) with blog drafts
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
-    conversation_id INTEGER REFERENCES conversations(id) ON DELETE CASCADE,
+    conversation_id INTEGER REFERENCES conversations(id),
+    forked_message_id INTEGER REFERENCES messages(id),
     role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'assistant')),
     content TEXT NOT NULL,
     is_blog BOOLEAN DEFAULT FALSE,
@@ -38,9 +39,9 @@ CREATE TABLE messages (
 -- Published social content with discovery metadata and threading support
 CREATE TABLE posts (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    conversation_id INTEGER REFERENCES conversations(id) ON DELETE CASCADE,
-    parent_post_id INTEGER REFERENCES posts(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ,
+    conversation_id INTEGER REFERENCES conversations(id),
+    parent_post_id INTEGER REFERENCES posts(id) ,
     title VARCHAR(200) NOT NULL,
     content TEXT NOT NULL,
     tags VARCHAR(500), -- comma-separated: "ai,ethics,philosophy"
@@ -49,8 +50,8 @@ CREATE TABLE posts (
 
 -- Social following relationships
 CREATE TABLE follows (
-    follower_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    following_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    follower_id INTEGER REFERENCES users(id) ,
+    following_id INTEGER REFERENCES users(id) ,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (follower_id, following_id),
     CHECK (follower_id != following_id)

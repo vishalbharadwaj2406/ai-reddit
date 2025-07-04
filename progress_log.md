@@ -1,4 +1,4 @@
-# AI Social MVP - Progress Log
+   # AI Social MVP - Progress Log
 
 ## Project Overview
 **Goal:** Build a powerful portfolio project for SOFTWARE ENGINEERING roles (backend/AI focus)
