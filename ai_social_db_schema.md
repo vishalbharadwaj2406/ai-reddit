@@ -1,4 +1,4 @@
-# AI Social MVP - Database Schema Design
+<!-- # AI Social MVP - Database Schema Design
 
 ## Schema Overview
 **5 tables supporting AI chat → social content transformation with threaded discussions**
@@ -284,4 +284,4 @@ CHECK (follower_id != following_id)
 - GET /search?tags=ai,ethics (tag-based content discovery)
 
 **Schema Status**: ✅ **LOCKED AND APPROVED**  
-**Next Phase**: API Architecture Design
+**Next Phase**: API Architecture Design -->
