@@ -1,10 +1,10 @@
-# AI Social
+# AIkya
 
-✨ Where Ideas Become Impactful Conversations ✨
+✨ Diverse Thoughts, Unified Wisdom ✨
 
-AI Social is a new kind of platform for thinkers, creators, and curious minds. Here, anyone—regardless of writing skill—can turn their thoughts into powerful, well-researched blogs and share them with a community that values substance, depth, and genuine discussion.
+AIkya is a revolutionary platform for thinkers, creators, and curious minds. Here, anyone—regardless of writing skill—can turn their thoughts into powerful, well-researched blogs and share them with a community that values substance, depth, and genuine discussion.
 
-Unlike traditional social media, AI Social is built for meaningful, bias-free debate and collaborative exploration. Our AI helps you clarify, fact-check, and challenge your ideas before you share—so your voice is not just heard, but truly understood.
+Unlike traditional social media, AIkya is built for meaningful, bias-free debate and collaborative exploration. Our AI helps you clarify, fact-check, and challenge your ideas before you share—so your voice is not just heard, but truly understood.
 
 Whether you want to:
 - Express a nuanced opinion,
@@ -12,7 +12,7 @@ Whether you want to:
 - Engage in fact-driven debates with people of different perspectives,
 - Or simply discover fresh, positive, and thought-provoking content—
 
-AI Social gives you the tools to do it, and a community that welcomes it. Share not just posts, but the full context of your conversations. Move beyond sound bites and gotchas—here, real discussion thrives.
+AIkya gives you the tools to do it, and a community that welcomes it. Share not just posts, but the full context of your conversations. Move beyond sound bites and gotchas—here, real discussion thrives.
 
 ---
 
@@ -41,4 +41,4 @@ AI Social gives you the tools to do it, and a community that welcomes it. Share 
 
 ---
 
-AI Social is for anyone who wants to share, learn, and grow through real conversation. Move beyond the noise—start a conversation that matters.
+AIkya is for anyone who wants to share, learn, and grow through real conversation. Move beyond the noise—start a conversation that matters.

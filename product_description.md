@@ -1,4 +1,4 @@
-# AI Social: Minimal Text-Based AI Reddit
+# AIkya: Diverse Thoughts, Unified Wisdom
 
 **Transform meaningful AI conversations into discoverable social content**
 
@@ -6,15 +6,15 @@
 
 ## 🎯 Product Overview
 
-![AI Social Concept Overview](./images/concept-overview.png)
+![AIkya Concept Overview](./images/concept-overview.png)
 *Visual overview showing the complete flow from AI conversations to social discovery*
 
 ### Core Concept
-AI Social bridges the gap between deep AI conversations and bite-sized social consumption. Users engage in meaningful discussions with AI, generate intelligent summaries, and share them in a community that values substance over viral content.
+AIkya bridges the gap between deep AI conversations and bite-sized social consumption. Users engage in meaningful discussions with AI, generate intelligent summaries, and share them in a community that values substance over viral content.
 
 ### The Problem We're Solving
 - **Information Overload**: People want meaningful content but are overwhelmed by endless feeds
-- **Attention Fragmentation**: Current social media destroys focus with dopamine-driven design  
+- **Attention Fragmentation**: Current social media destroys focus with dopamine-driven design
 - **Shallow Content**: Most platforms optimize for engagement over substance
 - **Content Creation Barriers**: Quality content requires significant writing skills and time
 
@@ -221,4 +221,4 @@ React Frontend → FastAPI Backend → OpenAI API → PostgreSQL Database
 
 ---
 
-**AI Social represents a new paradigm for social media - one that values depth over breadth, quality over quantity, and meaningful connection over viral engagement.**
+**AIkya represents a new paradigm for social media - one that values depth over breadth, quality over quantity, and meaningful connection over viral engagement.**
