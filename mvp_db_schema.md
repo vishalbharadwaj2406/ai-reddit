@@ -1,6 +1,6 @@
-# AIkya MVP Database Schema (Markdown)
+# [APP_NAME] MVP Database Schema (Markdown)
 
-This schema is designed for a minimal, production-ready MVP of the AIkya platform. It follows best practices for normalization, extensibility, and efficient querying. All fields are explicitly described. (Engine: PostgreSQL recommended)
+This schema is designed for a minimal, production-ready MVP of the [APP_NAME] platform. It follows best practices for normalization, extensibility, and efficient querying. All fields are explicitly described. (Engine: PostgreSQL recommended)
 
 ---
 

@@ -1,7 +1,7 @@
 """
 Tests Package
 
-This package contains all test files for the AIkya backend.
+This package contains all test files for the [APP_NAME] backend.
 
 Test Structure:
 - test_api/: API endpoint tests

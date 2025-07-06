@@ -1,5 +1,5 @@
 """
-AIkya Backend - Main Application Entry Point
+[APP_NAME] Backend - Main Application Entry Point
 
 This file is the heart of our FastAPI application. It:
 1. Creates the FastAPI app instance
@@ -38,7 +38,7 @@ def create_application() -> FastAPI:
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
-        description="AIkya - AI-powered conversation platform",
+        description=f"{settings.APP_NAME} - AI-powered conversation platform",
         docs_url="/docs",  # Swagger UI
         redoc_url="/redoc",  # ReDoc documentation
     )
@@ -97,7 +97,7 @@ async def root():
     - Basic API testing
     """
     return {
-        "message": "AIkya API is running!",
+        "message": f"{settings.APP_NAME} API is running!",
         "version": settings.APP_VERSION,
         "docs": "/docs"
     }

@@ -1,4 +1,4 @@
-# AIkya Backend
+# [APP_NAME] Backend
 
 ## Quick Start
 
@@ -64,4 +64,4 @@ This backend follows a **layered architecture** pattern:
 
 Once running, visit:
 - **Interactive Docs**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc 
+- **ReDoc**: http://localhost:8000/redoc

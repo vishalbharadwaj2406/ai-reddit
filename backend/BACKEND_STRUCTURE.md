@@ -1,8 +1,8 @@
-# AIkya Backend Structure
+# [APP_NAME] Backend Structure
 
 ## Overview
 
-This document explains the FastAPI backend structure we've created for the AIkya MVP. The architecture follows industry best practices with a layered approach optimized for scalability and maintainability.
+This document explains the FastAPI backend structure we've created for the [APP_NAME] MVP. The architecture follows industry best practices with a layered approach optimized for scalability and maintainability.
 
 ## Directory Structure
 

@@ -1,4 +1,4 @@
-# AIkya: Diverse Thoughts, Unified Wisdom
+# [APP_NAME]: Diverse Thoughts, Unified Wisdom
 
 **Transform meaningful AI conversations into discoverable social content**
 
@@ -6,11 +6,11 @@
 
 ## 🎯 Product Overview
 
-![AIkya Concept Overview](./images/concept-overview.png)
+![APP_NAME Concept Overview](./images/concept-overview.png)
 *Visual overview showing the complete flow from AI conversations to social discovery*
 
 ### Core Concept
-AIkya bridges the gap between deep AI conversations and bite-sized social consumption. Users engage in meaningful discussions with AI, generate intelligent summaries, and share them in a community that values substance over viral content.
+[APP_NAME] bridges the gap between deep AI conversations and bite-sized social consumption. Users engage in meaningful discussions with AI, generate intelligent summaries, and share them in a community that values substance over viral content.
 
 ### The Problem We're Solving
 - **Information Overload**: People want meaningful content but are overwhelmed by endless feeds
@@ -221,4 +221,4 @@ React Frontend → FastAPI Backend → OpenAI API → PostgreSQL Database
 
 ---
 
-**AIkya represents a new paradigm for social media - one that values depth over breadth, quality over quantity, and meaningful connection over viral engagement.**
+**[APP_NAME] represents a new paradigm for social media - one that values depth over breadth, quality over quantity, and meaningful connection over viral engagement.**

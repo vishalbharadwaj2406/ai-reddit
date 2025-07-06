@@ -1,7 +1,7 @@
-# AIkya MVP API Design
+# [APP_NAME] MVP API Design
 
 ## Overview
-This document defines the complete API specification for AIkya MVP backend. The API follows RESTful principles with real-time streaming for AI conversations.
+This document defines the complete API specification for [APP_NAME] MVP backend. The API follows RESTful principles with real-time streaming for AI conversations.
 
 ---
 
@@ -761,4 +761,4 @@ X-RateLimit-Reset: 1640995200
 
 ---
 
-This API design supports the complete AIkya MVP functionality with room for future expansion.
+This API design supports the complete [APP_NAME] MVP functionality with room for future expansion.

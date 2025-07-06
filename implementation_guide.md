@@ -1,7 +1,7 @@
-# AIkya MVP Implementation Guide
+# [APP_NAME] MVP Implementation Guide
 
 ## Project Overview
-AIkya is an AI-powered conversation platform where users create blog posts through AI conversations and can fork/expand existing posts for deeper exploration. This guide provides a complete task breakdown for two engineers (Vishal and Aravind) to build the MVP.
+[APP_NAME] is an AI-powered conversation platform where users create blog posts through AI conversations and can fork/expand existing posts for deeper exploration. This guide provides a complete task breakdown for two engineers (Vishal and Aravind) to build the MVP.
 
 **Tech Stack:**
 - Backend: Python/FastAPI
@@ -41,7 +41,7 @@ AIkya is an AI-powered conversation platform where users create blog posts throu
 
 **Deliverables:**
 ```
-aikya/
+[APP_NAME]/
 ├── backend/
 │   ├── app/
 │   ├── tests/
@@ -819,7 +819,7 @@ npm run build
 psql -U username -d database_name
 
 # Create database
-createdb aikya_db
+createdb app_db
 
 # Run migrations
 alembic revision --autogenerate -m "Initial migration"
@@ -828,4 +828,4 @@ alembic upgrade head
 
 ---
 
-This implementation guide provides a comprehensive roadmap for building the AIkya MVP with clear task distribution, deliverables, and learning resources. Each task is designed to be completed in 1-3 days by a single engineer, with proper verification criteria to ensure quality and progress tracking.
+This implementation guide provides a comprehensive roadmap for building the [APP_NAME] MVP with clear task distribution, deliverables, and learning resources. Each task is designed to be completed in 1-3 days by a single engineer, with proper verification criteria to ensure quality and progress tracking.

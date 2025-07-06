@@ -1,7 +1,7 @@
-# AIkya MVP API Design Decisions
+# [APP_NAME] MVP API Design Decisions
 
 ## 📋 Document Purpose
-This document captures key design decisions, rationales, and architectural choices made during the AIkya MVP API design process. Use this as a reference for understanding **why** certain decisions were made and **how** they support the platform's unique value proposition.
+This document captures key design decisions, rationales, and architectural choices made during the [APP_NAME] MVP API design process. Use this as a reference for understanding **why** certain decisions were made and **how** they support the platform's unique value proposition.
 
 ---
 
@@ -349,4 +349,4 @@ GET /conversations/{conversation_id}/messages
 
 ---
 
-This document serves as the definitive reference for understanding the architectural decisions behind AIkya's MVP API design. Each decision supports the platform's unique value proposition while maintaining simplicity and extensibility for future growth.
+This document serves as the definitive reference for understanding the architectural decisions behind [APP_NAME]'s MVP API design. Each decision supports the platform's unique value proposition while maintaining simplicity and extensibility for future growth.

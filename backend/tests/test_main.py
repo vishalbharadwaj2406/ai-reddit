@@ -22,7 +22,7 @@ def test_root_endpoint():
     assert "message" in data
     assert "version" in data
     assert "docs" in data
-    assert data["message"] == "AIkya API is running!"
+    assert data["message"] == f"{app.title} API is running!"
 
 
 def test_health_check():
@@ -51,4 +51,4 @@ async def test_app_startup():
 
     test_app = create_application()
     assert test_app is not None
-    assert test_app.title == "AIkya"
+    assert test_app.title == app.title

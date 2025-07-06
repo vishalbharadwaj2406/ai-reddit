@@ -107,7 +107,7 @@ def show_table_info():
 
 def main():
     """Run the complete setup process."""
-    print("🚀 AIkya Backend Development Setup")
+    print(f"🚀 {os.getenv('APP_NAME', '[APP_NAME]')} Backend Development Setup")
     print("=" * 50)
 
     steps = [

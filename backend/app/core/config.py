@@ -14,6 +14,7 @@ Why we use this approach:
 from typing import List
 from pydantic_settings import BaseSettings
 from pydantic import Field
+import os
 
 
 class Settings(BaseSettings):
@@ -28,14 +29,14 @@ class Settings(BaseSettings):
     """
 
     # Application Configuration
-    APP_NAME: str = Field(default="AIkya", description="Application name")
+    APP_NAME: str = Field(default_factory=lambda: os.getenv("APP_NAME", "AppNamePlaceholder"), description="Application name")
     APP_VERSION: str = Field(default="1.0.0", description="Application version")
     DEBUG: bool = Field(default=False, description="Debug mode")
 
     # Database Configuration
     DATABASE_URL: str = Field(
         description="PostgreSQL database URL",
-        example="postgresql://user:password@localhost:5432/aikya_db"
+        example="postgresql://user:password@localhost:5432/app_db"
     )
 
     # JWT Authentication
