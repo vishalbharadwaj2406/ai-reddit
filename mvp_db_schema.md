@@ -16,21 +16,21 @@ This schema is designed for a minimal, production-ready MVP of the AIkya platfor
 | created_at       | TIMESTAMP      |                                                      |
 | updated_at       | TIMESTAMP      | Last modification time                               |
 | google_id        | VARCHAR UNIQUE | For Google sign-in                                   |
-| archived         | BOOLEAN        | For future: soft-archive user                        |
+| is_private       | BOOLEAN        | Default FALSE. TRUE = followers-only content         |
 | status           | VARCHAR        | Record status: 'active', 'archived', etc.            |
 
 ---
 
 ## Follows
-| Field         | Type      | Constraints / Notes                  |
-|---------------|-----------|--------------------------------------|
-| follower_id   | UUID (FK) | References users(user_id)            |
-| following_id  | UUID (FK) | References users(user_id)            |
-| created_at    | TIMESTAMP |                                      |
-| updated_at    | TIMESTAMP | Last modification time               |
-| status        | VARCHAR   | Record status: 'active', 'archived', etc. |
-| PRIMARY KEY   | (follower_id, following_id)                     |
-| Constraint    | follower_id != following_id                     |
+| Field         | Type      | Constraints / Notes                                         |
+|---------------|-----------|-----------------------------------------------------------|
+| follower_id   | UUID (FK) | References users(user_id)                                  |
+| following_id  | UUID (FK) | References users(user_id)                                  |
+| created_at    | TIMESTAMP |                                                           |
+| updated_at    | TIMESTAMP | Last modification time                                    |
+| status        | VARCHAR   | 'pending', 'accepted', 'rejected', 'archived', etc.       |
+| PRIMARY KEY   | (follower_id, following_id)                                            |
+| Constraint    | follower_id != following_id                                            |
 
 ---
 
@@ -43,7 +43,6 @@ This schema is designed for a minimal, production-ready MVP of the AIkya platfor
 | created_at      | TIMESTAMP |                                                     |
 | updated_at      | TIMESTAMP | Last modification time                              |
 | forked_from     | UUID (FK) | Nullable, references posts(post_id)                 |
-| archived        | BOOLEAN   | For user archiving                                  |
 | status          | VARCHAR   | Record status: 'active', 'archived', etc.           |
 
 ---
@@ -71,25 +70,24 @@ This schema is designed for a minimal, production-ready MVP of the AIkya platfor
 | conversation_id | UUID (FK) | References conversations(conversation_id)           |
 | title           | VARCHAR   |                                                     |
 | content         | TEXT      |                                                     |
-| is_visible      | BOOLEAN   | Public/private toggle                               |
+| is_conversation_visible | BOOLEAN   | If TRUE, the conversation linked to this post is viewable by others (subject to user/conversation privacy). If FALSE, only the post content is visible. |
 | created_at      | TIMESTAMP |                                                     |
 | updated_at      | TIMESTAMP | Last modification time                              |
 | edited          | BOOLEAN   | True if post has been edited                        |
-| archived        | BOOLEAN   | For user archiving                                  |
 | status          | VARCHAR   | Record status: 'active', 'archived', etc.           |
 
 ---
 
-## Post Likes/Dislikes
+## Post Reactions
 | Field         | Type      | Constraints / Notes                                 |
 |---------------|-----------|-----------------------------------------------------|
 | user_id       | UUID (FK) | References users(user_id)                           |
 | post_id       | UUID (FK) | References posts(post_id)                           |
-| is_like       | BOOLEAN   | True=like, False=dislike                            |
+| reaction      | VARCHAR   | e.g. 'like', 'dislike', 'love', 'laugh', 'sad', etc. Only one reaction per user per post is allowed. |
 | created_at    | TIMESTAMP |                                                     |
 | updated_at    | TIMESTAMP | Last modification time                              |
 | status        | VARCHAR   | Record status: 'active', 'archived', etc.           |
-| PRIMARY KEY   | (user_id, post_id)                                              |
+| PRIMARY KEY   | (user_id, post_id)                                               |
 
 ---
 
