@@ -23,7 +23,7 @@ This document defines the complete API specification for AIkya MVP backend. The 
   "success": boolean,
   "data": object | array | null,
   "message": string,
-  "error_code": string | null
+  "errorCode": string | null
 }
 ```
 
@@ -33,7 +33,7 @@ This document defines the complete API specification for AIkya MVP backend. The 
   "success": false,
   "data": null,
   "message": "Human readable error message",
-  "error_code": "SPECIFIC_ERROR_CODE"
+  "errorCode": "SPECIFIC_ERROR_CODE"
 }
 ```
 
@@ -49,7 +49,7 @@ This document defines the complete API specification for AIkya MVP backend. The 
 **Request Body**:
 ```json
 {
-  "google_token": "string"
+  "googleToken": "string"
 }
 ```
 **Response**:
@@ -57,13 +57,13 @@ This document defines the complete API specification for AIkya MVP backend. The 
 {
   "success": true,
   "data": {
-    "access_token": "jwt_token_here",
+    "accessToken": "jwt_token_here",
     "user": {
-      "user_id": "uuid",
-      "user_name": "string",
+      "userId": "uuid",
+      "userName": "string",
       "email": "string",
-      "profile_picture": "string",
-      "created_at": "timestamp"
+      "profilePicture": "string",
+      "createdAt": "timestamp"
     }
   },
   "message": "Authentication successful"
@@ -87,13 +87,15 @@ This document defines the complete API specification for AIkya MVP backend. The 
 {
   "success": true,
   "data": {
-    "user_id": "uuid",
-    "user_name": "string",
-    "email": "string",
-    "profile_picture": "string",
-    "created_at": "timestamp",
-    "follower_count": 0,
-    "following_count": 0
+    "user": {
+      "userId": "uuid",
+      "userName": "string",
+      "email": "string",
+      "profilePicture": "string",
+      "createdAt": "timestamp",
+      "followerCount": 0,
+      "followingCount": 0
+    }
   },
   "message": "Profile retrieved successfully"
 }
@@ -104,24 +106,82 @@ This document defines the complete API specification for AIkya MVP backend. The 
 **Auth Required**: No
 **Response**: Same as /users/me
 
-#### PUT /users/me
-**Purpose**: Update user profile
+#### PATCH /users/me
+**Purpose**: Update user profile (partial update)
 **Auth Required**: Yes
 **Request Body**:
 ```json
 {
-  "user_name": "string",
-  "profile_picture": "string"
+  "userName": "string",
+  "profilePicture": "string"
 }
 ```
 
 #### POST /users/{user_id}/follow
-**Purpose**: Follow/unfollow user
+**Purpose**: Send a follow request or follow a user (depending on privacy)
 **Auth Required**: Yes
-**Request Body**:
+**Response**:
 ```json
 {
-  "action": "follow" | "unfollow"
+  "success": true,
+  "data": {
+    "status": "pending" | "accepted"
+  },
+  "message": "Follow request sent or follow successful"
+}
+```
+
+#### DELETE /users/{user_id}/follow
+**Purpose**: Unfollow a user or cancel a pending follow request
+**Auth Required**: Yes
+**Response**:
+```json
+{
+  "success": true,
+  "data": null,
+  "message": "Unfollowed or follow request cancelled successfully"
+}
+```
+
+#### GET /users/me/follow-requests/incoming
+**Purpose**: List incoming follow requests
+**Auth Required**: Yes
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "incomingRequests": [
+      {
+        "userId": "uuid",
+        "userName": "string",
+        "profilePicture": "string",
+        "requestedAt": "timestamp"
+      }
+    ]
+  },
+  "message": "Incoming follow requests retrieved successfully"
+}
+```
+
+#### GET /users/me/follow-requests/outgoing
+**Purpose**: List outgoing follow requests
+**Auth Required**: Yes
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "outgoingRequests": [
+      {
+        "userId": "uuid",
+        "userName": "string",
+        "profilePicture": "string",
+        "requestedAt": "timestamp"
+      }
+    ]
+  },
+  "message": "Outgoing follow requests retrieved successfully"
 }
 ```
 
@@ -135,14 +195,18 @@ This document defines the complete API specification for AIkya MVP backend. The 
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "user_id": "uuid",
-      "user_name": "string",
-      "profile_picture": "string",
-      "followed_at": "timestamp"
-    }
-  ],
+  "data": {
+    "pageNumber": 1,
+    "size": 20,
+    "followers": [
+      {
+        "userId": "uuid",
+        "userName": "string",
+        "profilePicture": "string",
+        "followedAt": "timestamp"
+      }
+    ]
+  },
   "message": "Followers retrieved successfully"
 }
 ```
@@ -157,14 +221,16 @@ This document defines the complete API specification for AIkya MVP backend. The 
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "user_id": "uuid",
-      "user_name": "string",
-      "profile_picture": "string",
-      "followed_at": "timestamp"
-    }
-  ],
+  "data": {
+    "following": [
+      {
+        "userId": "uuid",
+        "userName": "string",
+        "profilePicture": "string",
+        "followedAt": "timestamp"
+      }
+    ]
+  },
   "message": "Following retrieved successfully"
 }
 ```
@@ -185,12 +251,11 @@ This document defines the complete API specification for AIkya MVP backend. The 
   "success": true,
   "data": [
     {
-      "conversation_id": "uuid",
+      "conversationId": "uuid",
       "title": "string",
-      "created_at": "timestamp",
-      "updated_at": "timestamp",
-      "message_count": 0,
-      "forked_from": "uuid | null"
+      "createdAt": "timestamp",
+      "updatedAt": "timestamp",
+      "forkedFrom": "uuid | null"
     }
   ],
   "message": "Conversations retrieved successfully"
@@ -198,13 +263,13 @@ This document defines the complete API specification for AIkya MVP backend. The 
 ```
 
 #### POST /conversations
-**Purpose**: Create new conversation (for custom blog flow)
+**Purpose**: Explicitly create a new conversation (e.g., when user clicks 'Start Conversation')
 **Auth Required**: Yes
 **Request Body**:
 ```json
 {
   "title": "string",
-  "forked_from": "uuid | null"
+  "forkedFrom": "uuid | null"
 }
 ```
 **Response**:
@@ -212,9 +277,9 @@ This document defines the complete API specification for AIkya MVP backend. The 
 {
   "success": true,
   "data": {
-    "conversation_id": "uuid",
+    "conversationId": "uuid",
     "title": "string",
-    "created_at": "timestamp"
+    "createdAt": "timestamp"
   },
   "message": "Conversation created successfully"
 }
@@ -228,17 +293,17 @@ This document defines the complete API specification for AIkya MVP backend. The 
 {
   "success": true,
   "data": {
-    "conversation_id": "uuid",
+    "conversationId": "uuid",
     "title": "string",
-    "created_at": "timestamp",
-    "forked_from": "uuid | null",
+    "createdAt": "timestamp",
+    "forkedFrom": "uuid | null",
     "messages": [
       {
-        "message_id": "uuid",
+        "messageId": "uuid",
         "role": "user" | "assistant",
         "content": "string",
-        "is_blog": boolean,
-        "created_at": "timestamp"
+        "isBlog": boolean,
+        "createdAt": "timestamp"
       }
     ]
   },
@@ -255,7 +320,7 @@ This document defines the complete API specification for AIkya MVP backend. The 
 ### 4. AI Chat Endpoints
 
 #### POST /conversations/{conversation_id}/messages
-**Purpose**: Send message and get AI response
+**Purpose**: Send message and get AI response (conversation must already exist)
 **Auth Required**: Yes
 **Request Body**:
 ```json
@@ -264,8 +329,8 @@ This document defines the complete API specification for AIkya MVP backend. The 
 }
 ```
 **Response**:
-- If conversation doesn't exist, creates it automatically
 - Returns streaming response (see Streaming section)
+- Returns 404 Not Found if the conversation does not exist
 
 #### POST /conversations/{conversation_id}/generate-blog
 **Purpose**: Generate blog post from conversation
@@ -273,7 +338,7 @@ This document defines the complete API specification for AIkya MVP backend. The 
 **Request Body**:
 ```json
 {
-  "additional_context": "string | null"
+  "additionalContext": "string | null"
 }
 ```
 **Response**:
@@ -281,10 +346,9 @@ This document defines the complete API specification for AIkya MVP backend. The 
 {
   "success": true,
   "data": {
-    "message_id": "uuid",
+    "messageId": "uuid",
     "content": "string",
-    "is_blog": true,
-    "created_at": "timestamp"
+    "createdAt": "timestamp"
   },
   "message": "Blog generated successfully"
 }
@@ -301,33 +365,33 @@ This document defines the complete API specification for AIkya MVP backend. The 
 - `limit`: integer (default: 20, max: 100)
 - `offset`: integer (default: 0)
 - `tag`: string (filter by tag)
-- `user_id`: uuid (filter by user)
+- `userId`: uuid (filter by user)
 **Response**:
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "post_id": "uuid",
-      "title": "string",
-      "content": "string",
-      "created_at": "timestamp",
-      "user": {
-        "user_id": "uuid",
-        "user_name": "string",
-        "profile_picture": "string"
-      },
-      "tags": ["string"],
-      "like_count": 0,
-      "dislike_count": 0,
-      "comment_count": 0,
-      "view_count": 0,
-      "user_interaction": {
-        "liked": boolean | null,
-        "viewed": boolean
+  "data": {
+    "posts": [
+      {
+        "postId": "uuid",
+        "title": "string",
+        "content": "string",
+        "createdAt": "timestamp",
+        "user": {
+          "userId": "uuid",
+          "userName": "string",
+          "profilePicture": "string"
+        },
+        "tags": ["string"],
+        "reactions": { "like": 10, "love": 2 },
+        "userReaction": "like" | "love" | null,
+        "commentCount": 0,
+        "viewCount": 0,
+        "userViewCount": 0,
+        "conversationId": "uuid | null" // null if conversation is not viewable
       }
-    }
-  ],
+    ]
+  },
   "message": "Posts retrieved successfully"
 }
 ```
@@ -338,11 +402,11 @@ This document defines the complete API specification for AIkya MVP backend. The 
 **Request Body**:
 ```json
 {
-  "message_id": "uuid",
+  "messageId": "uuid",
   "title": "string",
   "content": "string",
   "tags": ["string"],
-  "is_visible": boolean
+  "isVisible": boolean
 }
 ```
 **Response**:
@@ -350,10 +414,10 @@ This document defines the complete API specification for AIkya MVP backend. The 
 {
   "success": true,
   "data": {
-    "post_id": "uuid",
+    "postId": "uuid",
     "title": "string",
     "content": "string",
-    "created_at": "timestamp"
+    "createdAt": "timestamp"
   },
   "message": "Post created successfully"
 }
@@ -362,7 +426,36 @@ This document defines the complete API specification for AIkya MVP backend. The 
 #### GET /posts/{post_id}
 **Purpose**: Get single post details
 **Auth Required**: No
-**Response**: Same as single post in GET /posts
+**Response**: Same as single post in GET /posts, but wrapped as `{ "data": { "post": { ... } } }`
+
+#### GET /posts/{post_id}/conversation
+**Purpose**: Get the conversation for a post (if viewable)
+**Auth Required**: No (viewable only if allowed by post owner)
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "conversation": {
+      "conversationId": "uuid",
+      "title": "string",
+      "createdAt": "timestamp",
+      "forkedFrom": "uuid | null",
+      "messages": [
+        {
+          "messageId": "uuid",
+          "role": "user" | "assistant",
+          "content": "string",
+          "isBlog": boolean,
+          "createdAt": "timestamp"
+        }
+      ]
+    }
+  },
+  "message": "Conversation retrieved successfully"
+}
+```
+- Returns 404 or omits conversation if not viewable.
 
 #### POST /posts/{post_id}/like
 **Purpose**: Like/dislike post
@@ -392,32 +485,59 @@ This document defines the complete API specification for AIkya MVP backend. The 
 {
   "success": true,
   "data": {
-    "share_id": "uuid",
-    "shared_at": "timestamp"
+    "shareId": "uuid",
+    "sharedAt": "timestamp"
   },
   "message": "Post shared successfully"
 }
 ```
 
 #### POST /posts/{post_id}/expand
-**Purpose**: Create conversation forked from post
+**Purpose**: Create a new conversation forked from a post (does not include the original conversation by default)
 **Auth Required**: Yes
-**Request Body**:
-```json
-{
-  "include_original_conversation": boolean
-}
-```
+**Request Body**: (empty)
 **Response**:
 ```json
 {
   "success": true,
   "data": {
-    "conversation_id": "uuid",
+    "conversationId": "uuid",
     "title": "string",
-    "forked_from": "uuid"
+    "forkedFrom": "uuid"
   },
   "message": "Conversation forked successfully"
+}
+```
+
+#### POST /conversations/{conversation_id}/include-original
+**Purpose**: Include the original conversation into the expanded conversation (optional, second step)
+**Auth Required**: Yes
+**Request Body**: (empty)
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "conversationId": "uuid",
+    "included": true
+  },
+  "message": "Original conversation included successfully"
+}
+```
+
+#### POST /conversations/{conversation_id}/uninclude-original
+**Purpose**: Remove the original conversation from the expanded conversation (undo the include-original action)
+**Auth Required**: Yes
+**Request Body**: (empty)
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "conversationId": "uuid",
+    "included": false
+  },
+  "message": "Original conversation removed successfully"
 }
 ```
 
@@ -426,7 +546,7 @@ This document defines the complete API specification for AIkya MVP backend. The 
 ### 6. Comment Endpoints
 
 #### GET /posts/{post_id}/comments
-**Purpose**: Get post comments
+**Purpose**: Get post comments (with reactions)
 **Auth Required**: No
 **Query Parameters**:
 - `limit`: integer (default: 20, max: 100)
@@ -435,22 +555,24 @@ This document defines the complete API specification for AIkya MVP backend. The 
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "comment_id": "uuid",
-      "content": "string",
-      "created_at": "timestamp",
-      "user": {
-        "user_id": "uuid",
-        "user_name": "string",
-        "profile_picture": "string"
-      },
-      "like_count": 0,
-      "dislike_count": 0,
-      "parent_comment_id": "uuid | null",
-      "replies": []
-    }
-  ],
+  "data": {
+    "comments": [
+      {
+        "commentId": "uuid",
+        "content": "string",
+        "createdAt": "timestamp",
+        "user": {
+          "userId": "uuid",
+          "userName": "string",
+          "profilePicture": "string"
+        },
+        "reactions": { "like": 3, "love": 1 },
+        "userReaction": "like" | "love" | null,
+        "parentCommentId": "uuid | null",
+        "replies": []
+      }
+    ]
+  },
   "message": "Comments retrieved successfully"
 }
 ```
@@ -462,7 +584,7 @@ This document defines the complete API specification for AIkya MVP backend. The 
 ```json
 {
   "content": "string",
-  "parent_comment_id": "uuid | null"
+  "parentCommentId": "uuid | null"
 }
 ```
 
@@ -473,6 +595,16 @@ This document defines the complete API specification for AIkya MVP backend. The 
 ```json
 {
   "action": "like" | "dislike" | "remove"
+}
+```
+
+#### POST /comments/{comment_id}/reaction
+**Purpose**: Add, change, or remove a reaction for a comment
+**Auth Required**: Yes
+**Request Body**:
+```json
+{
+  "reaction": "like" | "love" | "laugh" | "sad" | null
 }
 ```
 
@@ -487,13 +619,15 @@ This document defines the complete API specification for AIkya MVP backend. The 
 ```json
 {
   "success": true,
-  "data": [
-    {
-      "tag_id": "uuid",
-      "name": "string",
-      "post_count": 0
-    }
-  ],
+  "data": {
+    "tags": [
+      {
+        "tagId": "uuid",
+        "name": "string",
+        "postCount": 0
+      }
+    ]
+  },
   "message": "Tags retrieved successfully"
 }
 ```
@@ -509,11 +643,11 @@ This document defines the complete API specification for AIkya MVP backend. The 
 ### Message Format:
 ```json
 {
-  "type": "ai_response",
+  "type": "aiResponse",
   "data": {
     "content": "partial sentence...",
-    "is_complete": boolean,
-    "message_id": "uuid"
+    "isComplete": boolean,
+    "messageId": "uuid"
   }
 }
 ```
@@ -524,7 +658,7 @@ This document defines the complete API specification for AIkya MVP backend. The 
   "type": "error",
   "data": {
     "message": "Error description",
-    "error_code": "SPECIFIC_ERROR"
+    "errorCode": "SPECIFIC_ERROR"
   }
 }
 ```

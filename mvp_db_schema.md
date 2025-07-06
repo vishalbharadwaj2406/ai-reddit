@@ -131,16 +131,16 @@ This schema is designed for a minimal, production-ready MVP of the AIkya platfor
 
 ---
 
-## Comment Likes/Dislikes
+## Comment Reactions
 | Field         | Type      | Constraints / Notes                                 |
 |---------------|-----------|-----------------------------------------------------|
 | user_id       | UUID (FK) | References users(user_id)                           |
 | comment_id    | UUID (FK) | References comments(comment_id)                     |
-| is_like       | BOOLEAN   | True=like, False=dislike                            |
+| reaction      | VARCHAR   | e.g. 'like', 'dislike', 'love', 'laugh', 'sad', etc. Only one reaction per user per comment is allowed. |
 | created_at    | TIMESTAMP |                                                     |
 | updated_at    | TIMESTAMP | Last modification time                              |
 | status        | VARCHAR   | Record status: 'active', 'archived', etc.           |
-| PRIMARY KEY   | (user_id, comment_id)                                           |
+| PRIMARY KEY   | (user_id, comment_id)                                            |
 
 ---
 
