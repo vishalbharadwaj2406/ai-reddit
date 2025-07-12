@@ -14,18 +14,21 @@ from app.models.user import User
 from app.models.conversation import Conversation
 from app.models.message import Message
 from app.models.post import Post
-from app.models.comment import Comment
-from app.models.tag import Tag
+
+# TODO: Import these as we create the models
+# from app.models.comment import Comment
+# from app.models.tag import Tag
 
 # Import association tables for many-to-many relationships
-from app.models.associations import (
-    user_follows,
-    post_reactions,
-    comment_reactions,
-    post_tags,
-    post_views,
-    post_shares
-)
+# TODO: Import these as we create them
+# from app.models.associations import (
+#     user_follows,
+#     post_reactions,
+#     comment_reactions,
+#     post_tags,
+#     post_views,
+#     post_shares
+# )
 
 # List all models for easy iteration
 __all__ = [
@@ -33,12 +36,13 @@ __all__ = [
     "Conversation",
     "Message",
     "Post",
-    "Comment",
-    "Tag",
-    "user_follows",
-    "post_reactions",
-    "comment_reactions",
-    "post_tags",
-    "post_views",
-    "post_shares"
+    # TODO: Add these as we create models
+    # "Comment",
+    # "Tag",
+    # "user_follows",
+    # "post_reactions",
+    # "comment_reactions",
+    # "post_tags",
+    # "post_views",
+    # "post_shares"
 ]

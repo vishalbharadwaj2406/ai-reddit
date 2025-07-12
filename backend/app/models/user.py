@@ -114,34 +114,31 @@ class User(Base):
     # Relationships
     # Note: We define relationships here but the actual foreign keys
     # are in the related tables
+    # TODO: Uncomment these as we create the related models
 
-    conversations = relationship(
-        "Conversation",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        comment="All conversations created by this user"
-    )
+    # conversations = relationship(
+    #     "Conversation",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan"
+    # )
 
-    messages = relationship(
-        "Message",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        comment="All messages sent by this user"
-    )
+    # messages = relationship(
+    #     "Message",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan"
+    # )
 
-    posts = relationship(
-        "Post",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        comment="All posts created by this user"
-    )
+    # posts = relationship(
+    #     "Post",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan"
+    # )
 
-    comments = relationship(
-        "Comment",
-        back_populates="user",
-        cascade="all, delete-orphan",
-        comment="All comments made by this user"
-    )
+    # comments = relationship(
+    #     "Comment",
+    #     back_populates="user",
+    #     cascade="all, delete-orphan"
+    # )
 
     # Follow relationships (many-to-many)
     # These will be defined in associations.py

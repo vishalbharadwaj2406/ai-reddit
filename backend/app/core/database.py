@@ -16,11 +16,15 @@ Why SQLAlchemy?
 """
 
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase
 from typing import Generator
 
 from app.core.config import settings
+
+
+# Create Base class for all database models using SQLAlchemy 2.0 syntax
+class Base(DeclarativeBase):
+    pass
 
 
 # Create SQLAlchemy engine
@@ -40,10 +44,6 @@ SessionLocal = sessionmaker(
     autoflush=False,     # Don't auto-flush changes
     bind=engine          # Bind to our database engine
 )
-
-# Create Base class for all database models
-# All our model classes will inherit from this
-Base = declarative_base()
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -126,9 +126,10 @@ class DatabaseManager:
         Returns True if database is accessible, False otherwise.
         """
         try:
+            from sqlalchemy import text
             db = SessionLocal()
-            # Try a simple query
-            db.execute("SELECT 1")
+            # Try a simple query using SQLAlchemy 2.0 syntax
+            db.execute(text("SELECT 1"))
             db.close()
             return True
         except Exception as e:
