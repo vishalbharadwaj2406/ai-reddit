@@ -67,7 +67,13 @@ E2E Tests (5%):         Critical user journeys
 - **Business Logic**: Helper methods and computed properties
 - **Integration Tests**: 6 tests (currently skipped, ready to enable)
 
-#### API Layer (🔄 Planned)
+#### Authentication System (✅ Complete)
+- **Google OAuth Integration**: Token verification and user data extraction
+- **JWT Token Management**: Access (30min) and refresh (30 days) tokens  
+- **Authentication Endpoints**: Login, logout, refresh, health check
+- **Security Features**: Proper validation, audience verification, error handling
+
+#### API Layer (🔄 In Development)
 - **Endpoint Tests**: Request/response validation
 - **Authentication Tests**: OAuth flow and JWT handling
 - **Business Logic Tests**: Critical user workflows
