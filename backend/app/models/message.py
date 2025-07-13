@@ -103,15 +103,15 @@ class Message(Base):
     # Relationships
     # Note: We'll add these as we test them
     
-    # conversation = relationship(
-    #     "Conversation",
-    #     back_populates="messages"
-    # )
+    conversation = relationship(
+        "Conversation",
+        back_populates="messages"
+    )
 
-    # user = relationship(
-    #     "User",
-    #     back_populates="messages"
-    # )
+    user = relationship(
+        "User",
+        back_populates="messages"
+    )
 
     def __repr__(self):
         """String representation of Message for debugging."""

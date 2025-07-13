@@ -116,32 +116,72 @@ class User(Base):
     # are in the related tables
     # TODO: Uncomment these as we create the related models
 
-    # conversations = relationship(
-    #     "Conversation",
-    #     back_populates="user",
-    #     cascade="all, delete-orphan"
-    # )
+    conversations = relationship(
+        "Conversation",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
-    # messages = relationship(
-    #     "Message",
-    #     back_populates="user",
-    #     cascade="all, delete-orphan"
-    # )
+    messages = relationship(
+        "Message",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
-    # posts = relationship(
-    #     "Post",
-    #     back_populates="user",
-    #     cascade="all, delete-orphan"
-    # )
+    posts = relationship(
+        "Post",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
-    # comments = relationship(
-    #     "Comment",
-    #     back_populates="user",
-    #     cascade="all, delete-orphan"
-    # )
+    comments = relationship(
+        "Comment",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
-    # Follow relationships (many-to-many)
-    # These will be defined in associations.py
+    # Reaction relationships
+    post_reactions = relationship(
+        "PostReaction",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    comment_reactions = relationship(
+        "CommentReaction",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    # Follow relationships
+    # Users this user is following
+    following_relationships = relationship(
+        "Follow",
+        foreign_keys="Follow.follower_id",
+        back_populates="follower",
+        cascade="all, delete-orphan"
+    )
+
+    # Users following this user
+    follower_relationships = relationship(
+        "Follow",
+        foreign_keys="Follow.following_id", 
+        back_populates="following",
+        cascade="all, delete-orphan"
+    )
+
+    # Engagement relationships
+    post_views = relationship(
+        "PostView",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    shares_made = relationship(
+        "PostShare",
+        back_populates="shared_by",
+        doc="Shares made by this user"
+    )
 
     def __repr__(self):
         """String representation of User for debugging."""

@@ -87,17 +87,23 @@ class Conversation(Base):
     # Relationships
     # Note: We'll add these as we create the related models
     
-    # user = relationship(
-    #     "User",
-    #     back_populates="conversations"
-    # )
+    user = relationship(
+        "User",
+        back_populates="conversations"
+    )
 
-    # messages = relationship(
-    #     "Message",
-    #     back_populates="conversation",
-    #     cascade="all, delete-orphan",
-    #     order_by="Message.created_at"
-    # )
+    messages = relationship(
+        "Message",
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        order_by="Message.created_at"
+    )
+
+    posts = relationship(
+        "Post",
+        back_populates="conversation",
+        cascade="all, delete-orphan"
+    )
 
     # posts = relationship(
     #     "Post",

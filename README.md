@@ -21,7 +21,8 @@ Whether you want to:
 **MVP Features**
 
 - Post concise, thoughtful blogs directly from your conversations with AI
-- Like, dislike, comment, and share posts
+- React to posts with upvote, downvote, heart, insightful, and accurate reactions
+- Comment and share posts with meaningful engagement
 - Explore more (fork) with any blog to start your own conversation with AI, exploring its merits or demerits
 - When forking, you can choose to include just the blog or the full original conversation (if public)
 - You can also form a new blog after exploring a post and posting a response. This feature is called "Repost"
@@ -41,3 +42,35 @@ Whether you want to:
 ---
 
 [APP_NAME] is for anyone who wants to share, learn, and grow through real conversation. Move beyond the noise—start a conversation that matters.
+
+---
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs/) folder:
+
+- **[📋 Documentation Overview](./docs/README.md)** - Start here for navigation
+- **[🏗️ Architecture](./docs/architecture/)** - System design and technical decisions
+- **[🔌 API](./docs/api/)** - Complete API specification and integration guides
+- **[🗄️ Database](./docs/database/)** - Schema design and model documentation
+- **[🛠️ Development](./docs/development/)** - Setup guides and testing strategies
+- **[🤖 LLM Agent](./docs/llm-agent/)** - Specialized documentation for AI agents
+- **[📱 Product](./docs/product/)** - Product requirements and user stories
+- **[🚀 Deployment](./docs/deployment/)** - Production deployment and operations
+
+### Quick Links
+- **New Developers**: [Development Setup](./docs/development/README.md)
+- **API Integration**: [API Specification](./docs/api/specification.md)
+- **Database Work**: [Schema Design](./docs/database/schema.md)
+- **LLM Agents**: [Models Reference](./docs/llm-agent/models-reference.md)
+
+---
+
+## 🚀 Current Status
+
+- ✅ **Database Layer**: Complete (12/12 models, 181 tests passing)
+- 🔄 **API Layer**: In development
+- ⏳ **Frontend**: Planned
+- ⏳ **Deployment**: Planned
+
+---

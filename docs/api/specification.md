@@ -383,8 +383,11 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
           "profilePicture": "string"
         },
         "tags": ["string"],
-        "reactions": { "like": 10, "love": 2 },
-        "userReaction": "like" | "love" | null,
+        "reactions": { 
+          "upvote": 15, "downvote": 2, "heart": 8, 
+          "insightful": 12, "accurate": 5 
+        },
+        "userReaction": "upvote" | "downvote" | "heart" | "insightful" | "accurate" | null,
         "commentCount": 0,
         "viewCount": 0,
         "userViewCount": 0,
@@ -457,13 +460,30 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 ```
 - Returns 404 or omits conversation if not viewable.
 
-#### POST /posts/{post_id}/like
-**Purpose**: Like/dislike post
+#### POST /posts/{post_id}/reaction
+**Purpose**: Add, change, or remove a reaction for a post
 **Auth Required**: Yes
 **Request Body**:
 ```json
 {
-  "action": "like" | "dislike" | "remove"
+  "reaction": "upvote" | "downvote" | "heart" | "insightful" | "accurate" | null
+}
+```
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "reaction": "upvote",
+    "reactionCounts": {
+      "upvote": 15,
+      "downvote": 2,
+      "heart": 8,
+      "insightful": 12,
+      "accurate": 5
+    }
+  },
+  "message": "Reaction updated successfully"
 }
 ```
 
@@ -566,8 +586,11 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
           "userName": "string",
           "profilePicture": "string"
         },
-        "reactions": { "like": 3, "love": 1 },
-        "userReaction": "like" | "love" | null,
+        "reactions": { 
+          "upvote": 8, "downvote": 1, "heart": 3, 
+          "insightful": 5, "accurate": 2 
+        },
+        "userReaction": "upvote" | "downvote" | "heart" | "insightful" | "accurate" | null,
         "parentCommentId": "uuid | null",
         "replies": []
       }
@@ -588,23 +611,32 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 }
 ```
 
-#### POST /comments/{comment_id}/like
-**Purpose**: Like/dislike comment
-**Auth Required**: Yes
-**Request Body**:
-```json
-{
-  "action": "like" | "dislike" | "remove"
-}
-```
-
 #### POST /comments/{comment_id}/reaction
 **Purpose**: Add, change, or remove a reaction for a comment
 **Auth Required**: Yes
 **Request Body**:
 ```json
 {
-  "reaction": "like" | "love" | "laugh" | "sad" | null
+  "reaction": "upvote" | "downvote" | "heart" | "insightful" | "accurate" | null
+}
+```
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "reaction": "insightful",
+    "reactionCounts": {
+      "upvote": 8,
+      "downvote": 1,
+      "heart": 3,
+      "insightful": 6,
+      "accurate": 2
+    }
+  },
+  "message": "Reaction updated successfully"
+}
+```
 }
 ```
 
