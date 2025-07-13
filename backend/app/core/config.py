@@ -48,6 +48,10 @@ class Settings(BaseSettings):
         default=30,
         description="JWT token expiration time in minutes"
     )
+    JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
+        default=30,
+        description="JWT refresh token expiration time in days"
+    )
 
     # Google OAuth Configuration
     GOOGLE_CLIENT_ID: str = Field(
@@ -55,6 +59,16 @@ class Settings(BaseSettings):
     )
     GOOGLE_CLIENT_SECRET: str = Field(
         description="Google OAuth client secret"
+    )
+    GOOGLE_REDIRECT_URI: str = Field(
+        default="http://localhost:8000/auth/google/callback",
+        description="Google OAuth redirect URI"
+    )
+
+    # Frontend Configuration
+    FRONTEND_URL: str = Field(
+        default="http://localhost:3000",
+        description="Frontend application URL"
     )
 
     # CORS Configuration

@@ -11,6 +11,9 @@ alembic==1.12.1
 python-jose[cryptography]==3.3.0
 python-multipart==0.0.6
 passlib[bcrypt]==1.7.4
+google-auth==2.23.4
+google-auth-oauthlib==1.1.0
+google-auth-httplib2==0.1.1
 
 # HTTP Client for Google OAuth
 httpx==0.25.2

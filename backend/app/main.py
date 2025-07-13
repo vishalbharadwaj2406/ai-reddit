@@ -18,6 +18,12 @@ from app.core.config import settings
 # NOTE: Some routers may not work until schemas/services are implemented
 try:
     from app.api.v1.auth import router as auth_router
+    AUTH_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️  Warning: Auth module couldn't be imported: {e}")
+    AUTH_AVAILABLE = False
+
+try:
     from app.api.v1.users import router as users_router
     from app.api.v1.conversations import router as conversations_router
     from app.api.v1.posts import router as posts_router
@@ -55,12 +61,11 @@ def create_application() -> FastAPI:
 
     # Include API routers with version prefix
     # Each router handles a different resource collection
+    if AUTH_AVAILABLE:
+        app.include_router(auth_router)
+        print("✅ Auth router loaded successfully")
+    
     try:
-        app.include_router(
-            auth_router,
-            prefix="/api/v1/auth",
-            tags=["authentication"]
-        )
         app.include_router(
             users_router,
             prefix="/api/v1/users",
