@@ -44,7 +44,7 @@ class GoogleOAuthService:
             GoogleOAuthError: If token verification fails
         """
         try:
-            # Verify the token with Google
+            # Verify the token with Google using the modern approach
             id_info = id_token.verify_oauth2_token(
                 token,
                 requests.Request(),
@@ -55,9 +55,14 @@ class GoogleOAuthService:
             if id_info['aud'] != settings.GOOGLE_CLIENT_ID:
                 raise GoogleOAuthError("Token audience mismatch")
             
-            # Verify the token issuer
+            # Verify the token issuer (both formats accepted by Google)
             if id_info['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
                 raise GoogleOAuthError("Invalid token issuer")
+            
+            # Verify token hasn't expired (additional safety check)
+            import time
+            if 'exp' in id_info and id_info['exp'] < time.time():
+                raise GoogleOAuthError("Token has expired")
             
             return {
                 'google_id': id_info['sub'],
