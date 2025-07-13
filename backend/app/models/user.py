@@ -153,8 +153,35 @@ class User(Base):
         cascade="all, delete-orphan"
     )
 
-    # Follow relationships (many-to-many)
-    # These will be defined in associations.py
+    # Follow relationships
+    # Users this user is following
+    following_relationships = relationship(
+        "Follow",
+        foreign_keys="Follow.follower_id",
+        back_populates="follower",
+        cascade="all, delete-orphan"
+    )
+
+    # Users following this user
+    follower_relationships = relationship(
+        "Follow",
+        foreign_keys="Follow.following_id", 
+        back_populates="following",
+        cascade="all, delete-orphan"
+    )
+
+    # Engagement relationships
+    post_views = relationship(
+        "PostView",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    shares_made = relationship(
+        "PostShare",
+        back_populates="shared_by",
+        doc="Shares made by this user"
+    )
 
     def __repr__(self):
         """String representation of User for debugging."""

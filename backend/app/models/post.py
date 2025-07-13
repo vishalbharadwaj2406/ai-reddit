@@ -161,6 +161,27 @@ class Post(Base):
         cascade="all, delete-orphan"
     )
 
+    # Tag relationships
+    post_tags = relationship(
+        "PostTag",
+        back_populates="post",
+        cascade="all, delete-orphan"
+    )
+
+    # Engagement relationships
+    post_views = relationship(
+        "PostView",
+        back_populates="post",
+        cascade="all, delete-orphan"
+    )
+
+    shares = relationship(
+        "PostShare",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        doc="Shares of this post"
+    )
+
     # forked_conversations = relationship(
     #     "Conversation",
     #     foreign_keys="Conversation.forked_from",
@@ -213,6 +234,10 @@ class Post(Base):
     def activate(self):
         """Reactivate an archived post."""
         self.status = "active"
+
+    def get_share_count(self) -> int:
+        """Get total number of times this post has been shared."""
+        return len([share for share in self.shares if share.status == "active"])
 
     def get_author_display(self) -> str:
         """Get a display name for the post author."""

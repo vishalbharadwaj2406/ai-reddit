@@ -13,7 +13,7 @@ Why we use this approach:
 
 from typing import List
 from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic import Field, ConfigDict
 import os
 
 
@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     # Database Configuration
     DATABASE_URL: str = Field(
         description="PostgreSQL database URL",
-        example="postgresql://user:password@localhost:5432/app_db"
+        json_schema_extra={"example": "postgresql://user:password@localhost:5432/app_db"}
     )
 
     # JWT Authentication
@@ -88,15 +88,10 @@ class Settings(BaseSettings):
     #     description="Google Gemini API key"
     # )
 
-    class Config:
-        """
-        Pydantic configuration.
-
-        env_file: Tells Pydantic to load from .env file
-        case_sensitive: Environment variables are case sensitive
-        """
-        env_file = ".env"
-        case_sensitive = True
+    model_config = ConfigDict(
+        env_file=".env",
+        case_sensitive=True
+    )
 
 
 # Create a single instance of settings

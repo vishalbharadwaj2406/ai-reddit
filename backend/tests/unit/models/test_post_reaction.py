@@ -11,6 +11,7 @@ Tests cover:
 """
 
 import pytest
+import warnings
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone
 
@@ -104,8 +105,11 @@ class TestPostReactionModel:
             reaction="downvote"
         )
         db_session.add(reaction2)
-        with pytest.raises(IntegrityError):
-            db_session.commit()
+        # Suppress the expected SQLAlchemy identity warning for duplicate test
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=Warning)
+            with pytest.raises(IntegrityError):
+                db_session.commit()
     
     def test_reaction_update_allowed(self, db_session, sample_user, sample_post):
         """Test that existing reactions can be updated."""
@@ -163,8 +167,11 @@ class TestPostReactionModel:
         )
         
         db_session.add(reaction)
-        with pytest.raises(IntegrityError):
-            db_session.commit()
+        # Suppress expected SQLAlchemy warning for validation test
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=Warning)
+            with pytest.raises(IntegrityError):
+                db_session.commit()
     
     def test_reaction_without_post_fails(self, db_session, sample_user):
         """Test that reaction creation fails without a valid post."""
@@ -175,8 +182,11 @@ class TestPostReactionModel:
         )
         
         db_session.add(reaction)
-        with pytest.raises(IntegrityError):
-            db_session.commit()
+        # Suppress expected SQLAlchemy warning for validation test
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=Warning)
+            with pytest.raises(IntegrityError):
+                db_session.commit()
     
     def test_reaction_helper_methods(self, db_session, sample_user, sample_post):
         """Test reaction helper methods."""

@@ -17,12 +17,14 @@ from app.models.post import Post
 from app.models.comment import Comment
 from app.models.post_reaction import PostReaction
 from app.models.comment_reaction import CommentReaction
+from app.models.follow import Follow
+from app.models.tag import Tag
+from app.models.post_tag import PostTag
+from app.models.post_view import PostView
+from app.models.post_share import PostShare
 
 # TODO: Import these as we create the models
-# from app.models.tag import Tag
-# from app.models.post_tag import PostTag
-# from app.models.follow import Follow
-# from app.models.post_view import PostView
+# from app.models.post_share import PostShare
 # from app.models.post_share import PostShare
 
 # Import association tables for many-to-many relationships
@@ -45,16 +47,10 @@ __all__ = [
     "Comment",
     "PostReaction",
     "CommentReaction",
+    "Follow",
+    "Tag",
+    "PostTag",
+    "PostView",
+    "PostShare",
     # TODO: Add these as we create models
-    # "Tag",
-    # "PostTag",
-    # "Follow",
-    # "PostView", 
-    # "PostShare",
-    # "user_follows",
-    # "post_reactions",
-    # "comment_reactions",
-    # "post_tags",
-    # "post_views",
-    # "post_shares"
 ]
