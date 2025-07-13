@@ -2,9 +2,36 @@
 Post Model
 
 Represents a shareable post created from a conversation.
-Based on the posts table in mvp_db_schema.md.
+Based on the posts table in mvp_db_sc    # Relationships
+    user = relationship(
+        "User",
+        back_populates="posts"
+    )
 
-This model handles:
+    conversation = relationship(
+        "Conversation",
+        back_populates="posts"
+    )
+
+    # Comments relationship
+    comments = relationship(
+        "Comment",
+        back_populates="post",
+        cascade="all, delete-orphan"
+    )
+
+    # Reactions relationship
+    reactions = relationship(
+        "PostReaction",
+        back_populates="post",
+        cascade="all, delete-orphan"
+    )
+
+    # forked_conversations = relationship(
+    #     "Conversation",
+    #     foreign_keys="Conversation.forked_from",
+    #     back_populates="source_post"
+    # ) model handles:
 - Blog posts created from high-quality conversations
 - User-generated content for sharing
 - Post privacy and visibility settings
@@ -111,17 +138,28 @@ class Post(Base):
     )
 
     # Relationships
-    # Note: We'll add these as we test them
-    
-    # user = relationship(
-    #     "User",
-    #     back_populates="posts"
-    # )
+    user = relationship(
+        "User",
+        back_populates="posts"
+    )
 
-    # conversation = relationship(
-    #     "Conversation",
-    #     back_populates="posts"
-    # )
+    conversation = relationship(
+        "Conversation",
+        back_populates="posts"
+    )
+
+    # Comments and reactions relationships
+    comments = relationship(
+        "Comment",
+        back_populates="post",
+        cascade="all, delete-orphan"
+    )
+    
+    reactions = relationship(
+        "PostReaction",
+        back_populates="post",
+        cascade="all, delete-orphan"
+    )
 
     # forked_conversations = relationship(
     #     "Conversation",

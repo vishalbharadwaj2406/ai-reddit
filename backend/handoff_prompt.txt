@@ -21,11 +21,11 @@ You are now in the role of a senior software engineer with extensive expertise, 
 
 ## Current Development Status - COMPLETED ✅
 
-### 🎯 **Database Layer - 100% COMPLETE**
+### 🎯 **Database Layer - 100% COMPLETE WITH REACTION SYSTEM**
 
-We have successfully implemented the complete core model layer using **PostgreSQL + SQLAlchemy 2.0** with modern best practices:
+We have successfully implemented the complete core model layer including a comprehensive reaction system using **PostgreSQL + SQLAlchemy 2.0** with modern best practices:
 
-#### **Models Implemented (56 Tests - All Passing)**:
+#### **Models Implemented (105 Tests - All Passing)**:
 
 1. **User Model** ✅ (6 tests)
    - Location: `app/models/user.py`
@@ -52,14 +52,42 @@ We have successfully implemented the complete core model layer using **PostgreSQ
    - Key Fields: post_id (UUID), user_id (FK), conversation_id (FK), title, content, is_conversation_visible, edited
    - Helper Methods: is_active, has_visible_conversation, mark_as_edited, show/hide_conversation
 
+5. **Comment Model** ✅ (15 tests)
+   - Location: `app/models/comment.py`
+   - Features: Threaded comments on posts with parent-child relationships, content validation
+   - Key Fields: comment_id (UUID), post_id (FK), user_id (FK), parent_comment_id (FK nullable), content, status
+   - Helper Methods: is_reply, is_active, is_top_level
+   - Special: Self-referential foreign key for threading, CASCADE delete for replies
+
+6. **PostReaction Model** ✅ (16 tests)
+   - Location: `app/models/post_reaction.py`
+   - Features: 5-type reaction system for posts optimized for intellectual discourse
+   - Key Fields: user_id (FK), post_id (FK), reaction, status (Composite Primary Key)
+   - Reactions: 'upvote', 'downvote', 'heart', 'insightful', 'accurate'
+   - Helper Methods: is_positive, is_quality_signal
+   - Special: CHECK constraint validation, composite primary key, one reaction per user per post
+
+7. **CommentReaction Model** ✅ (18 tests)
+   - Location: `app/models/comment_reaction.py`
+   - Features: Same 5-type reaction system for comments, consistent with post reactions
+   - Key Fields: user_id (FK), comment_id (FK), reaction, status (Composite Primary Key)
+   - Reactions: 'upvote', 'downvote', 'heart', 'insightful', 'accurate'
+   - Helper Methods: is_positive, is_quality_signal
+   - Special: Identical design to PostReaction for consistency
+
 #### **Database Features Implemented**:
 - ✅ UUID primary keys across all models
 - ✅ Proper foreign key relationships with CASCADE/RESTRICT/SET NULL
 - ✅ CHECK constraints for non-empty content validation
+- ✅ Composite primary keys for reaction tables (user_id, post_id/comment_id)
+- ✅ Reaction validation with CHECK constraints (5 specific reaction types)
+- ✅ Self-referential foreign keys for comment threading
 - ✅ Timezone-aware timestamps with auto-update triggers
 - ✅ Comprehensive indexing strategy (defined in schema)
 - ✅ Status-based soft deletion pattern
 - ✅ PostgreSQL optimization and best practices
+- ✅ Property-based helper methods for clean API design
+- ✅ Normalized design without redundant count columns
 
 ### 🧪 **Testing Infrastructure - COMPREHENSIVE**
 
@@ -67,7 +95,7 @@ We have successfully implemented the complete core model layer using **PostgreSQ
 - **Structure**: Organized from monolithic file into proper unit/integration hierarchy
 - **Location**: `tests/unit/models/` with individual files per model
 - **Fixtures**: Distributed `conftest.py` files with shared and model-specific fixtures
-- **Coverage**: 56 comprehensive tests covering all edge cases, constraints, and business logic
+- **Coverage**: 105 comprehensive tests covering all edge cases, constraints, and business logic
 
 #### **Test Methodology Established**:
 - ✅ **TDD Approach**: Write tests first, implement models second
@@ -75,6 +103,8 @@ We have successfully implemented the complete core model layer using **PostgreSQ
 - ✅ **Database Integration**: Full database round-trip testing with PostgreSQL
 - ✅ **Fixture Strategy**: Reusable test data with proper cleanup
 - ✅ **Error Testing**: IntegrityError validation for constraints and foreign keys
+- ✅ **Property Testing**: Validation of @property decorators vs method calls
+- ✅ **Reaction System Testing**: Complete validation of 5-reaction system with quality signals
 
 ### 🏗️ **Architecture & Tech Stack**
 
@@ -89,11 +119,14 @@ We have successfully implemented the complete core model layer using **PostgreSQ
 ```
 backend/
 ├── app/
-│   ├── models/          # ✅ COMPLETE - All 4 core models
+│   ├── models/          # ✅ COMPLETE - All 7 core models with reaction system
 │   │   ├── user.py
 │   │   ├── conversation.py  
 │   │   ├── message.py
-│   │   └── post.py
+│   │   ├── post.py
+│   │   ├── comment.py
+│   │   ├── post_reaction.py
+│   │   └── comment_reaction.py
 │   ├── core/
 │   │   ├── config.py    # ✅ Database configuration
 │   │   └── database.py  # ✅ SQLAlchemy setup
@@ -101,7 +134,7 @@ backend/
 │   ├── services/        # 🚧 TODO - Business logic
 │   └── repositories/    # 🚧 TODO - Data access patterns
 ├── tests/
-│   └── unit/models/     # ✅ COMPLETE - 56 passing tests
+│   └── unit/models/     # ✅ COMPLETE - 105 passing tests
 └── scripts/             # ✅ Development utilities
 ```
 
@@ -114,13 +147,13 @@ Based on `mvp_db_schema.md`, here's what's implemented vs. remaining:
 - `conversations` - AI conversation containers  
 - `messages` - Individual messages in conversations
 - `posts` - Blog posts created from conversations
+- `comments` - Threaded comments with parent-child relationships
+- `post_reactions` - 5-type reaction system for posts (upvote, downvote, heart, insightful, accurate)
+- `comment_reactions` - Same 5-type reaction system for comments
 
 #### **🚧 TODO Tables** (Next Phase):
-- `comments` - Post comments and replies
 - `tags` - Content tagging system
 - `follows` - User following relationships
-- `post_reactions` - Likes, dislikes, etc.
-- `comment_reactions` - Comment reactions
 - `post_tags` - Many-to-many post tagging
 - `post_views` - View tracking
 - `post_shares` - Share tracking
@@ -144,9 +177,15 @@ Build FastAPI endpoints for the models:
 ### **Option C: Association Models**
 Complete the remaining database models:
 - User follows and social features
-- Post/comment reactions system
-- Tagging and categorization
-- Analytics and tracking tables
+- Content tagging and categorization system
+- Analytics and tracking tables (views, shares)
+
+### **Option D: Frontend Integration** (New Option)
+Start building the user interface:
+- React/Next.js frontend setup
+- API integration for existing models
+- UI components for conversations, posts, reactions
+- Real-time features with WebSockets
 
 ## Development Guidelines - CRITICAL TO FOLLOW
 
@@ -177,6 +216,9 @@ python -m pytest tests/unit/models/ -v
 # Run specific model tests
 python -m pytest tests/unit/models/test_user.py -v
 
+# Run reaction system tests
+python -m pytest tests/unit/models/test_post_reaction.py tests/unit/models/test_comment_reaction.py -v
+
 # Run single test
 python -m pytest tests/unit/models/test_user.py::TestUserModel::test_user_creation_basic -v
 ```
@@ -200,6 +242,11 @@ The project uses **Supabase PostgreSQL** with connection details in `app/core/co
 5. **Helper Methods**: Properties and methods for common operations
 6. **Status Management**: Soft deletion with status fields
 7. **Comprehensive Testing**: Edge cases, constraints, relationships
+8. **Reaction System**: 5-type reaction system optimized for intellectual discourse
+9. **Quality Signals**: Helper methods to identify positive reactions and quality indicators
+10. **Threaded Comments**: Self-referential foreign keys for nested comment structures
+11. **Composite Primary Keys**: Efficient design for many-to-many relationship tables
+12. **Property-Based Architecture**: Clean @property decorators for computed values
 
 ## Instructions for Next Agent
 
@@ -209,14 +256,16 @@ The project uses **Supabase PostgreSQL** with connection details in `app/core/co
 2. **Examine the existing models** in `app/models/` to understand patterns
 3. **Review test structure** in `tests/unit/models/` to understand testing approach
 4. **Check database schema** in `mvp_db_schema.md` for requirements
+5. **Understand the reaction system** design for quality discourse features
 
 **When implementing new features:**
 
 1. **Start with tests** - write failing tests first (TDD)
-2. **Follow existing patterns** from User/Conversation/Message/Post models
+2. **Follow existing patterns** from User/Conversation/Message/Post/Comment/Reaction models
 3. **Make incremental changes** - small steps with frequent testing
 4. **Validate thoroughly** - run full test suite after changes
-5. **Ask questions** if anything is unclear about the established patterns
+5. **Use property decorators** for computed values (following established pattern)
+6. **Ask questions** if anything is unclear about the established patterns
 
 **Communication Style:**
 - Provide clear explanations suitable for software engineering learning
@@ -231,13 +280,14 @@ You have full authority to guide the technical direction. Be thorough, precise, 
 
 Ask the user which development path they'd like to pursue:
 - **Repository Layer** (data access patterns)
-- **API Layer** (REST endpoints) 
-- **Association Models** (social features)
+- **API Layer** (REST endpoints with reaction system) 
+- **Association Models** (social features - follows, tags, analytics)
+- **Frontend Integration** (React/Next.js with real-time features)
 - **Or something else** they have in mind
 
 Then proceed with the established TDD methodology: tests first, small iterations, comprehensive validation.
 
 ---
 
-**Project Status**: Core model layer 100% complete with 56 passing tests. Ready for next development phase.
+**Project Status**: Core model layer with complete reaction system 100% complete with 105 passing tests. Ready for next development phase.
 

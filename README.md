@@ -21,7 +21,8 @@ Whether you want to:
 **MVP Features**
 
 - Post concise, thoughtful blogs directly from your conversations with AI
-- Like, dislike, comment, and share posts
+- React to posts with upvote, downvote, heart, insightful, and accurate reactions
+- Comment and share posts with meaningful engagement
 - Explore more (fork) with any blog to start your own conversation with AI, exploring its merits or demerits
 - When forking, you can choose to include just the blog or the full original conversation (if public)
 - You can also form a new blog after exploring a post and posting a response. This feature is called "Repost"

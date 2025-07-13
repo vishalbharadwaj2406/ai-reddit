@@ -83,7 +83,7 @@ This schema is designed for a minimal, production-ready MVP of the [APP_NAME] pl
 |---------------|-----------|-----------------------------------------------------|
 | user_id       | UUID (FK) | References users(user_id)                           |
 | post_id       | UUID (FK) | References posts(post_id)                           |
-| reaction      | VARCHAR   | e.g. 'like', 'dislike', 'love', 'laugh', 'sad', etc. Only one reaction per user per post is allowed. |
+| reaction      | VARCHAR   | 'upvote', 'downvote', 'heart', 'insightful', 'accurate'. Only one reaction per user per post is allowed. |
 | created_at    | TIMESTAMP |                                                     |
 | updated_at    | TIMESTAMP | Last modification time                              |
 | status        | VARCHAR   | Record status: 'active', 'archived', etc.           |
@@ -125,8 +125,6 @@ This schema is designed for a minimal, production-ready MVP of the [APP_NAME] pl
 | content         | TEXT      |                                                     |
 | created_at      | TIMESTAMP |                                                     |
 | updated_at      | TIMESTAMP | Last modification time                              |
-| like_count      | INT       |                                                     |
-| dislike_count   | INT       |                                                     |
 | status          | VARCHAR   | Record status: 'active', 'archived', etc.           |
 
 ---
@@ -136,7 +134,7 @@ This schema is designed for a minimal, production-ready MVP of the [APP_NAME] pl
 |---------------|-----------|-----------------------------------------------------|
 | user_id       | UUID (FK) | References users(user_id)                           |
 | comment_id    | UUID (FK) | References comments(comment_id)                     |
-| reaction      | VARCHAR   | e.g. 'like', 'dislike', 'love', 'laugh', 'sad', etc. Only one reaction per user per comment is allowed. |
+| reaction      | VARCHAR   | 'upvote', 'downvote', 'heart', 'insightful', 'accurate'. Only one reaction per user per comment is allowed. |
 | created_at    | TIMESTAMP |                                                     |
 | updated_at    | TIMESTAMP | Last modification time                              |
 | status        | VARCHAR   | Record status: 'active', 'archived', etc.           |

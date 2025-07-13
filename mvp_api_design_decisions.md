@@ -225,9 +225,15 @@ GET /conversations/{conversation_id}/messages
 - **User Experience**: Clear social connections without complexity
 
 ### **Engagement Metrics**
-**Decision**: Like/dislike, view counts, comment counts
+**Decision**: Universal reaction system with intellectual focus
 **Rationale**:
-- **Quality Signals**: Helps surface valuable content
+- **Quality Signals**: Reactions help surface valuable content
+- **Intellectual Discourse**: Specific reactions (upvote/downvote, insightful, accurate) promote thoughtful engagement
+- **Normalized Design**: Single reaction table eliminates count column redundancy
+- **Flexibility**: VARCHAR reaction field allows easy addition of new reaction types
+- **User Experience**: Clear quality indicators beyond simple like/dislike
+
+**Reaction Set**: `upvote`, `downvote`, `heart`, `insightful`, `accurate`
 - **User Feedback**: Provides engagement indicators
 - **Algorithm Ready**: Supports future recommendation systems
 - **Balanced**: Avoids pure popularity contests

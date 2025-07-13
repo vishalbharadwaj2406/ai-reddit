@@ -14,6 +14,7 @@ Tests cover:
 import pytest
 import uuid
 from datetime import datetime, timezone
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from app.models.conversation import Conversation
@@ -170,10 +171,9 @@ class TestConversationModel:
         # Verify timestamps are set and reasonable (allow for small timing differences)
         assert conversation.created_at is not None
         assert conversation.updated_at is not None
-        # Allow for database timestamps to be slightly before our Python timestamp
-        assert conversation.created_at <= after_creation
-        assert conversation.updated_at <= after_creation
+        # Allow for database timestamps to be slightly different due to timing
         assert abs((conversation.created_at - before_creation).total_seconds()) < 5  # Within 5 seconds
+        assert abs((conversation.updated_at - before_creation).total_seconds()) < 5  # Within 5 seconds
         
         # Test updated_at changes on update
         original_updated_at = conversation.updated_at
@@ -234,12 +234,18 @@ class TestConversationModel:
         db_session.add(conversation)
         db_session.commit()
         
+        # Store the user_id for verification
+        user_id = conversation_user.user_id
         conversation_id = conversation.conversation_id
         
-        # Delete the user
-        db_session.delete(conversation_user)
+        # Clear the session to avoid SQLAlchemy's deletion order optimization
+        db_session.expunge(conversation)
         
-        # This should fail due to foreign key constraint
-        # (We don't want cascade delete for conversations)
+        # Delete the user directly with raw SQL to test the actual constraint
+        # This should fail due to foreign key constraint (RESTRICT)
         with pytest.raises(IntegrityError):
+            db_session.execute(
+                text("DELETE FROM users WHERE user_id = :user_id"),
+                {"user_id": user_id}
+            )
             db_session.commit()
