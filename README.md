@@ -21,7 +21,6 @@ Whether you want to:
 **MVP Features**
 
 - Post concise, thoughtful blogs directly from your conversations with AI
-- All posts and messages are immutable (no editing or deleting after publishing)
 - Like, dislike, comment, and share posts
 - Explore more (fork) with any blog to start your own conversation with AI, exploring its merits or demerits
 - When forking, you can choose to include just the blog or the full original conversation (if public)
