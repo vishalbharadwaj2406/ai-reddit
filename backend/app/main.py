@@ -24,6 +24,13 @@ except ImportError as e:
     AUTH_AVAILABLE = False
 
 try:
+    from app.api.v1.health import router as health_router
+    HEALTH_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️  Warning: Health module couldn't be imported: {e}")
+    HEALTH_AVAILABLE = False
+
+try:
     from app.api.v1.users import router as users_router
     from app.api.v1.conversations import router as conversations_router
     from app.api.v1.posts import router as posts_router
@@ -64,6 +71,10 @@ def create_application() -> FastAPI:
     if AUTH_AVAILABLE:
         app.include_router(auth_router)
         print("✅ Auth router loaded successfully")
+    
+    if HEALTH_AVAILABLE:
+        app.include_router(health_router)
+        print("✅ Health router loaded successfully")
     
     try:
         app.include_router(
