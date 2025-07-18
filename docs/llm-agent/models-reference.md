@@ -1,11 +1,9 @@
-# AI Reddit Models Reference Guide for LLM Agents
+# AI Social Models Reference Guide for LLM Agents
 
-## 📋 Overview
-This document provides comprehensive information about all database models in the AI Reddit platform. Use this as a reference when implementing API endpoints, writing queries, or understanding relationships.
+## Overview
+This document provides comprehensive information about all database models in the AI Social platform. Use this as a reference when implementing API endpoints, writing queries, or understanding relationships.
 
----
-
-## 🏗️ Architecture Summary
+## Architecture Summary
 
 ### Core Entity Relationships
 ```
@@ -18,14 +16,12 @@ Tags, Views, Shares
 
 ### Key Design Principles
 1. **Conversation-Centric**: Posts emerge from AI conversations
-2. **Fork-Based Exploration**: Posts can be "expanded" into new conversations  
+2. **Fork-Based Exploration**: Posts can be "expanded" into new conversations
 3. **Universal Reactions**: Same reaction system for posts and comments
 4. **Soft Deletion**: Status fields instead of hard deletes
 5. **Analytics Ready**: Comprehensive tracking for views, shares, engagement
 
----
-
-## 📊 Complete Model Reference
+## Complete Model Reference
 
 ### 1. User Model
 **Purpose**: Platform user management with social features
@@ -41,7 +37,7 @@ Tags, Views, Shares
 
 **Relationships**:
 - `conversations`: One-to-many → Conversation
-- `posts`: One-to-many → Post  
+- `posts`: One-to-many → Post
 - `comments`: One-to-many → Comment
 - `post_reactions`: One-to-many → PostReaction
 - `comment_reactions`: One-to-many → CommentReaction
@@ -59,7 +55,7 @@ Tags, Views, Shares
 - Privacy controls for content visibility
 - Follow relationships and social graph
 
-### 2. Conversation Model  
+### 2. Conversation Model
 **Purpose**: AI conversation management with forking capability
 **File**: `app/models/conversation.py`
 
@@ -87,7 +83,7 @@ Tags, Views, Shares
 - Conversation history retrieval
 
 ### 3. Message Model
-**Purpose**: Individual messages within AI conversations  
+**Purpose**: Individual messages within AI conversations
 **File**: `app/models/message.py`
 
 **Key Fields**:
@@ -154,9 +150,9 @@ Tags, Views, Shares
 
 **Key Fields**:
 - `comment_id` (UUID, PK): Unique identifier
-- `post_id` (UUID, FK): Parent post → Post
-- `user_id` (UUID, FK): Author → User
-- `parent_comment_id` (UUID, FK): For threaded replies → Comment
+- `post_id` (UUID, FK): Target post → Post
+- `user_id` (UUID, FK): Comment author → User
+- `parent_comment_id` (UUID, FK): For threaded replies → Comment (nullable)
 - `content` (TEXT): Comment content
 - `status` (VARCHAR): 'active', 'archived'
 
@@ -164,254 +160,285 @@ Tags, Views, Shares
 - `post`: Many-to-one → Post
 - `user`: Many-to-one → User
 - `parent_comment`: Many-to-one → Comment (self-referential)
-- `replies`: One-to-many → Comment (self-referential)
+- `replies`: One-to-many → Comment (via parent_comment_id)
 - `reactions`: One-to-many → CommentReaction
 
 **Helper Methods**:
-- `get_reply_count()`: Count direct replies
+- `get_reaction_count(reaction_type)`: Count specific reactions
+- `is_reply()`: Check if comment is a reply
 - `get_thread_depth()`: Calculate nesting level
-- `is_top_level()`: Check if direct post comment
 
 **Usage in APIs**:
-- Comment threads
-- Reply management
-- Content moderation
+- Comment threads on posts
+- Nested discussion workflows
+- Social interaction features
 
 ### 6. PostReaction Model
-**Purpose**: User reactions to posts (upvote, downvote, etc.)
+**Purpose**: User reactions to posts (upvote, downvote, heart, etc.)
 **File**: `app/models/post_reaction.py`
 
 **Key Fields**:
+- Primary Key: Composite (`user_id`, `post_id`)
 - `user_id` (UUID, FK): Reactor → User
-- `post_id` (UUID, FK): Target post → Post  
+- `post_id` (UUID, FK): Target post → Post
 - `reaction` (VARCHAR): 'upvote', 'downvote', 'heart', 'insightful', 'accurate'
 - `status` (VARCHAR): 'active', 'archived'
-- **Composite Primary Key**: (user_id, post_id)
 
 **Relationships**:
 - `user`: Many-to-one → User
 - `post`: Many-to-one → Post
 
 **Helper Methods**:
-- `get_valid_reactions()`: List allowed reaction types
-- `update_reaction(new_reaction)`: Change user's reaction
+- `update_reaction(new_reaction)`: Change reaction type
 - `remove_reaction()`: Archive reaction
 
 **Usage in APIs**:
-- Reaction buttons
-- Content ranking
-- User engagement tracking
+- Social interaction endpoints
+- Reaction analytics
+- Content quality signals
 
 ### 7. CommentReaction Model
 **Purpose**: User reactions to comments (same system as posts)
 **File**: `app/models/comment_reaction.py`
 
-**Key Fields**: Same as PostReaction but for comments
-**Relationships**: Similar pattern to PostReaction
-**Usage**: Comment interaction tracking
+**Key Fields**:
+- Primary Key: Composite (`user_id`, `comment_id`)
+- `user_id` (UUID, FK): Reactor → User
+- `comment_id` (UUID, FK): Target comment → Comment
+- `reaction` (VARCHAR): 'upvote', 'downvote', 'heart', 'insightful', 'accurate'
+- `status` (VARCHAR): 'active', 'archived'
+
+**Relationships**:
+- `user`: Many-to-one → User
+- `comment`: Many-to-one → Comment
+
+**Helper Methods**:
+- `update_reaction(new_reaction)`: Change reaction type
+- `remove_reaction()`: Archive reaction
+
+**Usage in APIs**:
+- Comment interaction endpoints
+- Discussion quality metrics
+- User engagement tracking
 
 ### 8. Follow Model
-**Purpose**: User follow relationships with privacy support
+**Purpose**: User-to-user relationships with privacy controls
 **File**: `app/models/follow.py`
 
 **Key Fields**:
+- Primary Key: Composite (`follower_id`, `following_id`)
 - `follower_id` (UUID, FK): Following user → User
 - `following_id` (UUID, FK): Followed user → User
 - `status` (VARCHAR): 'pending', 'accepted', 'rejected', 'archived'
-- **Composite Primary Key**: (follower_id, following_id)
-- **Constraint**: follower_id != following_id
 
 **Relationships**:
-- `follower`: Many-to-one → User
-- `following`: Many-to-one → User
+- `follower`: Many-to-one → User (via follower_id)
+- `following`: Many-to-one → User (via following_id)
 
 **Helper Methods**:
-- `accept()`: Approve follow request
-- `reject()`: Decline follow request
+- `accept()`: Accept follow request
+- `reject()`: Reject follow request
 - `archive()`: Remove follow relationship
-- `is_pending()`, `is_accepted()`: Status checks
+- `is_pending()`: Check if awaiting approval
 
 **Usage in APIs**:
 - Social graph management
-- Follow request workflow
-- Privacy controls
+- Privacy-controlled following
+- User discovery features
 
 ### 9. Tag Model
-**Purpose**: Content categorization and discovery
+**Purpose**: Content categorization system
 **File**: `app/models/tag.py`
 
 **Key Fields**:
 - `tag_id` (UUID, PK): Unique identifier
-- `name` (VARCHAR, UNIQUE): Tag text (normalized)
+- `name` (VARCHAR, UNIQUE): Tag name (e.g., "philosophy", "technology")
+- `description` (TEXT): Optional tag description
+- `status` (VARCHAR): 'active', 'archived'
 
 **Relationships**:
 - `posts`: Many-to-many → Post (via PostTag)
 
 **Helper Methods**:
-- `normalize_name(name)`: Clean tag text
-- `get_hashtag()`: Return #hashtag format
-- `get_display_name()`: Formatted display
+- `get_post_count()`: Count associated posts
+- `is_active()`: Check if tag is active
 
 **Usage in APIs**:
-- Content tagging
-- Discovery features
-- Trending topics
+- Content discovery
+- Tag-based filtering
+- Content organization
 
 ### 10. PostTag Model
 **Purpose**: Many-to-many relationship between posts and tags
 **File**: `app/models/post_tag.py`
 
 **Key Fields**:
-- `post_id` (UUID, FK): → Post
-- `tag_id` (UUID, FK): → Tag
-- **Composite Primary Key**: (post_id, tag_id)
+- Primary Key: Composite (`post_id`, `tag_id`)
+- `post_id` (UUID, FK): Tagged post → Post
+- `tag_id` (UUID, FK): Applied tag → Tag
 
-**Usage**: Tag filtering, content categorization
+**Relationships**:
+- `post`: Many-to-one → Post
+- `tag`: Many-to-one → Tag
+
+**Usage in APIs**:
+- Post tagging workflow
+- Tag-based content filtering
+- Content categorization
 
 ### 11. PostView Model
 **Purpose**: Analytics tracking for post views
 **File**: `app/models/post_view.py`
 
 **Key Fields**:
-- `user_id` (UUID, FK): Viewer → User
+- Primary Key: Composite (`user_id`, `post_id`, `viewed_at`)
+- `user_id` (UUID, FK): Viewer → User (nullable for anonymous)
 - `post_id` (UUID, FK): Viewed post → Post
 - `viewed_at` (TIMESTAMP): View timestamp
-- `status` (VARCHAR): 'active', 'archived'
-- **Composite Primary Key**: (user_id, post_id, viewed_at)
-
-**Helper Methods**:
-- `create_view(user_id, post_id)`: Record view
-- `get_age()`: Time since view
-- `archive()`: Soft delete view
-
-**Usage in APIs**:
-- Analytics endpoints
-- View count tracking
-- User engagement metrics
-
-### 12. PostShare Model
-**Purpose**: Social sharing tracking with platform analytics
-**File**: `app/models/post_share.py`
-
-**Key Fields**:
-- `user_id` (UUID, FK): Sharer → User (nullable for anonymous)
-- `post_id` (UUID, FK): Shared post → Post
-- `shared_at` (TIMESTAMP): Share timestamp
-- `platform` (VARCHAR): 'twitter', 'facebook', 'direct_link', etc.
-- `share_metadata` (JSON): Additional platform-specific data
-- `status` (VARCHAR): 'active', 'archived'
-- **Composite Primary Key**: (post_id, user_id OR anonymous identifier)
 
 **Relationships**:
 - `user`: Many-to-one → User (nullable)
 - `post`: Many-to-one → Post
 
 **Helper Methods**:
-- `create_share(post_id, user_id, platform)`: Record share
-- `archive()`: Soft delete share
-- `is_anonymous()`: Check if anonymous share
+- `is_anonymous()`: Check if view is anonymous
 
 **Usage in APIs**:
-- Share tracking
-- Viral content analytics
-- Platform-specific metrics
+- Content analytics
+- User engagement tracking
+- Popular content identification
 
----
+### 12. PostShare Model
+**Purpose**: Social sharing tracking with platform attribution
+**File**: `app/models/post_share.py`
 
-## 🔧 Common Query Patterns
+**Key Fields**:
+- `share_id` (UUID, PK): Unique identifier
+- `user_id` (UUID, FK): Sharer → User (nullable for anonymous)
+- `post_id` (UUID, FK): Shared post → Post
+- `platform` (VARCHAR): 'twitter', 'linkedin', 'email', etc.
+- `shared_at` (TIMESTAMP): Share timestamp
 
-### User Feed Generation
+**Relationships**:
+- `user`: Many-to-one → User (nullable)
+- `post`: Many-to-one → Post
+
+**Helper Methods**:
+- `is_anonymous()`: Check if share is anonymous
+- `get_platform_stats()`: Platform-specific analytics
+
+**Usage in APIs**:
+- Social sharing workflow
+- Viral content tracking
+- Platform distribution analytics
+
+## Query Patterns and Best Practices
+
+### Common Query Examples
+
+#### User Authentication
 ```python
-# Get posts from followed users
-posts = db.query(Post).join(User).join(Follow, Follow.following_id == User.user_id)
-       .filter(Follow.follower_id == current_user_id, Follow.status == 'accepted')
-       .order_by(Post.created_at.desc())
+# Find user by Google ID
+user = db.query(User).filter(User.google_id == google_id).first()
+
+# Check if user is active
+if user and user.is_active():
+    # Proceed with authentication
 ```
 
-### Reaction Aggregation
+#### Content Discovery
+```python
+# Get public feed with privacy respect
+posts = db.query(Post).join(User)\
+         .filter(
+             and_(
+                 Post.status == 'active',
+                 or_(
+                     User.is_private == False,
+                     and_(
+                         User.is_private == True,
+                         exists().where(
+                             and_(
+                                 Follow.follower_id == current_user_id,
+                                 Follow.following_id == User.user_id,
+                                 Follow.status == 'accepted'
+                             )
+                         )
+                     )
+                 )
+             )
+         ).order_by(Post.created_at.desc())
+```
+
+#### Social Interactions
 ```python
 # Get reaction counts for a post
-reactions = db.query(PostReaction.reaction, func.count())
-           .filter(PostReaction.post_id == post_id, PostReaction.status == 'active')
-           .group_by(PostReaction.reaction)
+reaction_counts = db.query(PostReaction.reaction, func.count())\
+                   .filter(
+                       and_(
+                           PostReaction.post_id == post_id,
+                           PostReaction.status == 'active'
+                       )
+                   ).group_by(PostReaction.reaction).all()
+
+# Check if user already reacted
+existing_reaction = db.query(PostReaction)\
+                     .filter(
+                         and_(
+                             PostReaction.user_id == user_id,
+                             PostReaction.post_id == post_id,
+                             PostReaction.status == 'active'
+                         )
+                     ).first()
 ```
 
-### Privacy-Aware Content
+#### Conversation Management
 ```python
-# Respect user privacy settings
-visible_posts = db.query(Post).join(User)
-               .filter(or_(
-                   User.is_private == False,
-                   and_(User.is_private == True, Follow.follower_id == current_user_id)
-               ))
-```
-
-### Conversation Forking
-```python
-# Create forked conversation from post
-forked_conversation = Conversation(
-    user_id=current_user_id,
-    title=f"Expanding: {original_post.title}",
-    forked_from=original_post.post_id
+# Create new conversation with first message
+conversation = Conversation(
+    user_id=user_id,
+    title=title,
+    status='active'
 )
+db.add(conversation)
+db.flush()  # Get the ID
+
+# Add initial message
+message = conversation.add_message('user', initial_content)
 ```
 
----
+### Performance Optimization
 
-## 🚨 Important Constraints & Business Rules
+#### Indexing Strategy
+- Foreign keys automatically indexed
+- Composite primary keys optimized for common queries
+- Additional indexes on frequently filtered columns (status, created_at)
+- Unique constraints for data integrity
 
-### 1. Data Integrity
-- All foreign keys have proper constraints
-- No CASCADE deletes (handled at application level)
-- Soft deletion via status fields
+#### Query Efficiency
+- Use SQLAlchemy relationships instead of manual joins
+- Leverage eager loading for related data
+- Implement pagination for large result sets
+- Use aggregation functions for counts and statistics
 
-### 2. Privacy Logic
-- `User.is_private == True` → Only followers see content
-- `Post.is_conversation_visible == False` → Hide source conversation
-- Anonymous sharing supported via nullable user_id
+### Data Integrity Guidelines
 
-### 3. Unique Constraints
-- One reaction per user per post/comment
-- One follow relationship per user pair
-- Unique tag names (normalized)
-- Unique usernames and emails
+#### Status Management
+- Always check status fields in queries
+- Use helper methods for status transitions
+- Implement soft deletion consistently
+- Maintain audit trails through timestamps
 
-### 4. Status Management
-- 'active': Normal operation
-- 'archived': Soft deleted
-- 'pending': Awaiting approval (follows)
-- 'accepted'/'rejected': Follow request states
+#### Relationship Constraints
+- Respect foreign key constraints
+- Use helper methods for relationship creation
+- Implement proper error handling for constraint violations
+- Validate business logic constraints in application layer
 
----
+#### Privacy and Security
+- Implement privacy checks before data access
+- Use parameterized queries to prevent SQL injection
+- Validate user permissions for all operations
+- Implement proper authentication and authorization
 
-## 🎯 API Implementation Guidelines
-
-### 1. Always Check Status
-```python
-# Filter active records
-.filter(Model.status == 'active')
-```
-
-### 2. Respect Privacy
-```python
-# Check user privacy before showing content
-if user.is_private and not is_following(current_user, user):
-    return forbidden_response()
-```
-
-### 3. Use Helper Methods
-```python
-# Leverage model methods
-post.get_reaction_count('upvote')
-user.get_display_name()
-conversation.add_message('user', content)
-```
-
-### 4. Handle Soft Deletion
-```python
-# Archive instead of delete
-model.status = 'archived'
-db.commit()
-```
-
-This reference provides everything needed to implement the API layer efficiently while maintaining data integrity and business logic consistency.
+This comprehensive reference provides all the information needed to work effectively with the AI Social database models. Use this as your primary guide for implementing API endpoints, writing queries, and understanding the system architecture.

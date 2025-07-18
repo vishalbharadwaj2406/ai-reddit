@@ -1,240 +1,151 @@
 # API Documentation
 
-Complete API specification, endpoints, and integration guides for the AI Reddit platform.
+API specification, endpoints, and integration guides for the AI Social platform.
 
-## 📁 Contents
+## Contents
 
 ### [API Specification](./specification.md)
-Complete REST API documentation with all endpoints, request/response formats, and authentication details.
+Complete REST API specification with endpoints, request/response formats, and authentication.
 
 **Key Features:**
-- RESTful design with real-time WebSocket streaming
-- Google OAuth authentication with JWT tokens
-- Conversation-centric API with forking capabilities
-- Universal reaction system (upvote, downvote, heart, insightful, accurate)
-- Privacy controls and social features
-- Comprehensive error handling and rate limiting
+- RESTful design with OpenAPI documentation
+- JWT-based authentication with Google OAuth
+- WebSocket support for real-time AI conversations
+- Comprehensive error handling and validation
+- Rate limiting and security controls
 
-## 🔧 Implementation Methodology
+## API Overview
 
-### AI-Assisted Test-Driven Development (TDD)
+### Architecture
+- **Framework**: FastAPI with automatic OpenAPI generation
+- **Authentication**: JWT tokens via Google OAuth 2.0
+- **Validation**: Pydantic schemas for all requests/responses
+- **Documentation**: Interactive Swagger UI and ReDoc
+- **Real-time**: WebSocket connections for AI conversations
 
-We follow a modified TDD approach optimized for AI-assisted development:
-
-#### **Red-Green-Refactor Cycle**
-1. **Red Phase**: Write comprehensive test cases first
-   - Test success scenarios with proper API response format
-   - Test error cases (authentication, validation, edge cases)
-   - Test authorization scenarios (unauthorized access)
-
-2. **Green Phase**: Implement the minimal code to pass tests
-   - Focus on API logic and response structure
-   - Handle database operations with proper error handling
-   - Maintain consistent response format across all endpoints
-
-3. **Refactor Phase**: Optimize and clean up
-   - Remove code duplication
-   - Improve error handling
-   - Enhance documentation
-
-#### **Test Organization**
-- **Unit Tests**: `/tests/unit/api/v1/` - API endpoint testing
-- **Fixtures**: `/tests/fixtures/` - Reusable test data and mocks
-- **Helpers**: `/tests/utils/` - Common testing utilities
-- **Mock Strategy**: Mock database operations for fast, isolated tests
-
-#### **Development Principles**
-- **API-First**: Test and implement API endpoints before complex business logic
-- **Incremental**: Build one endpoint at a time with full test coverage
-- **Clean Tests**: Zero warnings, fast execution, clear output
-- **Consistent Format**: All API responses follow standardized format
-
-### Current Implementation Status
-
-#### ✅ **Completed Endpoints**
-- `GET /users/me` - User profile retrieval (3 test cases)
-- `PATCH /users/me` - Profile updates (4 test cases)
-- Authentication middleware with comprehensive error handling
-
-#### 🔄 **In Progress**
-- Track A: Core User & Social Features implementation
-- Additional user endpoints (follow system, public profiles)
-
-#### 📋 **Next Steps**
-- Complete remaining Track A endpoints
-- Implement comprehensive error handling
-- Add integration tests for complex workflows
-
-## 🔗 API Overview
+### Base URL
+```
+Development: http://localhost:8000
+Production: TBD
+```
 
 ### Authentication
-- **Google OAuth**: Primary authentication method
-- **JWT Tokens**: Bearer token format for API access
-- **Public Access**: Read-only access to posts without authentication
-- **Rate Limiting**: Generous MVP limits for testing and feedback
-
-### Core Endpoints
-
-#### User Management
-- `GET /users/me` - Current user profile
-- `PATCH /users/me` - Update profile
-- `POST /users/{id}/follow` - Follow/unfollow users
-- `GET /users/{id}/followers` - User's followers list
-
-#### Conversations & AI Chat
-- `POST /conversations` - Create new conversation
-- `GET /conversations/{id}` - Get conversation details
-- `POST /conversations/{id}/messages` - Send message (with AI response)
-- `WebSocket /ws/conversations/{id}` - Real-time AI streaming
-
-#### Posts & Content
-- `GET /posts` - Public feed with filtering
-- `POST /posts` - Create post from conversation
-- `GET /posts/{id}` - Single post details
-- `POST /posts/{id}/expand` - Fork conversation from post
-
-#### Social Features
-- `POST /posts/{id}/reaction` - Add/update reactions
-- `GET /posts/{id}/comments` - Get comments
-- `POST /posts/{id}/comments` - Create comment
-- `POST /posts/{id}/share` - Track sharing
-
-## 🔄 Real-time Features
-
-### WebSocket Integration
-- **Connection**: `/ws/conversations/{conversation_id}?token=jwt_token`
-- **Streaming**: AI responses streamed sentence-by-sentence
-- **Authentication**: JWT token in query parameter for MVP simplicity
+All authenticated endpoints require JWT tokens obtained via Google OAuth:
+```
+Authorization: Bearer <jwt_token>
+```
 
 ### Response Format
+All API responses follow a standard wrapper format:
 ```json
 {
-  "type": "aiResponse",
-  "data": {
-    "content": "partial sentence...",
-    "isComplete": boolean,
-    "messageId": "uuid"
-  }
+  "success": boolean,
+  "data": object | array | null,
+  "message": string,
+  "errorCode": string | null
 }
 ```
 
-## 🚦 Rate Limiting
+## Endpoint Categories
 
-### MVP Limits (Generous for Testing)
-- **AI Messages**: 100/hour per user
-- **Blog Generation**: 20/hour per user
-- **Post Creation**: 10/hour per user
-- **General API**: 2000/hour per user
+### Authentication Endpoints
+- `POST /auth/google` - Google OAuth authentication
+- `POST /auth/refresh` - Refresh JWT token
+- `POST /auth/logout` - Logout user
 
-## ❌ Error Handling
+### User Management
+- `GET /users/me` - Get current user profile
+- `PATCH /users/me` - Update user profile
+- `GET /users/{user_id}` - Get public user profile
+- `POST /users/{user_id}/follow` - Follow/unfollow user
 
-### Standard Error Response
-```json
-{
-  "success": false,
-  "data": null,
-  "message": "Human readable error message",
-  "errorCode": "SPECIFIC_ERROR_CODE"
-}
-```
+### Conversation Management
+- `POST /conversations` - Create new conversation
+- `GET /conversations/{id}` - Get conversation details
+- `POST /conversations/{id}/messages` - Add message to conversation
+- `GET /conversations/{id}/messages` - Get conversation messages
+- `WebSocket /ws/conversations/{id}` - Real-time conversation
 
-### Error Code Categories
-- **Authentication**: `AUTH_REQUIRED`, `INVALID_TOKEN`
-- **Resources**: `NOT_FOUND`, `FORBIDDEN`
-- **Validation**: `INVALID_INPUT`, `MISSING_FIELD`
-- **Rate Limiting**: `RATE_LIMIT_EXCEEDED`
-- **AI Services**: `AI_SERVICE_ERROR`, `AI_GENERATION_FAILED`
+### Content Management
+- `GET /posts` - Get public feed
+- `POST /posts` - Create new post
+- `GET /posts/{id}` - Get post details
+- `POST /posts/{id}/expand` - Fork post into new conversation
+- `POST /posts/{id}/reaction` - Add/remove reaction
+- `GET /posts/{id}/comments` - Get post comments
+- `POST /posts/{id}/comments` - Add comment to post
 
-## 🔧 Implementation Status
+### Social Features
+- `GET /users/{id}/posts` - Get user's posts
+- `GET /users/{id}/followers` - Get user's followers
+- `GET /users/{id}/following` - Get users being followed
+- `GET /feed/following` - Get personalized feed
 
-- ✅ **Specification**: Complete and reviewed
-- ✅ **Database Layer**: All 13 tables created via Alembic migrations
-- ✅ **Health Endpoints**: Database and system health monitoring active
-- ✅ **Authentication System**: Google OAuth and JWT implementation complete
-- ✅ **Models & Schemas**: All SQLAlchemy models and Pydantic schemas implemented
-- ✅ **Testing Framework**: 181 tests passing with comprehensive coverage
-- ✅ **Migration System**: Alembic configured and operational
-- 🔄 **CRUD Endpoints**: Ready for implementation with solid foundation
-- 🔄 **WebSocket Integration**: Ready for real-time AI streaming
-- 🔄 **Rate Limiting**: Ready for implementation
-- 🔄 **Error Handling**: Ready for standardized error responses
-- ✅ **Authentication**: Complete (Google OAuth + JWT)
-- 🔄 **Core Endpoints**: User, conversation, post CRUD in development
-- ⏳ **Advanced Features**: WebSocket streaming, AI integration planned
-- ⏳ **Testing**: Integration tests planned after core endpoints
-- ⏳ **Documentation**: Auto-generated OpenAPI planned
+### Health & System
+- `GET /health` - Basic health check
+- `GET /health/database` - Database connectivity check
+- `GET /health/` - Comprehensive system health
 
-## 🔧 Implementation Methodology
+## Implementation Status
 
-### AI-Assisted Test-Driven Development (TDD)
+### Complete
+- Health check endpoints
+- Authentication infrastructure (JWT + Google OAuth)
+- Database models and relationships
+- Request/response schemas
+- Error handling framework
 
-We follow a modified TDD approach optimized for AI-assisted development:
+### Ready for Implementation
+- User management endpoints
+- Conversation and message endpoints
+- Post creation and management
+- Social interaction features
+- WebSocket real-time communication
 
-#### **Red-Green-Refactor Cycle**
-1. **Red Phase**: Write comprehensive test cases first
-   - Test success scenarios with proper API response format
-   - Test error cases (authentication, validation, edge cases)
-   - Test authorization scenarios (unauthorized access)
+### Future Enhancements
+- Advanced search capabilities
+- Content recommendation algorithms
+- Analytics and reporting endpoints
+- Administrative management interfaces
+- Third-party integrations
 
-2. **Green Phase**: Implement the minimal code to pass tests
-   - Focus on API logic and response structure
-   - Handle database operations with proper error handling
-   - Maintain consistent response format across all endpoints
+## Development Guidelines
 
-3. **Refactor Phase**: Optimize and clean up
-   - Remove code duplication
-   - Improve error handling
-   - Enhance documentation
+### Request Validation
+- All requests validated using Pydantic schemas
+- Comprehensive error messages for invalid requests
+- Type checking and automatic documentation
 
-#### **Test Organization**
-- **Unit Tests**: `/tests/unit/api/v1/` - API endpoint testing
-- **Fixtures**: `/tests/fixtures/` - Reusable test data and mocks
-- **Helpers**: `/tests/utils/` - Common testing utilities
-- **Mock Strategy**: Mock database operations for fast, isolated tests
+### Error Handling
+- Consistent error response format across all endpoints
+- HTTP status codes following REST conventions
+- Detailed error codes for client-side handling
 
-#### **Development Principles**
-- **API-First**: Test and implement API endpoints before complex business logic
-- **Incremental**: Build one endpoint at a time with full test coverage
-- **Clean Tests**: Zero warnings, fast execution, clear output
-- **Consistent Format**: All API responses follow standardized format
+### Security
+- JWT token validation on all protected endpoints
+- Rate limiting to prevent abuse
+- Input sanitization and SQL injection prevention
+- CORS configuration for frontend integration
 
-### Current Implementation Status
+### Performance
+- Efficient database queries with proper indexing
+- Pagination for large result sets
+- Caching strategies for frequently accessed data
+- Async request handling where appropriate
 
-#### ✅ **Completed Endpoints**
-- `GET /users/me` - User profile retrieval (3 test cases)
-- `PATCH /users/me` - Profile updates (4 test cases)
-- Authentication middleware with comprehensive error handling
+## Testing Strategy
 
-#### 🔄 **In Progress**
-- Track A: Core User & Social Features implementation
-- Additional user endpoints (follow system, public profiles)
+### API Testing
+- Comprehensive endpoint testing with real database
+- Authentication flow testing
+- Error condition validation
+- Performance and load testing
 
-#### 📋 **Next Steps**
-- Complete remaining Track A endpoints
-- Implement comprehensive error handling
-- Add integration tests for complex workflows
+### Integration Testing
+- End-to-end user workflow testing
+- Third-party service integration testing
+- Database transaction testing
+- Real-time WebSocket communication testing
 
-## 🎯 Key User Flows
-
-### 1. AI-Assisted Content Creation
-1. User starts conversation → WebSocket connection
-2. AI streams responses in real-time
-3. User generates blog post from conversation
-4. User publishes post with tags and privacy settings
-
-### 2. Content Discovery & Interaction
-1. User browses public feed
-2. User reacts to posts (upvote, insightful, etc.)
-3. User comments on posts
-4. User expands interesting posts into new conversations
-
-### 3. Social Networking
-1. User follows other users
-2. User receives follow requests (for private accounts)
-3. User's feed shows content from followed users
-4. User shares posts to external platforms
-
----
-
-*For implementation details, see the [Development](../development/) section.*
-*For database integration, see the [Architecture](../architecture/) section.*
+*For database schema, see the [Database](../database/) section.*
+*For system architecture, see the [Architecture](../architecture/) section.*

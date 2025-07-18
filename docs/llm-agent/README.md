@@ -1,219 +1,120 @@
 # LLM Agent Documentation
 
-Specialized documentation for AI agents working on the AI Reddit codebase. This section provides comprehensive references and guidelines optimized for LLM-assisted development.
+Documentation for AI agents working on this codebase.
 
-## 📁 Contents
+## Contents
 
 ### [Senior Developer Handoff](./handoff-prompt.md)
-Comprehensive context and methodology for AI agents taking lead engineering roles. This is your primary starting point for understanding project status, technical decisions, and development approach.
+Context and methodology for LLM agents working on the AI Social platform.
+
+**Key Information:**
+- Complete project context and current status
+- Development methodologies and best practices
+- Database models and API patterns
+- Testing strategies and implementation guidelines
 
 ### [Models Reference](./models-reference.md)
-Complete database model documentation specifically designed for LLM agents, including relationships, helper methods, and usage patterns.
+Model guide for LLM agents including database schema, relationships, and query patterns.
 
-**Key Features:**
-- Detailed model specifications for all 12 database models
-- Relationship mapping and navigation
-- Helper method documentation
-- Common query patterns
-- Business logic implementation guidelines
+**Key Information:**
+- Complete model documentation with relationships
+- Helper methods and business logic
+- Query examples and database patterns
+- Integration points between models
 
-## 🤖 LLM Agent Guidelines
+## Purpose
 
-### Using This Documentation
+This documentation section provides specialized information for AI agents (like Claude) to effectively work on the AI Social codebase. It includes comprehensive context about the project structure, implementation patterns, and best practices.
 
-#### For Database Queries
-- Reference the Models Reference for exact field names and relationships
-- Use the provided query patterns for efficient database operations
-- Follow the established naming conventions and constraints
+## Key Features for AI Agents
 
-#### For API Implementation
-- Use the comprehensive model documentation to understand data relationships
-- Follow the helper method patterns for consistent business logic
-- Maintain the established architectural patterns
+### Database Context
+- Complete model reference with 12 core models
+- Relationship mappings and foreign key constraints
+- Helper methods and computed properties
+- Query patterns and optimization guidelines
 
-### Key Principles for LLM Agents
+### API Patterns
+- Consistent request/response formats
+- Authentication and authorization patterns
+- Error handling strategies
+- Testing methodologies
 
-#### 1. Data Integrity
-- Always check foreign key constraints before creating relationships
-- Use the provided helper methods instead of direct field manipulation
-- Respect the soft deletion pattern via status fields
+### Development Guidelines
+- Code organization and architectural patterns
+- Testing strategies with 181 tests passing
+- Database migration procedures
+- Implementation best practices
 
-#### 2. Relationship Navigation
-- Understand the conversation-centric design pattern
-- Use the established relationship paths for data access
-- Follow the privacy logic embedded in model methods
+## Current Implementation Status
 
-#### 3. Query Efficiency
-- Use the provided query patterns for optimal performance
-- Leverage SQLAlchemy relationships instead of manual joins
-- Follow the indexing strategy for fast queries
+### Database Foundation (Complete)
+- All 12 models implemented and tested
+- 13 tables created via Alembic migrations
+- Foreign key relationships established
+- Helper methods and business logic implemented
 
-## 🗄️ Model Quick Reference
+### Authentication System (Complete)
+- Google OAuth integration
+- JWT token management
+- Authentication middleware
+- Security validation
 
-### Core Entities
-```python
-# Primary models and their key relationships
-User → Conversations → Messages
-User → Posts → Comments → Reactions
-Post → Tags (via PostTag)
-Post → Views, Shares (analytics)
-User ↔ User (via Follow for social graph)
-```
+### Health Monitoring (Complete)
+- Database connectivity checks
+- System health endpoints
+- Migration status verification
+- Comprehensive health reporting
 
-### Key Helper Methods
-```python
-# User helpers
-user.get_display_name()
-user.is_active()
+### Ready for Development
+- CRUD API endpoints
+- WebSocket real-time features
+- AI conversation integration
+- Social interaction features
 
-# Post helpers  
-post.get_reaction_count('upvote')
-post.get_share_count()
-post.is_visible_to(user)
+## Usage Guidelines for AI Agents
 
-# Conversation helpers
-conversation.add_message(role, content)
-conversation.get_latest_message()
+### Model Queries
+Reference the Models Reference for:
+- Proper model instantiation
+- Relationship navigation
+- Helper method usage
+- Query optimization
 
-# Follow helpers
-follow.accept()
-follow.archive()
-follow.is_pending()
-```
+### API Implementation
+Follow established patterns for:
+- Request validation using Pydantic schemas
+- Response formatting with standard wrapper
+- Error handling with consistent codes
+- Authentication and authorization
 
-## 🔧 Implementation Patterns
+### Testing Approach
+Maintain testing standards with:
+- Comprehensive test coverage
+- Database transaction testing
+- Authentication flow validation
+- Error condition testing
 
-### Creating Relationships
-```python
-# Always use helper methods when available
-conversation.add_message('user', 'Hello AI!')
+### Code Quality
+Adhere to established standards:
+- Type hints for all functions
+- Proper docstring documentation
+- Consistent naming conventions
+- Clean architectural patterns
 
-# For direct creation, respect constraints
-post_reaction = PostReaction(
-    user_id=user.user_id,
-    post_id=post.post_id,
-    reaction='upvote',
-    status='active'
-)
-```
+## Implementation Priorities
 
-### Privacy Checks
-```python
-# Use built-in privacy logic
-if post.is_visible_to(current_user):
-    return post_data
-else:
-    return forbidden_response()
+### Immediate Tasks
+1. Enable integration tests (remove skips from 6 existing tests)
+2. Implement core CRUD API endpoints
+3. Add WebSocket support for real-time features
+4. Integrate AI conversation capabilities
 
-# Respect user privacy settings
-if user.is_private and not is_following(current_user, user):
-    return limited_profile()
-```
+### Development Workflow
+1. Reference existing models and patterns
+2. Follow established testing methodologies
+3. Maintain consistent code organization
+4. Update documentation as needed
 
-### Query Optimization
-```python
-# Use relationships for efficient queries
-user.posts.filter(Post.status == 'active')
-
-# Aggregate queries with proper joins
-reaction_counts = db.query(PostReaction.reaction, func.count())
-                   .filter(PostReaction.post_id == post_id)
-                   .group_by(PostReaction.reaction)
-```
-
-## 📊 Data Validation Rules
-
-### Required Fields
-- All models require explicit status field ('active' by default)
-- Foreign keys must reference existing records
-- Unique constraints must be respected (usernames, emails, etc.)
-
-### Business Logic Constraints
-- Users cannot follow themselves
-- Only one reaction per user per post/comment
-- Conversations can be forked from posts only
-- Anonymous sharing allows null user_id
-
-### Status Management
-- 'active': Normal operational state
-- 'archived': Soft deleted (hidden from normal queries)
-- 'pending': Awaiting approval (follows)
-- 'accepted'/'rejected': Follow request outcomes
-
-## 🎯 Common Use Cases
-
-### User Authentication Flow
-```python
-# Google OAuth → User creation/retrieval
-user = User.query.filter_by(google_id=google_id).first()
-if not user:
-    user = User(google_id=google_id, email=email, ...)
-```
-
-### Content Creation Workflow
-```python
-# Conversation → Message → Post
-conversation = Conversation(user_id=user_id, title=title)
-message = conversation.add_message('assistant', blog_content)
-post = Post(user_id=user_id, conversation_id=conversation.conversation_id, ...)
-```
-
-### Social Interaction
-```python
-# Follow request handling
-follow = Follow(follower_id=current_user_id, following_id=target_user_id)
-if target_user.is_private:
-    follow.status = 'pending'
-else:
-    follow.status = 'accepted'
-```
-
-### Content Discovery
-```python
-# Public feed with privacy respect
-posts = db.query(Post).join(User)
-         .filter(or_(
-             User.is_private == False,
-             and_(User.is_private == True, 
-                  Follow.follower_id == current_user_id,
-                  Follow.status == 'accepted')
-         ))
-```
-
-## ⚠️ Important Constraints
-
-### Database-Level
-- UUID primary keys (never use auto-increment IDs)
-- Composite primary keys for tracking tables
-- Foreign key constraints enforced
-- Unique constraints on usernames, emails
-
-### Application-Level
-- Soft deletion only (never hard delete)
-- Privacy checks before data access
-- Rate limiting on user actions
-- Input validation and sanitization
-
-### Performance
-- Use indexes for frequent queries
-- Limit result sets with pagination
-- Avoid N+1 queries with proper eager loading
-- Cache frequent lookups where appropriate
-
-## 🔄 Error Handling
-
-### Common Scenarios
-- **Foreign Key Violations**: Check existence before creation
-- **Unique Constraint Violations**: Handle gracefully with user feedback
-- **Privacy Violations**: Return appropriate error codes
-- **Rate Limiting**: Respect limits and provide clear feedback
-
-### Best Practices
-- Use try-catch blocks for database operations
-- Provide specific error messages for debugging
-- Log errors with context for monitoring
-- Return consistent error response format
-
----
-
-*This documentation is specifically designed for LLM agents. For human developer documentation, see the [Development](../development/) section.*
+*For technical architecture, see the [Architecture](../architecture/) section.*
+*For API specifications, see the [API](../api/) section.*
