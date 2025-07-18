@@ -304,6 +304,77 @@ GET /conversations/{conversation_id}/messages
 
 ---
 
+## 🔐 **Track A Implementation Decisions**
+
+### **Instagram-like Privacy Model**
+**Decision**: Implement comprehensive privacy controls matching Instagram's behavior
+**Rationale**:
+- **User Trust**: Users need control over their social interactions
+- **Familiar UX**: Instagram's privacy model is well-understood by users
+- **Graduated Privacy**: Different levels of privacy for different content types
+- **Social Safety**: Protects users from unwanted followers and content access
+
+**Implementation**:
+```
+User Privacy Settings:
+- is_private: boolean (account-level privacy)
+- Follow system: pending/accepted states
+- Content visibility: controlled by follow relationships
+- List access: privacy-aware with authentication requirements
+```
+
+**Privacy Logic**:
+- **Public accounts**: Anyone can follow instantly, view content, see follower lists
+- **Private accounts**: Follow requests required, only approved followers see content
+- **Error handling**: Specific error codes (`PRIVATE_ACCOUNT_AUTH_REQUIRED`, `PRIVATE_ACCOUNT_FOLLOW_REQUIRED`)
+- **Pagination**: Privacy-aware with follow status included for authenticated users
+
+### **Test-Driven Development (TDD) Methodology**
+**Decision**: Implement strict TDD with Red-Green-Refactor cycles
+**Rationale**:
+- **Quality Assurance**: Comprehensive test coverage ensures reliability
+- **Regression Prevention**: Changes can't break existing functionality
+- **Documentation**: Tests serve as living documentation of behavior
+- **Confidence**: Refactoring and feature additions with confidence
+
+**Implementation**:
+```
+Red Phase: Write failing tests for new functionality
+Green Phase: Implement minimal code to pass tests
+Refactor Phase: Optimize and clean up code
+Integration: Ensure all tests pass before moving forward
+```
+
+**Quality Metrics**:
+- **40 API Tests**: Comprehensive coverage of all social endpoints
+- **100% Pass Rate**: All tests must pass before deployment
+- **Mock Strategy**: Fast, isolated tests with proper database mocking
+- **Realistic Scenarios**: Tests cover success, error, and edge cases
+
+### **Service Layer Architecture**
+**Decision**: Implement Repository and Service patterns for business logic
+**Rationale**:
+- **Separation of Concerns**: Business logic separated from API controllers
+- **Testability**: Easy to test business logic independently
+- **Maintainability**: Clear boundaries between layers
+- **Extensibility**: Easy to add new features and modify existing ones
+
+**Implementation**:
+```
+Controllers → Services → Repositories → Database
+     ↓           ↓           ↓
+  API Logic  Business    Data Access
+              Logic
+```
+
+**Benefits**:
+- **Clean Architecture**: Clear separation of responsibilities
+- **Easy Testing**: Mock services and repositories independently
+- **Code Reuse**: Business logic can be reused across different endpoints
+- **Scalability**: Easy to add new services as platform grows
+
+---
+
 ## 📋 Future Expansion Considerations
 
 ### **Designed for Growth**
@@ -345,6 +416,9 @@ GET /conversations/{conversation_id}/messages
 | Conversation-centric model | Supports AI-assisted content creation | Core platform differentiator |
 | Forked_from for reposts | Elegant, normalized design | Reduces API complexity |
 | Empty conversations for custom posts | Efficient, atomic operations | Maintains data consistency |
+| Instagram-like privacy model | User trust and familiar UX | Production-ready social features |
+| Test-Driven Development | Quality assurance and confidence | 40 passing tests, zero regressions |
+| Service layer architecture | Clean architecture and testability | Maintainable and scalable codebase |
 | Content editing deferred for MVP | MVP scope decision | Simplifies initial API complexity |
 | WebSocket for AI chat | Real-time user experience | Essential for AI conversations |
 | Google OAuth only | MVP simplicity | Reduces authentication complexity |

@@ -67,7 +67,22 @@ class TestUserEndpoints:
         # Override dependencies
         with mock_dependency_override(app, get_current_user, sample_user):
             with patch("app.core.database.get_db", return_value=mock_db):
-                response = api_client.get_with_auth("/api/v1/users/me", valid_token)
+                # Mock the UserService to avoid database calls
+                with patch("app.api.v1.users.UserService") as mock_user_service:
+                    mock_service_instance = Mock()
+                    mock_service_instance.get_user_profile_data.return_value = {
+                        "user_id": str(sample_user.user_id),
+                        "user_name": sample_user.user_name,
+                        "email": sample_user.email,
+                        "profile_picture": sample_user.profile_picture,
+                        "created_at": sample_user.created_at.isoformat(),
+                        "follower_count": 5,
+                        "following_count": 5,
+                        "is_private": sample_user.is_private
+                    }
+                    mock_user_service.return_value = mock_service_instance
+                    
+                    response = api_client.get_with_auth("/api/v1/users/me", valid_token)
         
         assert response.status_code == status.HTTP_200_OK
         
@@ -121,10 +136,23 @@ class TestUserEndpoints:
         # Override dependencies and mock all database operations
         with mock_dependency_override(app, get_current_user, sample_user):
             with patch("app.core.database.get_db", return_value=mock_db):
-                # Mock the database operations that would fail with Mock objects
-                with patch.object(mock_db, 'commit', return_value=None):
-                    with patch.object(mock_db, 'refresh', return_value=None):
-                        response = api_client.patch_with_auth("/api/v1/users/me", update_data, valid_token)
+                # Mock the UserService to avoid database calls
+                with patch("app.api.v1.users.UserService") as mock_user_service:
+                    mock_service_instance = Mock()
+                    mock_service_instance.update_user_profile.return_value = sample_user
+                    mock_service_instance.get_user_profile_data.return_value = {
+                        "user_id": str(sample_user.user_id),
+                        "user_name": "updated_user",
+                        "email": sample_user.email,
+                        "profile_picture": sample_user.profile_picture,
+                        "created_at": sample_user.created_at.isoformat(),
+                        "follower_count": 5,
+                        "following_count": 5,
+                        "is_private": True
+                    }
+                    mock_user_service.return_value = mock_service_instance
+                    
+                    response = api_client.patch_with_auth("/api/v1/users/me", update_data, valid_token)
         
         assert response.status_code == status.HTTP_200_OK
         
@@ -176,10 +204,88 @@ class TestUserEndpoints:
         # Override dependencies
         with mock_dependency_override(app, get_current_user, sample_user):
             with patch("app.core.database.get_db", return_value=mock_db):
-                response = api_client.patch_with_auth("/api/v1/users/me", update_data, valid_token)
+                # Mock the UserService to avoid database calls
+                with patch("app.api.v1.users.UserService") as mock_user_service:
+                    mock_service_instance = Mock()
+                    mock_service_instance.update_user_profile.return_value = sample_user
+                    mock_service_instance.get_user_profile_data.return_value = {
+                        "user_id": str(sample_user.user_id),
+                        "user_name": sample_user.user_name,
+                        "email": sample_user.email,
+                        "profile_picture": sample_user.profile_picture,
+                        "created_at": sample_user.created_at.isoformat(),
+                        "follower_count": 5,
+                        "following_count": 5,
+                        "is_private": sample_user.is_private
+                    }
+                    mock_user_service.return_value = mock_service_instance
+                    
+                    response = api_client.patch_with_auth("/api/v1/users/me", update_data, valid_token)
         
         assert response.status_code == status.HTTP_200_OK
         
         data = response.json()
         assert_api_response_format(data, success=True)
         assert data["message"] == "Profile updated successfully"
+
+    # ========== PUBLIC PROFILE TESTS ==========
+
+    def test_get_public_user_profile_success(self, client, sample_user):
+        """Test successful retrieval of public user profile"""
+        # Mock database session
+        mock_db = create_mock_db_session(user_return=sample_user, count_return=3)
+        
+        with patch("app.core.database.get_db", return_value=mock_db):
+            with patch("app.api.v1.users.UserService") as mock_user_service:
+                mock_service_instance = Mock()
+                mock_service_instance.user_repo.get_by_id.return_value = sample_user
+                mock_service_instance.get_user_profile_data.return_value = {
+                    "user_id": str(sample_user.user_id),
+                    "user_name": sample_user.user_name,
+                    "email": sample_user.email,
+                    "profile_picture": sample_user.profile_picture,
+                    "created_at": sample_user.created_at.isoformat(),
+                    "follower_count": 3,
+                    "following_count": 3,
+                    "is_private": sample_user.is_private
+                }
+                mock_user_service.return_value = mock_service_instance
+                
+                response = client.get(f"/api/v1/users/{sample_user.user_id}")
+        
+        assert response.status_code == status.HTTP_200_OK
+        
+        data = response.json()
+        assert_api_response_format(data, success=True)
+        assert data["message"] == "Public profile retrieved successfully"
+        assert data["errorCode"] is None
+        
+        user_data = data["data"]["user"]
+        assert_user_data_format(user_data)
+        assert user_data["user_id"] == str(sample_user.user_id)
+        assert user_data["user_name"] == sample_user.user_name
+        assert user_data["is_private"] == sample_user.is_private
+
+    def test_get_public_user_profile_not_found(self, client):
+        """Test public profile retrieval for non-existent user"""
+        non_existent_user_id = "00000000-0000-0000-0000-000000000000"
+        
+        mock_db = create_mock_db_session(user_return=None, count_return=0)
+        
+        with patch("app.core.database.get_db", return_value=mock_db):
+            with patch("app.api.v1.users.UserService") as mock_user_service:
+                mock_service_instance = Mock()
+                mock_service_instance.user_repo.get_by_id.return_value = None
+                mock_user_service.return_value = mock_service_instance
+                
+                response = client.get(f"/api/v1/users/{non_existent_user_id}")
+        
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        
+        data = response.json()
+        # For HTTPException, response is wrapped in detail
+        assert "detail" in data
+        assert_api_response_format(data["detail"], success=False)
+        assert data["detail"]["message"] == "User not found"
+        assert data["detail"]["errorCode"] == "USER_NOT_FOUND"
+        assert data["detail"]["data"] is None

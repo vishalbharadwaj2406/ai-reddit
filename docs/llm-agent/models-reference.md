@@ -41,14 +41,25 @@ Tags, Views, Shares
 - `comments`: One-to-many → Comment
 - `post_reactions`: One-to-many → PostReaction
 - `comment_reactions`: One-to-many → CommentReaction
-- `followers`: Many-to-many → User (via Follow)
-- `following`: Many-to-many → User (via Follow)
+- `followers`: Many-to-many → User (via Follow, as following_id)
+- `following`: Many-to-many → User (via Follow, as follower_id)
 - `post_views`: One-to-many → PostView
 - `shares_made`: One-to-many → PostShare
 
 **Helper Methods**:
 - `get_display_name()`: Returns user_name or email fallback
 - `is_active()`: Checks if status == 'active'
+- `get_follower_count()`: Count accepted followers
+- `get_following_count()`: Count accepted following
+- `is_following(user_id)`: Check if following specific user
+- `has_follow_request_from(user_id)`: Check for pending request
+- `can_view_private_content(viewer_id)`: Privacy check for content access
+
+**Privacy Logic**:
+- **Public accounts** (`is_private = False`): Anyone can view content and follow lists
+- **Private accounts** (`is_private = True`): Only approved followers can view content
+- **Follow requests**: Required for private accounts, instant for public accounts
+- **Content visibility**: Controlled by privacy settings and follow relationships
 
 **Usage in APIs**:
 - User profiles, authentication, social features
@@ -222,7 +233,7 @@ Tags, Views, Shares
 - User engagement tracking
 
 ### 8. Follow Model
-**Purpose**: User-to-user relationships with privacy controls
+**Purpose**: Instagram-like user-to-user relationships with privacy controls
 **File**: `app/models/follow.py`
 
 **Key Fields**:
@@ -230,21 +241,31 @@ Tags, Views, Shares
 - `follower_id` (UUID, FK): Following user → User
 - `following_id` (UUID, FK): Followed user → User
 - `status` (VARCHAR): 'pending', 'accepted', 'rejected', 'archived'
+- `created_at` (TIMESTAMP): When follow request was made
+- `updated_at` (TIMESTAMP): When status was last changed
 
 **Relationships**:
 - `follower`: Many-to-one → User (via follower_id)
 - `following`: Many-to-one → User (via following_id)
 
 **Helper Methods**:
-- `accept()`: Accept follow request
-- `reject()`: Reject follow request
-- `archive()`: Remove follow relationship
+- `accept()`: Accept follow request (status = 'accepted')
+- `reject()`: Reject follow request (status = 'rejected')
+- `archive()`: Remove follow relationship (status = 'archived')
 - `is_pending()`: Check if awaiting approval
+- `is_accepted()`: Check if follow relationship is active
+
+**Business Logic**:
+- **Public accounts**: Instant follow (status = 'accepted')
+- **Private accounts**: Request required (status = 'pending')
+- **Privacy controls**: Only accepted follows grant access to private content
+- **Follower/Following lists**: Privacy-aware with authentication requirements
 
 **Usage in APIs**:
-- Social graph management
-- Privacy-controlled following
-- User discovery features
+- Social graph management with Instagram-like behavior
+- Privacy-controlled following with request/approval flow
+- Follower/Following lists with pagination and privacy controls
+- User discovery features with privacy respect
 
 ### 9. Tag Model
 **Purpose**: Content categorization system

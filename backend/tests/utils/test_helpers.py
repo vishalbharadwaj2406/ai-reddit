@@ -76,10 +76,16 @@ def assert_api_response_format(response_data: Dict[str, Any], success: bool = Tr
     assert "success" in response_data
     assert "data" in response_data
     assert "message" in response_data
+    assert "errorCode" in response_data
     assert response_data["success"] == success
     
-    if not success:
-        assert "error" in response_data.get("data", {})
+    if success:
+        assert response_data["errorCode"] is None
+    else:
+        assert response_data["errorCode"] is not None
+        assert isinstance(response_data["errorCode"], str)
+        # For error cases, data should be None
+        assert response_data["data"] is None
 
 
 def assert_user_data_format(user_data: Dict[str, Any]):

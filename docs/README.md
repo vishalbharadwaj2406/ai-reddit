@@ -63,7 +63,12 @@ Production deployment, scaling, and operations.
 - **Database Tables**: Complete (13 tables created via Alembic migrations)
 - **Health Check API**: Complete (Database connectivity + table verification)
 - **Migration System**: Complete (Alembic configured and working)
-- **API Layer**: Core CRUD endpoints ready for development
+- **Track A: User & Social APIs**: Complete (40/40 tests passing)
+  - Instagram-like Follow System with privacy controls
+  - User profile management with comprehensive validation
+  - Follower/Following lists with pagination support
+  - Production-ready privacy model matching Instagram behavior
+- **Track B: Content & Community**: In Progress (being handled by another engineer)
 - **Frontend**: Planned
 - **Deployment**: Infrastructure ready (Supabase PostgreSQL)
 
@@ -88,4 +93,5 @@ Production deployment, scaling, and operations.
 - Maintain consistency with established patterns
 
 *Last Updated: July 18, 2025*
-*Documentation Version: 1.2*
+*Documentation Version: 2.0*
+*Track A (User & Social): Complete - Track B (Content & Community): In Progress*

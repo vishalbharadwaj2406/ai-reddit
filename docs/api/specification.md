@@ -221,8 +221,8 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 ```
 
 #### GET /users/{user_id}/followers
-**Purpose**: Get user's followers list
-**Auth Required**: No
+**Purpose**: Get user's followers list with privacy controls
+**Auth Required**: Optional (required for private accounts)
 **Query Parameters**:
 - `limit`: integer (default: 20, max: 100)
 - `offset`: integer (default: 0)
@@ -231,23 +231,123 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 {
   "success": true,
   "data": {
-    "pageNumber": 1,
-    "size": 20,
     "followers": [
       {
-        "userId": "uuid",
-        "userName": "string",
-        "profilePicture": "string",
-        "followedAt": "timestamp"
+        "user_id": "uuid",
+        "user_name": "string",
+        "profile_picture": "string",
+        "is_private": boolean,
+        "followed_at": "timestamp",
+        "follow_status": {
+          "follow_status": "none" | "pending" | "accepted",
+          "is_following": boolean,
+          "request_pending": boolean,
+          "follows_you": boolean
+        }
       }
-    ]
+    ],
+    "pagination": {
+      "total_count": integer,
+      "limit": integer,
+      "offset": integer,
+      "has_next": boolean,
+      "has_previous": boolean
+    }
   },
   "message": "Followers retrieved successfully"
 }
 ```
 
+**Privacy Behavior**:
+- **Public accounts**: Anyone can view followers
+- **Private accounts**: Only authenticated users who follow the account can view
+- **Error responses**: 
+  - `403 Forbidden` with `PRIVATE_ACCOUNT_AUTH_REQUIRED` if unauthenticated
+  - `403 Forbidden` with `PRIVATE_ACCOUNT_FOLLOW_REQUIRED` if not following
+
 #### GET /users/{user_id}/following
-**Purpose**: Get users that this user follows
+**Purpose**: Get users that this user follows with privacy controls
+**Auth Required**: Optional (required for private accounts)
+**Query Parameters**:
+- `limit`: integer (default: 20, max: 100)
+- `offset`: integer (default: 0)
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "following": [
+      {
+        "user_id": "uuid",
+        "user_name": "string",
+        "profile_picture": "string",
+        "is_private": boolean,
+        "followed_at": "timestamp",
+        "follow_status": {
+          "follow_status": "none" | "pending" | "accepted",
+          "is_following": boolean,
+          "request_pending": boolean,
+          "follows_you": boolean
+        }
+      }
+    ],
+    "pagination": {
+      "total_count": integer,
+      "limit": integer,
+      "offset": integer,
+      "has_next": boolean,
+      "has_previous": boolean
+    }
+  },
+  "message": "Following retrieved successfully"
+}
+```
+
+**Privacy Behavior**: Same as followers endpoint
+
+#### GET /users/me/follow-requests
+**Purpose**: Get incoming follow requests for the authenticated user
+**Auth Required**: Yes
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "requests": [
+      {
+        "follower_id": "uuid",
+        "follower_name": "string",
+        "profile_picture": "string",
+        "requested_at": "timestamp"
+      }
+    ],
+    "count": integer
+  },
+  "message": "Follow requests retrieved successfully"
+}
+```
+
+#### PATCH /users/me/follow-requests/{follower_id}
+**Purpose**: Accept or reject a follow request
+**Auth Required**: Yes
+**Request Body**:
+```json
+{
+  "action": "accept" | "reject"
+}
+```
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "follow_id": "string",
+    "status": "accepted" | "rejected",
+    "updated_at": "timestamp"
+  },
+  "message": "Follow request accepted" | "Follow request rejected"
+}
+```
 **Auth Required**: No
 **Query Parameters**:
 - `limit`: integer (default: 20, max: 100)
