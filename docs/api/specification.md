@@ -261,7 +261,7 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 **Privacy Behavior**:
 - **Public accounts**: Anyone can view followers
 - **Private accounts**: Only authenticated users who follow the account can view
-- **Error responses**: 
+- **Error responses**:
   - `403 Forbidden` with `PRIVATE_ACCOUNT_AUTH_REQUIRED` if unauthenticated
   - `403 Forbidden` with `PRIVATE_ACCOUNT_FOLLOW_REQUIRED` if not following
 
@@ -374,9 +374,10 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 
 ### 3. Conversation Endpoints
 
-#### GET /conversations
+#### GET /conversations ✅ IMPLEMENTED
 **Purpose**: Get user's conversations
 **Auth Required**: Yes
+**Implementation Status**: Complete with 3 test cases
 **Query Parameters**:
 - `limit`: integer (default: 20, max: 100)
 - `offset`: integer (default: 0)
@@ -397,9 +398,10 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 }
 ```
 
-#### POST /conversations
+#### POST /conversations ✅ IMPLEMENTED
 **Purpose**: Explicitly create a new conversation (e.g., when user clicks 'Start Conversation')
 **Auth Required**: Yes
+**Implementation Status**: Complete with 6 test cases
 **Request Body**:
 ```json
 {
@@ -420,9 +422,10 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 }
 ```
 
-#### GET /conversations/{conversation_id}
+#### GET /conversations/{conversation_id} ✅ IMPLEMENTED
 **Purpose**: Get conversation details and messages
 **Auth Required**: Yes (own conversations only)
+**Implementation Status**: Complete with 9 test cases
 **Response**:
 ```json
 {
@@ -446,9 +449,10 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 }
 ```
 
-#### DELETE /conversations/{conversation_id}
+#### DELETE /conversations/{conversation_id} ✅ IMPLEMENTED
 **Purpose**: Archive conversation
 **Auth Required**: Yes
+**Implementation Status**: Complete with 7 test cases
 
 ---
 
@@ -518,9 +522,9 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
           "profilePicture": "string"
         },
         "tags": ["string"],
-        "reactions": { 
-          "upvote": 15, "downvote": 2, "heart": 8, 
-          "insightful": 12, "accurate": 5 
+        "reactions": {
+          "upvote": 15, "downvote": 2, "heart": 8,
+          "insightful": 12, "accurate": 5
         },
         "userReaction": "upvote" | "downvote" | "heart" | "insightful" | "accurate" | null,
         "commentCount": 0,
@@ -721,9 +725,9 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
           "userName": "string",
           "profilePicture": "string"
         },
-        "reactions": { 
-          "upvote": 8, "downvote": 1, "heart": 3, 
-          "insightful": 5, "accurate": 2 
+        "reactions": {
+          "upvote": 8, "downvote": 1, "heart": 3,
+          "insightful": 5, "accurate": 2
         },
         "userReaction": "upvote" | "downvote" | "heart" | "insightful" | "accurate" | null,
         "parentCommentId": "uuid | null",
