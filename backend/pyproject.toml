@@ -1,0 +1,10 @@
+# pytest configuration file
+# This suppresses expected warnings to keep test output clean
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    # Ignore specific warnings from jose library (external dependency)
+    "ignore:datetime.datetime.utcnow.*:DeprecationWarning:jose.jwt",
+    # Ignore specific warnings we can't control from external libraries
+    "ignore:.*utcnow.*:DeprecationWarning:jose.*",
+]

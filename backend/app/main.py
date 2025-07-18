@@ -10,6 +10,7 @@ This file is the heart of our FastAPI application. It:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
 # Import configuration
 from app.core.config import settings
@@ -39,6 +40,22 @@ except ImportError as e:
     print("This is normal during initial setup. Routes will be added as modules are implemented.")
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifespan manager.
+    
+    Handles startup and shutdown events using the modern lifespan pattern.
+    """
+    # Startup
+    print(f"🚀 {settings.APP_NAME} starting up...")
+    
+    yield
+    
+    # Shutdown
+    print(f"🛑 {settings.APP_NAME} shutting down...")
+
+
 def create_application() -> FastAPI:
     """
     Create and configure the FastAPI application.
@@ -54,6 +71,7 @@ def create_application() -> FastAPI:
         description=f"{settings.APP_NAME} - AI-powered conversation platform",
         docs_url="/docs",  # Swagger UI
         redoc_url="/redoc",  # ReDoc documentation
+        lifespan=lifespan,
     )
 
     # Add CORS middleware
@@ -128,34 +146,6 @@ async def health_check():
     In production, this might check database connectivity, etc.
     """
     return {"status": "healthy"}
-
-
-# Application lifecycle events
-@app.on_event("startup")
-async def startup_event():
-    """
-    Code to run when the application starts up.
-
-    Good place to:
-    - Initialize database connections
-    - Set up logging
-    - Pre-load AI models
-    - Connect to external services
-    """
-    print(f"🚀 {settings.APP_NAME} starting up...")
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """
-    Code to run when the application shuts down.
-
-    Good place to:
-    - Close database connections
-    - Clean up resources
-    - Save any pending data
-    """
-    print(f"🛑 {settings.APP_NAME} shutting down...")
 
 
 # If running this file directly (for development)

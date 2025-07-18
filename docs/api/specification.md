@@ -79,9 +79,10 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 
 ### 2. User Endpoints
 
-#### GET /users/me
+#### GET /users/me ✅ IMPLEMENTED
 **Purpose**: Get current user profile
 **Auth Required**: Yes
+**Implementation Status**: Complete with 3 test cases
 **Response**:
 ```json
 {
@@ -94,10 +95,44 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
       "profilePicture": "string",
       "createdAt": "timestamp",
       "followerCount": 0,
-      "followingCount": 0
+      "followingCount": 0,
+      "isPrivate": false
     }
   },
   "message": "Profile retrieved successfully"
+}
+```
+
+#### PATCH /users/me ✅ IMPLEMENTED
+**Purpose**: Update current user profile
+**Auth Required**: Yes
+**Implementation Status**: Complete with 4 test cases
+**Request Body**:
+```json
+{
+  "userName": "string (optional)",
+  "profilePicture": "string (optional)",
+  "isPrivate": "boolean (optional)"
+}
+```
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "userId": "uuid",
+      "userName": "string",
+      "email": "string",
+      "profilePicture": "string",
+      "createdAt": "timestamp",
+      "followerCount": 0,
+      "followingCount": 0,
+      "isPrivate": false
+    }
+  },
+  "message": "Profile updated successfully"
+}
 }
 ```
 

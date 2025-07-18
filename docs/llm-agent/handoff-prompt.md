@@ -32,6 +32,26 @@
 - ✅ **Security Features**: Token validation, audience verification, comprehensive error handling
 - ✅ **Database Integration**: Seamless user registration and login with User model
 
+### **🚀 API Development: ACTIVE & FOLLOWING BEST PRACTICES**
+- ✅ **TDD Methodology**: AI-assisted Test-Driven Development with Red-Green-Refactor cycle
+- ✅ **Test Infrastructure**: Comprehensive test organization with fixtures, helpers, and mocks
+- ✅ **User Endpoints**: `GET /users/me` (3 tests), `PATCH /users/me` (4 tests) - All passing
+- ✅ **Authentication Middleware**: Complete auth dependency with proper error handling
+- ✅ **Clean Development**: Zero warnings, fast tests, consistent API response format
+- 🔄 **In Progress**: Track A (Core User & Social Features) - Follow system, public profiles
+
+### **📋 Development Methodology**
+**AI-Assisted TDD Process:**
+1. **Red Phase**: Write comprehensive test cases first (success, error, auth scenarios)
+2. **Green Phase**: Implement minimal code to pass tests (API logic, database operations)
+3. **Refactor Phase**: Optimize and clean up (remove duplication, improve error handling)
+
+**Key Principles:**
+- **API-First**: Test and implement endpoints before complex business logic
+- **Incremental**: One endpoint at a time with full test coverage
+- **Mock Strategy**: Fast, isolated tests with proper database mocking
+- **Consistent Format**: Standardized API response structure across all endpoints
+
 ### **📚 Documentation: PROFESSIONAL-GRADE ORGANIZATION**
 Your team has created an exceptional documentation structure that rivals industry standards:
 

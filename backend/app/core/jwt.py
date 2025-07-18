@@ -11,7 +11,7 @@ Security Features:
 - Secure token validation
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from jose import JWTError, jwt
 from app.core.config import settings
@@ -38,13 +38,13 @@ class JWTManager:
             Encoded JWT access token
         """
         # Calculate expiration time
-        expire = datetime.utcnow() + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
         
         # Base claims
         claims = {
             "sub": user_id,  # Subject (user ID)
             "exp": expire,   # Expiration time
-            "iat": datetime.utcnow(),  # Issued at
+            "iat": datetime.now(timezone.utc),  # Issued at
             "type": "access",  # Token type
             "jti": str(uuid.uuid4())  # JWT ID for tracking
         }
@@ -68,12 +68,12 @@ class JWTManager:
             Encoded JWT refresh token
         """
         # Calculate expiration time (longer than access token)
-        expire = datetime.utcnow() + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
+        expire = datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
         
         claims = {
             "sub": user_id,
             "exp": expire,
-            "iat": datetime.utcnow(),
+            "iat": datetime.now(timezone.utc),
             "type": "refresh",
             "jti": str(uuid.uuid4())
         }

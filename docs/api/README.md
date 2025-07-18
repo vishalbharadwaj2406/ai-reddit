@@ -15,6 +15,56 @@ Complete REST API documentation with all endpoints, request/response formats, an
 - Privacy controls and social features
 - Comprehensive error handling and rate limiting
 
+## 🔧 Implementation Methodology
+
+### AI-Assisted Test-Driven Development (TDD)
+
+We follow a modified TDD approach optimized for AI-assisted development:
+
+#### **Red-Green-Refactor Cycle**
+1. **Red Phase**: Write comprehensive test cases first
+   - Test success scenarios with proper API response format
+   - Test error cases (authentication, validation, edge cases)
+   - Test authorization scenarios (unauthorized access)
+
+2. **Green Phase**: Implement the minimal code to pass tests
+   - Focus on API logic and response structure
+   - Handle database operations with proper error handling
+   - Maintain consistent response format across all endpoints
+
+3. **Refactor Phase**: Optimize and clean up
+   - Remove code duplication
+   - Improve error handling
+   - Enhance documentation
+
+#### **Test Organization**
+- **Unit Tests**: `/tests/unit/api/v1/` - API endpoint testing
+- **Fixtures**: `/tests/fixtures/` - Reusable test data and mocks
+- **Helpers**: `/tests/utils/` - Common testing utilities
+- **Mock Strategy**: Mock database operations for fast, isolated tests
+
+#### **Development Principles**
+- **API-First**: Test and implement API endpoints before complex business logic
+- **Incremental**: Build one endpoint at a time with full test coverage
+- **Clean Tests**: Zero warnings, fast execution, clear output
+- **Consistent Format**: All API responses follow standardized format
+
+### Current Implementation Status
+
+#### ✅ **Completed Endpoints**
+- `GET /users/me` - User profile retrieval (3 test cases)
+- `PATCH /users/me` - Profile updates (4 test cases)
+- Authentication middleware with comprehensive error handling
+
+#### 🔄 **In Progress**
+- Track A: Core User & Social Features implementation
+- Additional user endpoints (follow system, public profiles)
+
+#### 📋 **Next Steps**
+- Complete remaining Track A endpoints
+- Implement comprehensive error handling
+- Add integration tests for complex workflows
+
 ## 🔗 API Overview
 
 ### Authentication
@@ -113,6 +163,56 @@ Complete REST API documentation with all endpoints, request/response formats, an
 - ⏳ **Advanced Features**: WebSocket streaming, AI integration planned
 - ⏳ **Testing**: Integration tests planned after core endpoints
 - ⏳ **Documentation**: Auto-generated OpenAPI planned
+
+## 🔧 Implementation Methodology
+
+### AI-Assisted Test-Driven Development (TDD)
+
+We follow a modified TDD approach optimized for AI-assisted development:
+
+#### **Red-Green-Refactor Cycle**
+1. **Red Phase**: Write comprehensive test cases first
+   - Test success scenarios with proper API response format
+   - Test error cases (authentication, validation, edge cases)
+   - Test authorization scenarios (unauthorized access)
+
+2. **Green Phase**: Implement the minimal code to pass tests
+   - Focus on API logic and response structure
+   - Handle database operations with proper error handling
+   - Maintain consistent response format across all endpoints
+
+3. **Refactor Phase**: Optimize and clean up
+   - Remove code duplication
+   - Improve error handling
+   - Enhance documentation
+
+#### **Test Organization**
+- **Unit Tests**: `/tests/unit/api/v1/` - API endpoint testing
+- **Fixtures**: `/tests/fixtures/` - Reusable test data and mocks
+- **Helpers**: `/tests/utils/` - Common testing utilities
+- **Mock Strategy**: Mock database operations for fast, isolated tests
+
+#### **Development Principles**
+- **API-First**: Test and implement API endpoints before complex business logic
+- **Incremental**: Build one endpoint at a time with full test coverage
+- **Clean Tests**: Zero warnings, fast execution, clear output
+- **Consistent Format**: All API responses follow standardized format
+
+### Current Implementation Status
+
+#### ✅ **Completed Endpoints**
+- `GET /users/me` - User profile retrieval (3 test cases)
+- `PATCH /users/me` - Profile updates (4 test cases)
+- Authentication middleware with comprehensive error handling
+
+#### 🔄 **In Progress**
+- Track A: Core User & Social Features implementation
+- Additional user endpoints (follow system, public profiles)
+
+#### 📋 **Next Steps**
+- Complete remaining Track A endpoints
+- Implement comprehensive error handling
+- Add integration tests for complex workflows
 
 ## 🎯 Key User Flows
 
