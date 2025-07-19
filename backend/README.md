@@ -1,4 +1,6 @@
-# [APP_NAME] Backend
+# AI Social Backend
+
+FastAPI backend with LangChain + Gemini AI integration, PostgreSQL database, and comprehensive authentication system.
 
 ## Quick Start
 
