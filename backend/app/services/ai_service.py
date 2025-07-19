@@ -10,6 +10,7 @@ This service handles AI interactions including:
 Uses LangChain framework with Google Gemini 2.5 Flash for production AI responses.
 LangChain abstraction ensures future-proofing for multiple AI providers (OpenAI, Anthropic, etc).
 Provider switching is achieved by changing the LLM class while maintaining the same interface.
+Architecture supports seamless migration between AI providers without code changes.
 """
 
 import asyncio
