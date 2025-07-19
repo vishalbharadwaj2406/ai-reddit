@@ -11,15 +11,20 @@ Conversations are the core feature where users interact with AI.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
-from uuid import uuid4
+from uuid import uuid4, UUID
+import json
+import asyncio
 
 from app.core.database import get_db
 from app.schemas.conversation import ConversationCreate, ConversationResponse, ConversationListItem
+from app.schemas.message import MessageCreate, MessageResponse
 from app.models.conversation import Conversation
 from app.models.message import Message
 from app.dependencies.auth import get_current_user
 from app.models.user import User
+from app.services.ai_service import generate_ai_response
 
 router = APIRouter()
 
@@ -325,5 +330,264 @@ async def archive_conversation(
                 "error": "CONVERSATION_ARCHIVE_ERROR",
                 "message": "Failed to archive conversation",
                 "details": str(e)
+            }
+        )
+
+
+@router.post("/{conversation_id}/messages", status_code=status.HTTP_201_CREATED)
+async def send_message(
+    conversation_id: UUID,
+    message_data: MessageCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Send a message to a conversation and prepare for AI response.
+    
+    This endpoint:
+    1. Validates the conversation exists and user has access
+    2. Saves the user message to the database
+    3. Returns the message details for immediate display
+    4. The client should then open SSE stream to get AI response
+    """
+    
+    try:
+        # Find conversation using ORM
+        conversation = (
+            db.query(Conversation)
+            .filter(Conversation.conversation_id == conversation_id)
+            .first()
+        )
+        
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "NOT_FOUND",
+                    "message": "Conversation not found"
+                }
+            )
+        
+        # Check if user owns the conversation
+        if conversation.user_id != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": "FORBIDDEN",
+                    "message": "Access denied to conversation"
+                }
+            )
+        
+        # Check if conversation is archived
+        if conversation.status == "archived":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "CONVERSATION_ARCHIVED",
+                    "message": "Cannot send messages to archived conversations"
+                }
+            )
+        
+        # Create user message
+        user_message = Message(
+            message_id=uuid4(),
+            conversation_id=conversation_id,
+            user_id=current_user.user_id,
+            role="user",
+            content=message_data.content,
+            is_blog=False,
+            status="active"
+        )
+        
+        db.add(user_message)
+        db.commit()
+        db.refresh(user_message)
+        
+        # Return user message details
+        return {
+            "success": True,
+            "data": {
+                "message_id": str(user_message.message_id),
+                "content": user_message.content,
+                "role": user_message.role,
+                "created_at": user_message.created_at.isoformat()
+            },
+            "message": "Message sent successfully"
+        }
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (404, 403, 422)
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "success": False,
+                "data": None,
+                "message": "Failed to send message",
+                "errorCode": "MESSAGE_SEND_ERROR"
+            }
+        )
+
+
+@router.get("/{conversation_id}/stream")
+async def stream_ai_response(
+    conversation_id: UUID,
+    message_id: UUID = Query(..., description="ID of the user message to respond to"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Stream AI response to a user message via Server-Sent Events.
+    
+    This endpoint:
+    1. Validates the conversation and message exist
+    2. Checks user has access to the conversation
+    3. Generates AI response streaming token by token
+    4. Saves the complete AI response to database when done
+    """
+    
+    try:
+        # Find conversation using ORM
+        conversation = (
+            db.query(Conversation)
+            .filter(Conversation.conversation_id == conversation_id)
+            .first()
+        )
+        
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "NOT_FOUND",
+                    "message": "Conversation not found"
+                }
+            )
+        
+        # Check if user owns the conversation
+        if conversation.user_id != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": "FORBIDDEN",
+                    "message": "Access denied to conversation"
+                }
+            )
+        
+        # Check if conversation is archived
+        if conversation.status == "archived":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "CONVERSATION_ARCHIVED",
+                    "message": "Cannot stream responses for archived conversations"
+                }
+            )
+        
+        # Find the user message
+        user_message = (
+            db.query(Message)
+            .filter(
+                Message.message_id == message_id,
+                Message.conversation_id == conversation_id
+            )
+            .first()
+        )
+        
+        if not user_message:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "NOT_FOUND",
+                    "message": "Message not found"
+                }
+            )
+        
+        # Create AI message record
+        ai_message = Message(
+            message_id=uuid4(),
+            conversation_id=conversation_id,
+            user_id=None,  # AI message
+            role="assistant",
+            content="",  # Will be populated as we stream
+            is_blog=False,
+            status="active"
+        )
+        
+        db.add(ai_message)
+        db.commit()
+        db.refresh(ai_message)
+        
+        # Create SSE streaming function
+        async def generate_sse_stream():
+            try:
+                complete_response = ""
+                
+                # Generate AI response
+                async for response_chunk in generate_ai_response(
+                    user_message=user_message.content,
+                    conversation_id=conversation_id
+                ):
+                    # Update message_id in response
+                    response_chunk["message_id"] = str(ai_message.message_id)
+                    
+                    # Build complete response
+                    if response_chunk.get("is_complete", False):
+                        complete_response = response_chunk["content"]
+                    
+                    # Format as SSE with API wrapper
+                    sse_data = {
+                        "success": True,
+                        "data": response_chunk,
+                        "message": "Streaming AI response"
+                    }
+                    
+                    # Send SSE event
+                    if response_chunk.get("is_complete", False):
+                        yield f"event: ai_complete\ndata: {json.dumps(sse_data)}\n\n"
+                    else:
+                        yield f"event: ai_response\ndata: {json.dumps(sse_data)}\n\n"
+                    
+                    # Small delay to simulate real streaming
+                    await asyncio.sleep(0.01)
+                
+                # Update the AI message with complete response
+                ai_message.content = complete_response
+                db.commit()
+                
+            except Exception as e:
+                # Send error event
+                error_data = {
+                    "success": False,
+                    "data": None,
+                    "message": f"AI service error: {str(e)}",
+                    "errorCode": "AI_SERVICE_ERROR"
+                }
+                yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
+        
+        # Return SSE stream
+        return StreamingResponse(
+            generate_sse_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Cache-Control"
+            }
+        )
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (404, 403, 422)
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "success": False,
+                "data": None,
+                "message": "Failed to stream AI response",
+                "errorCode": "STREAM_ERROR"
             }
         )

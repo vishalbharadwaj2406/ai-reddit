@@ -14,7 +14,7 @@ System design, technical decisions, and architectural patterns.
 API specification, endpoints, and integration guides.
 - **API Specification**: REST API documentation
 - **Authentication**: OAuth flow and security
-- **WebSocket**: Real-time communication protocols
+- **SSE Streaming**: Real-time communication protocols
 
 ### [Database](./database/)
 Database schema, models, and data management.
@@ -71,7 +71,7 @@ Production deployment, scaling, and operations.
 - **Track B: Content & Community**: In Progress
   - Conversation Management: Complete (4/4 endpoints, 7 tests passing)
   - Post Management: Next (posts, reactions, comments)
-  - Real-time Features: Planned (WebSocket chat, AI integration)
+  - Real-time Features: Planned (SSE streaming, AI integration)
 - **Frontend**: Planned
 - **Deployment**: Infrastructure ready (Supabase PostgreSQL)
 

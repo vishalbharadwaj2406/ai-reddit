@@ -78,17 +78,26 @@ User writes in frontend → POST /posts → Creates both conversation + post
 
 ## 🔄 Real-Time & Streaming Decisions
 
-### **WebSocket for AI Conversations**
-**Decision**: Use WebSocket with token in query parameter
+### **Server-Sent Events for AI Conversations**
+**Decision**: Use Server-Sent Events (SSE) with standard Authorization headers
 **Rationale**:
-- **Real-time Experience**: Essential for AI conversation flow
-- **MVP Simplicity**: Query param auth reduces complexity vs. subprotocols
-- **User Experience**: Streaming responses feel more conversational
-- **Scalability**: Supports future multi-user conversations
+- **Industry Standard**: ChatGPT, Claude, and major AI platforms use SSE for response streaming
+- **Simplicity**: Unidirectional streaming perfect for AI responses (no bidirectional communication needed)
+- **Built-in Browser Support**: Native `EventSource` API with automatic reconnection
+- **HTTP/2 Compatible**: Benefits from multiplexing and standard HTTP infrastructure
+- **Easier Authentication**: Standard Bearer tokens in headers vs query parameters
+- **Stateless**: Each response stream is independent, improving scalability
 
 **Implementation**:
 ```
-WebSocket: /ws/conversations/{conversation_id}?token=jwt_token
+POST /conversations/{conversation_id}/messages  # Send user message
+GET /conversations/{conversation_id}/stream     # SSE endpoint for AI responses
+```
+
+**SSE Response Format** (with standard API wrapper):
+```
+event: ai_response
+data: {"success": true, "data": {"content": "token...", "is_complete": false}, "message": "Streaming"}
 ```
 
 ---
@@ -108,7 +117,7 @@ WebSocket: /ws/conversations/{conversation_id}?token=jwt_token
 **Rationale**:
 - **Stateless**: Supports horizontal scaling
 - **Standard Practice**: Well-understood security model
-- **Flexible**: Works with both REST and WebSocket
+- **Flexible**: Works with both REST and SSE streaming
 - **Refresh Support**: Maintains session continuity
 
 ---
@@ -403,7 +412,7 @@ Controllers → Services → Repositories → Database
 
 ### **Technical Validation**
 - **API Performance**: Response times under 200ms for most endpoints
-- **WebSocket Stability**: Reliable real-time conversation experience
+- **SSE Streaming**: Reliable real-time conversation experience
 - **Database Efficiency**: Query performance with proper indexing
 - **Error Rates**: Low error rates across all endpoints
 
@@ -420,7 +429,7 @@ Controllers → Services → Repositories → Database
 | Test-Driven Development | Quality assurance and confidence | 40 passing tests, zero regressions |
 | Service layer architecture | Clean architecture and testability | Maintainable and scalable codebase |
 | Content editing deferred for MVP | MVP scope decision | Simplifies initial API complexity |
-| WebSocket for AI chat | Real-time user experience | Essential for AI conversations |
+| SSE for AI chat | Real-time user experience | Essential for AI conversations |
 | Google OAuth only | MVP simplicity | Reduces authentication complexity |
 | UUID primary keys | Scalability and security | Future-proof architecture |
 | Generous rate limits | MVP testing and feedback | Enables thorough validation |

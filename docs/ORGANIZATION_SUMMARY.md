@@ -42,7 +42,7 @@ docs/
 
 #### 2. **API** (`/api/`)
 - REST API specification
-- WebSocket documentation for real-time features
+- SSE streaming documentation for real-time features
 - Authentication and error handling guides
 
 #### 3. **Database** (`/database/`)

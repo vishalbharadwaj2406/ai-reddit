@@ -10,7 +10,7 @@ Complete REST API specification with endpoints, request/response formats, and au
 **Key Features:**
 - RESTful design with OpenAPI documentation
 - JWT-based authentication with Google OAuth
-- WebSocket support for real-time AI conversations
+- SSE streaming support for real-time AI conversations
 - Comprehensive error handling and validation
 - Rate limiting and security controls
 
@@ -21,7 +21,7 @@ Complete REST API specification with endpoints, request/response formats, and au
 - **Authentication**: JWT tokens via Google OAuth 2.0
 - **Validation**: Pydantic schemas for all requests/responses
 - **Documentation**: Interactive Swagger UI and ReDoc
-- **Real-time**: WebSocket connections for AI conversations
+- **Real-time**: SSE streaming connections for AI conversations
 
 ### Base URL
 ```
@@ -64,7 +64,7 @@ All API responses follow a standard wrapper format:
 - `GET /conversations/{id}` - Get conversation details
 - `POST /conversations/{id}/messages` - Add message to conversation
 - `GET /conversations/{id}/messages` - Get conversation messages
-- `WebSocket /ws/conversations/{id}` - Real-time conversation
+- `GET /conversations/{id}/stream` - Real-time SSE conversation streaming
 
 ### Content Management
 - `GET /posts` - Get public feed
@@ -101,7 +101,7 @@ All API responses follow a standard wrapper format:
 - Conversation and message endpoints
 - Post creation and management
 - Social interaction features
-- WebSocket real-time communication
+- SSE real-time communication
 
 ### Future Enhancements
 - Advanced search capabilities
@@ -146,7 +146,7 @@ All API responses follow a standard wrapper format:
 - End-to-end user workflow testing
 - Third-party service integration testing
 - Database transaction testing
-- Real-time WebSocket communication testing
+- Real-time SSE streaming communication testing
 
 *For database schema, see the [Database](../database/) section.*
 *For system architecture, see the [Architecture](../architecture/) section.*

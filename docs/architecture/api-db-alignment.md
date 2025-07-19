@@ -77,7 +77,7 @@ Database relationships directly map to API response structure:
 
 **Minor Suggestions**:
 1. Add batch operations for performance (GET multiple posts/users)
-2. Consider WebSocket heartbeat for connection management
+2. Consider SSE connection management for streaming responses
 3. Add admin endpoints for moderation (future)
 
 **Conclusion**: Your API design is production-ready and perfectly aligned with your database. Implementation should be straightforward with minimal friction.

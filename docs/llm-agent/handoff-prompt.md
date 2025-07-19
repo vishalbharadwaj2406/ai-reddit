@@ -100,7 +100,7 @@ You're inheriting a **complete Track A foundation** ready for Track B implementa
 1. **Conversation APIs**: AI-assisted conversations with message handling
 2. **Post Management**: Content creation from conversations, visibility controls
 3. **Community Features**: Comments, reactions, content sharing
-4. **Real-time Features**: WebSocket chat, live conversation updates
+4. **Real-time Features**: SSE streaming, live conversation updates
 
 ### **Why This Approach is Optimal:**
 1. **Zero Technical Debt**: Clean Track A foundation with no shortcuts
@@ -170,7 +170,7 @@ Red → Green → Refactor → Integrate
 4. **Search & Discovery**: Basic content search and filtering
 
 ### **Phase 3: Real-time & AI Integration (Days 6-8)**
-1. **WebSocket Chat**: Real-time messaging for conversations
+1. **SSE Streaming**: Real-time messaging for conversations
 2. **AI Integration**: OpenAI API integration for conversation assistance
 3. **Live Updates**: Real-time reaction updates and notifications
 4. **Advanced Features**: Multi-user conversations, conversation forking
@@ -211,7 +211,7 @@ Red → Green → Refactor → Integrate
 
 ### **API Design Excellence (Your Blueprint):**
 - **RESTful**: Predictable patterns with logical resource nesting
-- **Real-time**: WebSocket for AI conversations with streaming responses
+- **Real-time**: SSE streaming for AI conversations with streaming responses
 - **Privacy-Aware**: Public read access, authenticated interactions
 - **Extensible**: Clean abstractions supporting future features
 
@@ -295,7 +295,7 @@ Users control conversation visibility and can share anonymously. Privacy setting
 ### **🔄 Current Focus:**
 - **Track B Development**: Content & Community APIs (Conversation, Post, Comment systems)
 - **AI Integration**: OpenAI API integration for conversation assistance
-- **Real-time Features**: WebSocket chat and live updates
+- **Real-time Features**: SSE streaming and live updates
 
 ### **⏳ Planned:**
 - **Frontend Development**: React/Next.js application
@@ -387,7 +387,7 @@ When you complete work or reach a natural stopping point, update this handoff pr
 - Track B Conversation Management: Complete (4 endpoints implemented with comprehensive testing)
 - Post Management Implementation: Create, read, react, and fork functionality
 - AI Integration Setup: OpenAI API integration for conversation assistance
-- Real-time Features: WebSocket chat implementation
+- Real-time Features: SSE streaming implementation
 
 ### Notes for Next Engineer:
 - **Track A Foundation Complete**: 40 passing tests, Instagram-like privacy model implemented

@@ -68,7 +68,7 @@ This documentation section provides specialized information for AI agents (like 
 
 ### Ready for Development
 - CRUD API endpoints
-- WebSocket real-time features
+- SSE real-time features
 - AI conversation integration
 - Social interaction features
 
@@ -107,7 +107,7 @@ Adhere to established standards:
 ### Immediate Tasks
 1. Enable integration tests (remove skips from 6 existing tests)
 2. Implement core CRUD API endpoints
-3. Add WebSocket support for real-time features
+3. Add SSE support for real-time features
 4. Integrate AI conversation capabilities
 
 ### Development Workflow

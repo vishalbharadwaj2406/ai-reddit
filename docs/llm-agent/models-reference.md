@@ -89,7 +89,7 @@ Tags, Views, Shares
 - `archive()`: Soft delete conversation
 
 **Usage in APIs**:
-- WebSocket chat endpoints
+- SSE streaming endpoints
 - Post expansion/forking
 - Conversation history retrieval
 

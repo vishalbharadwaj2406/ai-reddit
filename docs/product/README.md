@@ -70,7 +70,7 @@ AI Social is a social media platform that combines AI-assisted content creation 
 ### Core Features (Current Development)
 
 #### 1. AI Conversation System (Ready for Implementation)
-- **Real-time Chat**: WebSocket-based conversation with AI (architecture complete)
+- **Real-time Chat**: SSE streaming-based conversation with AI (architecture complete)
 - **Context Memory**: AI remembers full conversation history (database schema complete)
 - **Blog Generation**: Transform conversations into polished posts (API design complete)
 - **Conversation Management**: Save, organize, and return to conversations (models complete)

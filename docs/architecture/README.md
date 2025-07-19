@@ -55,7 +55,7 @@ Analysis of how the API design aligns with the database schema, ensuring consist
 - **Backend**: FastAPI with SQLAlchemy 2.0
 - **Database**: PostgreSQL (Supabase) with UUID primary keys
 - **Authentication**: JWT with Google OAuth
-- **Real-time**: WebSocket for AI conversations (ready for implementation)
+- **Real-time**: SSE streaming for AI conversations (ready for implementation)
 - **AI Integration**: LangChain with Gemini (ready for implementation)
 - **Testing**: Pytest with comprehensive coverage
 - **Deployment**: Supabase PostgreSQL infrastructure
@@ -75,7 +75,7 @@ Analysis of how the API design aligns with the database schema, ensuring consist
 ### Ready for Implementation
 - Post Management APIs (create, read, react, fork)
 - Community Features (comments, sharing, analytics)
-- WebSocket real-time features
+- SSE real-time features
 - AI conversation integration
 - Social interaction features
 - Content management workflows

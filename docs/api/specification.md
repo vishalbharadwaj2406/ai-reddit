@@ -805,33 +805,90 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 
 ---
 
-## 🔄 Real-time Streaming
+## 🔄 Real-time Streaming (Server-Sent Events)
 
-### WebSocket Connection: /ws/conversations/{conversation_id}
-**Purpose**: Real-time AI conversation streaming
-**Auth Required**: Yes (via query param ?token=jwt_token)
-
-### Message Format:
+### POST /conversations/{conversation_id}/messages
+**Purpose**: Send user message and trigger AI response
+**Auth Required**: Yes (Bearer token)
+**Request Body**:
 ```json
 {
-  "type": "aiResponse",
-  "data": {
-    "content": "partial sentence...",
-    "isComplete": boolean,
-    "messageId": "uuid"
-  }
+  "content": "User message content"
 }
 ```
 
-### Error Format:
+**Response**:
 ```json
 {
-  "type": "error",
+  "success": true,
   "data": {
-    "message": "Error description",
-    "errorCode": "SPECIFIC_ERROR"
-  }
+    "message_id": "uuid",
+    "content": "User message content",
+    "role": "user",
+    "created_at": "2025-07-19T10:30:00Z"
+  },
+  "message": "Message sent successfully"
 }
+```
+
+### GET /conversations/{conversation_id}/stream?message_id={message_id}
+**Purpose**: Stream AI response via Server-Sent Events
+**Auth Required**: Yes (Bearer token)
+**Content-Type**: `text/event-stream`
+
+### SSE Message Format:
+```
+event: ai_response
+data: {"success": true, "data": {"content": "partial sentence...", "is_complete": false, "message_id": "uuid"}, "message": "Streaming AI response"}
+
+event: ai_complete
+data: {"success": true, "data": {"content": "Final complete response", "is_complete": true, "message_id": "uuid"}, "message": "AI response complete"}
+```
+
+### SSE Error Format:
+```
+event: error
+data: {"success": false, "data": null, "message": "Error description", "errorCode": "SPECIFIC_ERROR"}
+```
+
+### Complete SSE Streaming Example:
+**Client sends message:**
+```bash
+curl -X POST /api/v1/conversations/123/messages \
+  -H "Authorization: Bearer token" \
+  -d '{"content": "Explain quantum computing"}'
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "message_id": "msg-456",
+    "content": "Explain quantum computing",
+    "role": "user",
+    "created_at": "2025-07-19T10:30:00Z"
+  },
+  "message": "Message sent successfully"
+}
+```
+
+**Client opens SSE stream:**
+```bash
+curl -H "Authorization: Bearer token" \
+  /api/v1/conversations/123/stream?message_id=msg-456
+```
+
+**SSE Stream Response:**
+```
+event: ai_response
+data: {"success": true, "data": {"content": "Quantum computing is", "is_complete": false, "message_id": "msg-789"}, "message": "Streaming AI response"}
+
+event: ai_response
+data: {"success": true, "data": {"content": " a revolutionary technology", "is_complete": false, "message_id": "msg-789"}, "message": "Streaming AI response"}
+
+event: ai_complete
+data: {"success": true, "data": {"content": "Quantum computing is a revolutionary technology that leverages quantum mechanics...", "is_complete": true, "message_id": "msg-789"}, "message": "AI response complete"}
 ```
 
 ---
@@ -887,7 +944,7 @@ X-RateLimit-Reset: 1640995200
 
 ### 2. Start Conversation & Create Post
 1. User types message → `POST /conversations/{id}/messages` (creates conversation if needed)
-2. AI streams response via WebSocket
+2. AI streams response via SSE
 3. User continues conversation...
 4. `POST /conversations/{id}/generate-blog` → Generate blog candidate
 5. `POST /posts` → Publish final post
@@ -915,7 +972,14 @@ X-RateLimit-Reset: 1640995200
 ### AI Integration:
 - Use LangChain with Gemini for model flexibility
 - Implement proper error handling and retries
-- Stream responses sentence-by-sentence
+- Stream responses token-by-token via SSE
+- Maintain conversation context in database
+
+### SSE Implementation:
+- Use FastAPI's `StreamingResponse` for SSE endpoints
+- Include standard API wrapper in each SSE event
+- Handle connection errors gracefully with reconnection
+- Implement proper CORS headers for cross-origin SSE
 - Store conversation context efficiently
 
 ### Security:

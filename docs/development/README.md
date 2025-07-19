@@ -185,7 +185,7 @@ E2E Tests (5%):         Critical user journeys
 ### Week 1 Goals
 - Complete authentication infrastructure
 - Implement core user management endpoints
-- Setup WebSocket for AI conversations
+- Setup SSE streaming for AI conversations
 
 ### Week 2 Goals
 - Complete conversation and post management APIs
