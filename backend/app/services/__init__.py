@@ -26,13 +26,13 @@ Why use a service layer?
 # from app.services.user_service import UserService
 # from app.services.conversation_service import ConversationService
 # from app.services.post_service import PostService
-# from app.services.ai_service import AIService
+from app.services.ai_service import AIService
 
 # List all services for easy reference
-# __all__ = [
-#     "AuthService",
-#     "UserService",
-#     "ConversationService",
-#     "PostService",
-#     "AIService"
-# ]
+__all__ = [
+    # "AuthService",
+    # "UserService", 
+    # "ConversationService",
+    # "PostService",
+    "AIService"
+]

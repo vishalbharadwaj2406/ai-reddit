@@ -83,10 +83,31 @@ class Settings(BaseSettings):
         description="Default rate limit per minute"
     )
 
-    # AI Configuration (commented out for now)
-    # GOOGLE_API_KEY: str = Field(
-    #     description="Google Gemini API key"
-    # )
+    # AI Configuration
+    GOOGLE_GEMINI_API_KEY: str = Field(
+        default="",
+        description="Google Gemini API key for AI features"
+    )
+    AI_MODEL_NAME: str = Field(
+        default="gemini-2.5-flash",
+        description="Gemini model to use for AI responses (recommended: gemini-2.5-flash for MVP)"
+    )
+    AI_TEMPERATURE: float = Field(
+        default=0.7,
+        description="AI response creativity (0.0 = deterministic, 1.0 = very creative)"
+    )
+    AI_MAX_TOKENS: int = Field(
+        default=2048,
+        description="Maximum tokens for AI responses"
+    )
+    AI_TOP_P: float = Field(
+        default=0.9,
+        description="AI nucleus sampling parameter"
+    )
+    AI_TOP_K: int = Field(
+        default=40,
+        description="AI top-k sampling parameter"
+    )
 
     model_config = ConfigDict(
         env_file=".env",

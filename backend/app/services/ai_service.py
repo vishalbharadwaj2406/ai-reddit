@@ -7,19 +7,22 @@ This service handles AI interactions including:
 - Managing AI conversation context
 - Error handling for AI service failures
 
-For MVP, this will use Google Gemini API via LangChain.
+Uses Google Gemini API for production AI responses.
 Future versions may support multiple AI providers.
 """
 
 import asyncio
 import logging
-from typing import AsyncGenerator, Dict, Any, Optional
+import os
+from typing import AsyncGenerator, Dict, Any, Optional, List
 from uuid import UUID
 import json
 
-# For future implementation with actual AI service
-# from langchain_google_genai import ChatGoogleGenerativeAI
-# from langchain.schema import HumanMessage, AIMessage
+import google.generativeai as genai
+from google.generativeai.types import GenerationConfig, HarmCategory, HarmBlockThreshold
+
+from app.prompts import conversation_prompts, system_prompts
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -31,25 +34,54 @@ class AIServiceError(Exception):
 
 class AIService:
     """
-    AI Service for handling conversation responses.
+    AI Service for handling conversation responses using Google Gemini.
     
     This service is responsible for:
-    1. Generating AI responses based on user messages
+    1. Generating AI responses based on user messages using Gemini API
     2. Streaming responses in real-time
     3. Maintaining conversation context
     4. Handling AI service failures gracefully
+    5. Managing content safety and moderation
     """
     
     def __init__(self):
-        """Initialize AI service with configuration"""
-        # For MVP, we'll use mock responses
-        # In production, initialize actual AI client here
-        self.mock_mode = True  # Set to False when implementing real AI
+        """Initialize AI service with Gemini configuration"""
+        # Initialize Gemini API
+        api_key = settings.GOOGLE_GEMINI_API_KEY
+        if not api_key:
+            logger.warning("GOOGLE_GEMINI_API_KEY not found. Running in mock mode.")
+            self.mock_mode = True
+            self.model = None
+        else:
+            try:
+                genai.configure(api_key=api_key)
+                self.model = genai.GenerativeModel(
+                    model_name=settings.AI_MODEL_NAME,
+                    generation_config=GenerationConfig(
+                        temperature=settings.AI_TEMPERATURE,
+                        top_p=settings.AI_TOP_P,
+                        top_k=settings.AI_TOP_K,
+                        max_output_tokens=settings.AI_MAX_TOKENS,
+                        candidate_count=1,
+                    ),
+                    safety_settings={
+                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
+                    }
+                )
+                self.mock_mode = False
+                logger.info(f"Gemini AI service initialized successfully with {settings.AI_MODEL_NAME}")
+            except Exception as e:
+                logger.error(f"Failed to initialize Gemini API: {str(e)}")
+                self.mock_mode = True
+                self.model = None
         
     async def generate_ai_response(
         self,
         user_message: str,
-        conversation_history: Optional[list] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None,
         conversation_id: Optional[UUID] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
@@ -58,6 +90,7 @@ class AIService:
         Args:
             user_message: The user's message to respond to
             conversation_history: Previous messages in the conversation
+                Format: [{"role": "user"|"assistant", "content": "message"}]
             conversation_id: ID of the conversation for context
             
         Yields:
@@ -77,8 +110,8 @@ class AIService:
             async for chunk in self._generate_mock_response(user_message):
                 yield chunk
         else:
-            # Real AI implementation would go here
-            async for chunk in self._generate_real_ai_response(
+            # Real Gemini AI implementation
+            async for chunk in self._generate_gemini_response(
                 user_message, conversation_history, conversation_id
             ):
                 yield chunk
@@ -134,31 +167,94 @@ class AIService:
                 "message_id": None  # Will be set by the endpoint
             }
     
-    async def _generate_real_ai_response(
+    async def _generate_gemini_response(
         self,
         user_message: str,
-        conversation_history: Optional[list] = None,
+        conversation_history: Optional[List[Dict[str, str]]] = None,
         conversation_id: Optional[UUID] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Generate real AI response using LangChain + Gemini.
+        Generate real AI response using Google Gemini API.
         
-        This will be implemented when we integrate the actual AI service.
+        Constructs the conversation context and streams the response.
         """
         
         try:
-            # TODO: Implement real AI integration
-            # 1. Initialize Gemini client
-            # 2. Build conversation context from history
-            # 3. Send request to AI service
-            # 4. Stream response tokens
+            # Build the conversation context using our prompt templates
+            system_prompts_instance = system_prompts.SystemPrompts()
+            conversation_prompts_instance = conversation_prompts.ConversationPrompts()
             
-            # For now, raise error to indicate not implemented
-            raise AIServiceError("Real AI service not implemented yet")
+            system_message = system_prompts_instance.get_system_prompt()
+            conversation_starter = conversation_prompts_instance.get_conversation_starter()
+            
+            # Build conversation history for Gemini
+            messages = []
+            
+            # Add system context
+            messages.append({
+                "role": "user", 
+                "parts": [system_message]
+            })
+            messages.append({
+                "role": "model", 
+                "parts": [conversation_starter]
+            })
+            
+            # Add conversation history if provided
+            if conversation_history:
+                for msg in conversation_history:
+                    role = "user" if msg["role"] == "user" else "model"
+                    messages.append({
+                        "role": role,
+                        "parts": [msg["content"]]
+                    })
+            
+            # Add current user message
+            messages.append({
+                "role": "user",
+                "parts": [user_message]
+            })
+            
+            # Start chat session with history
+            chat = self.model.start_chat(history=messages[:-1])
+            
+            # Generate streaming response
+            response = await asyncio.to_thread(
+                chat.send_message,
+                user_message,
+                stream=True
+            )
+            
+            current_content = ""
+            
+            # Stream the response chunks
+            for chunk in response:
+                if chunk.text:
+                    current_content += chunk.text
+                    
+                    yield {
+                        "content": current_content,
+                        "is_complete": False,
+                        "message_id": None  # Will be set by the endpoint
+                    }
+                    
+                    # Add small delay to simulate more natural streaming
+                    await asyncio.sleep(0.01)
+            
+            # Send final complete message
+            yield {
+                "content": current_content,
+                "is_complete": True,
+                "message_id": None
+            }
             
         except Exception as e:
-            logger.error(f"AI service error: {str(e)}")
-            raise AIServiceError(f"AI service failed: {str(e)}")
+            logger.error(f"Gemini AI service error: {str(e)}")
+            
+            # Fallback to mock response if Gemini fails
+            logger.warning("Falling back to mock response due to Gemini error")
+            async for chunk in self._generate_mock_response(user_message):
+                yield chunk
     
     async def health_check(self) -> Dict[str, Any]:
         """
@@ -172,23 +268,71 @@ class AIService:
             return {
                 "status": "healthy",
                 "mode": "mock",
-                "message": "AI service running in mock mode"
+                "message": "AI service running in mock mode",
+                "provider": "mock"
             }
         else:
-            # TODO: Implement real health check for AI service
             try:
-                # Test actual AI service connectivity
-                return {
-                    "status": "healthy",
-                    "mode": "production",
-                    "message": "AI service connected"
-                }
+                # Test Gemini API connectivity with a simple request
+                test_response = await asyncio.to_thread(
+                    self.model.generate_content,
+                    "Hello, please respond with 'OK' to confirm you're working."
+                )
+                
+                if test_response.text and "OK" in test_response.text.upper():
+                    return {
+                        "status": "healthy",
+                        "mode": "production",
+                        "message": "Gemini AI service connected and responsive",
+                        "provider": "google_gemini"
+                    }
+                else:
+                    return {
+                        "status": "degraded",
+                        "mode": "production", 
+                        "message": "Gemini responded but with unexpected content",
+                        "provider": "google_gemini"
+                    }
+                    
             except Exception as e:
+                logger.error(f"Gemini health check failed: {str(e)}")
                 return {
                     "status": "unhealthy",
                     "mode": "production",
-                    "message": f"AI service error: {str(e)}"
+                    "message": f"Gemini API error: {str(e)}",
+                    "provider": "google_gemini"
                 }
+    
+    async def generate_blog_from_conversation(
+        self,
+        conversation_content: str,
+        additional_context: Optional[str] = None
+    ) -> AsyncGenerator[Dict[str, Any], None]:
+        """
+        Generate blog post from conversation content.
+        
+        Args:
+            conversation_content: The conversation to transform into a blog
+            additional_context: Additional instructions or context
+            
+        Yields:
+            Dict containing response tokens for blog generation
+        """
+        
+        try:
+            # Use conversation prompts to format the blog generation request
+            conversation_prompts_instance = conversation_prompts.ConversationPrompts()
+            blog_prompt = conversation_prompts_instance.format_blog_prompt(
+                conversation_content, additional_context
+            )
+            
+            # Generate blog using the same response mechanism
+            async for chunk in self.generate_ai_response(blog_prompt):
+                yield chunk
+                
+        except Exception as e:
+            logger.error(f"Blog generation error: {str(e)}")
+            raise AIServiceError(f"Blog generation failed: {str(e)}")
 
 
 # Global AI service instance
@@ -197,7 +341,7 @@ ai_service = AIService()
 
 async def generate_ai_response(
     user_message: str,
-    conversation_history: Optional[list] = None,
+    conversation_history: Optional[List[Dict[str, str]]] = None,
     conversation_id: Optional[UUID] = None
 ) -> AsyncGenerator[Dict[str, Any], None]:
     """
