@@ -136,7 +136,7 @@ def test_pagination_standards()
 ### Track B: Content & Community APIs (Target)
 - [ ] All conversation and post endpoints functional
 - [ ] 95%+ test coverage on business logic
-- [ ] AI integration working with OpenAI API
+- [ ] AI integration working with LangChain + Gemini API
 - [ ] SSE streaming functional
 - [ ] Real-time updates working properly
 - [ ] Content moderation and filtering implemented
@@ -154,5 +154,5 @@ def test_pagination_standards()
 1. **Functional**: All content and community endpoints working
 2. **Performance**: Response times under 200ms for complex queries
 3. **Real-time**: SSE streaming with sub-second message delivery
-4. **AI Integration**: Natural conversation flow with OpenAI
+4. **AI Integration**: Natural conversation flow with LangChain + Gemini
 5. **Scalability**: Handle multiple concurrent conversations

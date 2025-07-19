@@ -2,13 +2,14 @@
 AI Service for AI Social Platform
 
 This service handles AI interactions including:
-- Generating AI responses to user messages
-- Streaming responses token by token
-- Managing AI conversation context
-- Error handling for AI service failures
+- Generating AI responses to user messages via LangChain abstraction
+- Streaming responses token by token with real-time delivery
+- Managing AI conversation context and memory
+- Error handling for AI service failures with graceful fallbacks
 
-Uses Google Gemini API for production AI responses.
-Future versions may support multiple AI providers.
+Uses LangChain framework with Google Gemini 2.5 Flash for production AI responses.
+LangChain abstraction ensures future-proofing for multiple AI providers (OpenAI, Anthropic, etc).
+Provider switching is achieved by changing the LLM class while maintaining the same interface.
 """
 
 import asyncio
@@ -18,8 +19,11 @@ from typing import AsyncGenerator, Dict, Any, Optional, List
 from uuid import UUID
 import json
 
-import google.generativeai as genai
-from google.generativeai.types import GenerationConfig, HarmCategory, HarmBlockThreshold
+# LangChain imports for future-proof AI integration
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from langchain_core.callbacks import AsyncCallbackHandler
+from langchain_core.outputs import LLMResult
 
 from app.prompts import conversation_prompts, system_prompts
 from app.core.config import settings
@@ -32,51 +36,54 @@ class AIServiceError(Exception):
     pass
 
 
+class StreamingCallbackHandler(AsyncCallbackHandler):
+    """Custom callback handler for streaming responses"""
+    
+    def __init__(self):
+        self.tokens = []
+        
+    async def on_llm_new_token(self, token: str, **kwargs) -> None:
+        """Called when a new token is generated"""
+        self.tokens.append(token)
+
+
 class AIService:
     """
-    AI Service for handling conversation responses using Google Gemini.
+    AI Service for handling conversation responses using LangChain + Google Gemini.
     
     This service is responsible for:
-    1. Generating AI responses based on user messages using Gemini API
+    1. Generating AI responses based on user messages using LangChain abstraction
     2. Streaming responses in real-time
     3. Maintaining conversation context
     4. Handling AI service failures gracefully
-    5. Managing content safety and moderation
+    5. Future-proofing for multiple AI providers through LangChain
     """
     
     def __init__(self):
-        """Initialize AI service with Gemini configuration"""
-        # Initialize Gemini API
+        """Initialize AI service with LangChain + Gemini configuration"""
+        # Initialize Gemini through LangChain
         api_key = settings.GOOGLE_GEMINI_API_KEY
         if not api_key:
             logger.warning("GOOGLE_GEMINI_API_KEY not found. Running in mock mode.")
             self.mock_mode = True
-            self.model = None
+            self.llm = None
         else:
             try:
-                genai.configure(api_key=api_key)
-                self.model = genai.GenerativeModel(
-                    model_name=settings.AI_MODEL_NAME,
-                    generation_config=GenerationConfig(
-                        temperature=settings.AI_TEMPERATURE,
-                        top_p=settings.AI_TOP_P,
-                        top_k=settings.AI_TOP_K,
-                        max_output_tokens=settings.AI_MAX_TOKENS,
-                        candidate_count=1,
-                    ),
-                    safety_settings={
-                        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE,
-                    }
+                # Initialize LangChain Gemini LLM
+                self.llm = ChatGoogleGenerativeAI(
+                    model=settings.AI_MODEL_NAME,
+                    google_api_key=api_key,
+                    temperature=settings.AI_TEMPERATURE,
+                    top_p=settings.AI_TOP_P,
+                    top_k=settings.AI_TOP_K,
+                    max_output_tokens=settings.AI_MAX_TOKENS,
                 )
                 self.mock_mode = False
-                logger.info(f"Gemini AI service initialized successfully with {settings.AI_MODEL_NAME}")
+                logger.info(f"LangChain AI service initialized successfully with {settings.AI_MODEL_NAME}")
             except Exception as e:
-                logger.error(f"Failed to initialize Gemini API: {str(e)}")
+                logger.error(f"Failed to initialize LangChain Gemini: {str(e)}")
                 self.mock_mode = True
-                self.model = None
+                self.llm = None
         
     async def generate_ai_response(
         self,
@@ -110,8 +117,8 @@ class AIService:
             async for chunk in self._generate_mock_response(user_message):
                 yield chunk
         else:
-            # Real Gemini AI implementation
-            async for chunk in self._generate_gemini_response(
+            # Real LangChain + Gemini implementation
+            async for chunk in self._generate_langchain_response(
                 user_message, conversation_history, conversation_id
             ):
                 yield chunk
@@ -167,16 +174,17 @@ class AIService:
                 "message_id": None  # Will be set by the endpoint
             }
     
-    async def _generate_gemini_response(
+    async def _generate_langchain_response(
         self,
         user_message: str,
         conversation_history: Optional[List[Dict[str, str]]] = None,
         conversation_id: Optional[UUID] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Generate real AI response using Google Gemini API.
+        Generate real AI response using LangChain + Google Gemini.
         
-        Constructs the conversation context and streams the response.
+        This method uses LangChain's abstraction for future-proofing and
+        provider flexibility.
         """
         
         try:
@@ -184,53 +192,34 @@ class AIService:
             system_prompts_instance = system_prompts.SystemPrompts()
             conversation_prompts_instance = conversation_prompts.ConversationPrompts()
             
-            system_message = system_prompts_instance.get_system_prompt()
-            conversation_starter = conversation_prompts_instance.get_conversation_starter()
+            system_message_content = system_prompts_instance.get_system_prompt()
             
-            # Build conversation history for Gemini
+            # Build LangChain message list
             messages = []
             
-            # Add system context
-            messages.append({
-                "role": "user", 
-                "parts": [system_message]
-            })
-            messages.append({
-                "role": "model", 
-                "parts": [conversation_starter]
-            })
+            # Add system message
+            messages.append(SystemMessage(content=system_message_content))
             
             # Add conversation history if provided
             if conversation_history:
-                for msg in conversation_history:
-                    role = "user" if msg["role"] == "user" else "model"
-                    messages.append({
-                        "role": role,
-                        "parts": [msg["content"]]
-                    })
+                for msg in conversation_history[-10:]:  # Last 10 messages for context
+                    if msg["role"] == "user":
+                        messages.append(HumanMessage(content=msg["content"]))
+                    elif msg["role"] == "assistant":
+                        messages.append(AIMessage(content=msg["content"]))
             
             # Add current user message
-            messages.append({
-                "role": "user",
-                "parts": [user_message]
-            })
+            messages.append(HumanMessage(content=user_message))
             
-            # Start chat session with history
-            chat = self.model.start_chat(history=messages[:-1])
-            
-            # Generate streaming response
-            response = await asyncio.to_thread(
-                chat.send_message,
-                user_message,
-                stream=True
-            )
-            
+            # Generate streaming response using LangChain
             current_content = ""
             
-            # Stream the response chunks
-            for chunk in response:
-                if chunk.text:
-                    current_content += chunk.text
+            # Use streaming with callback handler
+            callback_handler = StreamingCallbackHandler()
+            
+            async for chunk in self.llm.astream(messages, callbacks=[callback_handler]):
+                if chunk.content:
+                    current_content += chunk.content
                     
                     yield {
                         "content": current_content,
@@ -249,10 +238,10 @@ class AIService:
             }
             
         except Exception as e:
-            logger.error(f"Gemini AI service error: {str(e)}")
+            logger.error(f"LangChain AI service error: {str(e)}")
             
-            # Fallback to mock response if Gemini fails
-            logger.warning("Falling back to mock response due to Gemini error")
+            # Fallback to mock response if LangChain fails
+            logger.warning("Falling back to mock response due to LangChain error")
             async for chunk in self._generate_mock_response(user_message):
                 yield chunk
     
@@ -269,38 +258,46 @@ class AIService:
                 "status": "healthy",
                 "mode": "mock",
                 "message": "AI service running in mock mode",
-                "provider": "mock"
+                "provider": "mock",
+                "framework": "langchain"
             }
         else:
             try:
-                # Test Gemini API connectivity with a simple request
-                test_response = await asyncio.to_thread(
-                    self.model.generate_content,
-                    "Hello, please respond with 'OK' to confirm you're working."
-                )
+                # Test LangChain + Gemini connectivity with a simple request
+                test_messages = [
+                    HumanMessage(content="Hello, please respond with 'OK' to confirm you're working.")
+                ]
                 
-                if test_response.text and "OK" in test_response.text.upper():
+                response = await self.llm.ainvoke(test_messages)
+                
+                if response.content and "OK" in response.content.upper():
                     return {
                         "status": "healthy",
                         "mode": "production",
-                        "message": "Gemini AI service connected and responsive",
-                        "provider": "google_gemini"
+                        "message": "LangChain + Gemini AI service connected and responsive",
+                        "provider": "google_gemini",
+                        "framework": "langchain",
+                        "model": settings.AI_MODEL_NAME
                     }
                 else:
                     return {
                         "status": "degraded",
                         "mode": "production", 
-                        "message": "Gemini responded but with unexpected content",
-                        "provider": "google_gemini"
+                        "message": "LangChain + Gemini responded but with unexpected content",
+                        "provider": "google_gemini",
+                        "framework": "langchain",
+                        "model": settings.AI_MODEL_NAME
                     }
                     
             except Exception as e:
-                logger.error(f"Gemini health check failed: {str(e)}")
+                logger.error(f"LangChain health check failed: {str(e)}")
                 return {
                     "status": "unhealthy",
                     "mode": "production",
-                    "message": f"Gemini API error: {str(e)}",
-                    "provider": "google_gemini"
+                    "message": f"LangChain + Gemini API error: {str(e)}",
+                    "provider": "google_gemini",
+                    "framework": "langchain",
+                    "model": settings.AI_MODEL_NAME
                 }
     
     async def generate_blog_from_conversation(

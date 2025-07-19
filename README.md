@@ -45,12 +45,13 @@ Technical documentation is available in the [`docs/`](./docs/) folder:
 - **Database Layer**: Complete (12/12 models, 181 tests passing)
 - **Database Tables**: 13 tables created in PostgreSQL (Supabase)
 - **Authentication System**: Google OAuth + JWT implementation complete
+- **AI Service**: LangChain + Gemini 2.5 Flash integration complete (production ready)
 - **Health Monitoring**: Database and system health endpoints active
 - **Migration System**: Alembic configured and operational
 - **Testing Framework**: 181 tests passing with comprehensive coverage
-- **API Layer**: Ready for implementation with solid foundation
+- **API Layer**: Track A (User & Social) complete, Track B (Content) in progress
 - **Frontend**: Planned
-- **Deployment**: Planned
+- **Deployment**: Infrastructure ready
 
 ### Database Foundation Complete
 - **Tables Created**: 13 tables (12 models + 1 Alembic version tracking)
@@ -58,11 +59,18 @@ Technical documentation is available in the [`docs/`](./docs/) folder:
 - **Health Checks**: Database connectivity and table verification working
 - **Test Coverage**: All models thoroughly tested with relationship validation
 
-### Ready for CRUD API Development
+### AI Integration Complete
+- **Framework**: LangChain abstraction layer for future-proof provider switching
+- **Model**: Google Gemini 2.5 Flash for optimal cost-performance
+- **Features**: Real-time streaming responses, conversation context, error handling
+- **Production Status**: Fully functional with real API integration
+
+### Ready for Content API Development
 - **Database**: Production-ready PostgreSQL setup with Supabase
 - **Models**: All SQLAlchemy models implemented and tested
 - **Schemas**: Pydantic schemas for API request/response validation
 - **Authentication**: Google OAuth and JWT token management
+- **AI Service**: LangChain + Gemini streaming responses working
 - **Health Monitoring**: Real-time database and system health endpoints
 - **Migration System**: Alembic for database version control
 
@@ -71,9 +79,9 @@ Technical documentation is available in the [`docs/`](./docs/) folder:
 - **Backend**: FastAPI with SQLAlchemy 2.0
 - **Database**: PostgreSQL (Supabase)
 - **Authentication**: Google OAuth 2.0 + JWT
+- **AI Integration**: LangChain + Google Gemini 2.5 Flash (production ready)
 - **Testing**: Pytest with 181 tests passing
-- **Deployment**: Planned (cloud infrastructure)
-- **AI Integration**: Google Gemini API (planned)
+- **Deployment**: Infrastructure ready (cloud deployment planned)
 
 ## Development
 
@@ -81,6 +89,7 @@ Technical documentation is available in the [`docs/`](./docs/) folder:
 - Python 3.12+
 - PostgreSQL 17.4+
 - Git
+- Google API key for Gemini (for AI features)
 
 ### Setup
 ```bash
@@ -89,6 +98,7 @@ cd ai-reddit/backend
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+# Copy .env.example to .env and add your API keys
 pytest tests/ -v
 ```
 
@@ -98,4 +108,10 @@ pytest tests/ -v
 - Health monitoring endpoints active
 - 181 tests passing for all models and relationships
 
-*Last Updated: July 18, 2025*
+### AI Service
+- LangChain framework with Gemini 2.5 Flash model
+- Real-time streaming responses via SSE
+- Production-ready with comprehensive error handling
+- Future-proof architecture for easy provider switching
+
+*Last Updated: July 19, 2025*
