@@ -81,6 +81,7 @@ class AIService:
                 )
                 self.mock_mode = False
                 logger.info(f"LangChain AI service initialized successfully with {settings.AI_MODEL_NAME}")
+        # Production-ready AI integration with proper error handling
             except Exception as e:
                 logger.error(f"Failed to initialize LangChain Gemini: {str(e)}")
                 self.mock_mode = True
