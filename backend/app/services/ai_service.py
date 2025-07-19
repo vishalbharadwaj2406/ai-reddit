@@ -38,10 +38,10 @@ class AIServiceError(Exception):
 
 class StreamingCallbackHandler(AsyncCallbackHandler):
     """Custom callback handler for streaming responses"""
-    
+
     def __init__(self):
         self.tokens = []
-        
+
     async def on_llm_new_token(self, token: str, **kwargs) -> None:
         """Called when a new token is generated"""
         self.tokens.append(token)
@@ -50,7 +50,7 @@ class StreamingCallbackHandler(AsyncCallbackHandler):
 class AIService:
     """
     AI Service for handling conversation responses using LangChain + Google Gemini.
-    
+
     This service is responsible for:
     1. Generating AI responses based on user messages using LangChain abstraction
     2. Streaming responses in real-time
@@ -58,7 +58,7 @@ class AIService:
     4. Handling AI service failures gracefully
     5. Future-proofing for multiple AI providers through LangChain
     """
-    
+
     def __init__(self):
         """Initialize AI service with LangChain + Gemini configuration"""
         # Initialize Gemini through LangChain
@@ -84,7 +84,7 @@ class AIService:
                 logger.error(f"Failed to initialize LangChain Gemini: {str(e)}")
                 self.mock_mode = True
                 self.llm = None
-        
+
     async def generate_ai_response(
         self,
         user_message: str,
@@ -93,13 +93,13 @@ class AIService:
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Generate AI response and stream it token by token.
-        
+
         Args:
             user_message: The user's message to respond to
             conversation_history: Previous messages in the conversation
                 Format: [{"role": "user"|"assistant", "content": "message"}]
             conversation_id: ID of the conversation for context
-            
+
         Yields:
             Dict containing response tokens with format:
             {
@@ -107,11 +107,11 @@ class AIService:
                 "is_complete": False,
                 "message_id": "uuid"
             }
-            
+
         Raises:
             AIServiceError: If AI service fails
         """
-        
+
         if self.mock_mode:
             # Mock AI response for testing/development
             async for chunk in self._generate_mock_response(user_message):
@@ -122,15 +122,15 @@ class AIService:
                 user_message, conversation_history, conversation_id
             ):
                 yield chunk
-    
+
     async def _generate_mock_response(self, user_message: str) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Generate mock AI response for testing.
-        
+
         This simulates streaming AI responses by yielding tokens
         with realistic delays.
         """
-        
+
         # Generate mock response based on user message
         if "quantum" in user_message.lower():
             mock_response = (
@@ -152,28 +152,28 @@ class AIService:
                 "I'm here to help you develop your thoughts into structured content. "
                 "Could you tell me more about what you'd like to explore?"
             )
-        
+
         # Split response into tokens and stream them
         words = mock_response.split()
         current_content = ""
-        
+
         for i, word in enumerate(words):
             # Add word to current content
             if i == 0:
                 current_content = word
             else:
                 current_content += f" {word}"
-            
+
             # Simulate streaming delay
             await asyncio.sleep(0.05)  # 50ms delay between tokens
-            
+
             # Yield current state
             yield {
                 "content": current_content,
                 "is_complete": i == len(words) - 1,
                 "message_id": None  # Will be set by the endpoint
             }
-    
+
     async def _generate_langchain_response(
         self,
         user_message: str,
@@ -182,24 +182,24 @@ class AIService:
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Generate real AI response using LangChain + Google Gemini.
-        
+
         This method uses LangChain's abstraction for future-proofing and
         provider flexibility.
         """
-        
+
         try:
             # Build the conversation context using our prompt templates
             system_prompts_instance = system_prompts.SystemPrompts()
             conversation_prompts_instance = conversation_prompts.ConversationPrompts()
-            
+
             system_message_content = system_prompts_instance.get_system_prompt()
-            
+
             # Build LangChain message list
             messages = []
-            
+
             # Add system message
             messages.append(SystemMessage(content=system_message_content))
-            
+
             # Add conversation history if provided
             if conversation_history:
                 for msg in conversation_history[-10:]:  # Last 10 messages for context
@@ -207,52 +207,52 @@ class AIService:
                         messages.append(HumanMessage(content=msg["content"]))
                     elif msg["role"] == "assistant":
                         messages.append(AIMessage(content=msg["content"]))
-            
+
             # Add current user message
             messages.append(HumanMessage(content=user_message))
-            
+
             # Generate streaming response using LangChain
             current_content = ""
-            
+
             # Use streaming with callback handler
             callback_handler = StreamingCallbackHandler()
-            
+
             async for chunk in self.llm.astream(messages, callbacks=[callback_handler]):
                 if chunk.content:
                     current_content += chunk.content
-                    
+
                     yield {
                         "content": current_content,
                         "is_complete": False,
                         "message_id": None  # Will be set by the endpoint
                     }
-                    
+
                     # Add small delay to simulate more natural streaming
                     await asyncio.sleep(0.01)
-            
+
             # Send final complete message
             yield {
                 "content": current_content,
                 "is_complete": True,
                 "message_id": None
             }
-            
+
         except Exception as e:
             logger.error(f"LangChain AI service error: {str(e)}")
-            
+
             # Fallback to mock response if LangChain fails
             logger.warning("Falling back to mock response due to LangChain error")
             async for chunk in self._generate_mock_response(user_message):
                 yield chunk
-    
+
     async def health_check(self) -> Dict[str, Any]:
         """
         Check if AI service is healthy and responsive.
-        
+
         Returns:
             Dict with health status information
         """
-        
+
         if self.mock_mode:
             return {
                 "status": "healthy",
@@ -267,9 +267,9 @@ class AIService:
                 test_messages = [
                     HumanMessage(content="Hello, please respond with 'OK' to confirm you're working.")
                 ]
-                
+
                 response = await self.llm.ainvoke(test_messages)
-                
+
                 if response.content and "OK" in response.content.upper():
                     return {
                         "status": "healthy",
@@ -282,13 +282,13 @@ class AIService:
                 else:
                     return {
                         "status": "degraded",
-                        "mode": "production", 
+                        "mode": "production",
                         "message": "LangChain + Gemini responded but with unexpected content",
                         "provider": "google_gemini",
                         "framework": "langchain",
                         "model": settings.AI_MODEL_NAME
                     }
-                    
+
             except Exception as e:
                 logger.error(f"LangChain health check failed: {str(e)}")
                 return {
@@ -299,7 +299,7 @@ class AIService:
                     "framework": "langchain",
                     "model": settings.AI_MODEL_NAME
                 }
-    
+
     async def generate_blog_from_conversation(
         self,
         conversation_content: str,
@@ -307,26 +307,26 @@ class AIService:
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Generate blog post from conversation content.
-        
+
         Args:
             conversation_content: The conversation to transform into a blog
             additional_context: Additional instructions or context
-            
+
         Yields:
             Dict containing response tokens for blog generation
         """
-        
+
         try:
             # Use conversation prompts to format the blog generation request
             conversation_prompts_instance = conversation_prompts.ConversationPrompts()
             blog_prompt = conversation_prompts_instance.format_blog_prompt(
                 conversation_content, additional_context
             )
-            
+
             # Generate blog using the same response mechanism
             async for chunk in self.generate_ai_response(blog_prompt):
                 yield chunk
-                
+
         except Exception as e:
             logger.error(f"Blog generation error: {str(e)}")
             raise AIServiceError(f"Blog generation failed: {str(e)}")
@@ -343,7 +343,7 @@ async def generate_ai_response(
 ) -> AsyncGenerator[Dict[str, Any], None]:
     """
     Convenience function for generating AI responses.
-    
+
     This is the main entry point for AI response generation.
     """
     async for response_chunk in ai_service.generate_ai_response(
