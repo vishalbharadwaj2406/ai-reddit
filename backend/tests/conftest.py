@@ -8,6 +8,7 @@ import pytest
 import sys
 import os
 from sqlalchemy.orm import Session
+from fastapi.testclient import TestClient
 
 # Add app to path
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "app"))
@@ -15,6 +16,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "app"))
 from app.core.database import get_db, create_tables, drop_tables, Base, engine
 from app.models.user import User
 from app.models.conversation import Conversation
+from app.main import app
 
 
 @pytest.fixture
@@ -34,6 +36,30 @@ def db_session():
     yield db
     db.close()
     drop_tables()
+
+
+@pytest.fixture
+def client(db_session):
+    """
+    Create a FastAPI test client with test database session.
+    
+    This fixture:
+    1. Overrides the get_db dependency to use the test database
+    2. Creates a TestClient for making API requests
+    3. Provides clean isolation between tests
+    """
+    # Override the get_db dependency to use our test database session
+    def override_get_db():
+        yield db_session
+    
+    app.dependency_overrides[get_db] = override_get_db
+    
+    # Create test client
+    with TestClient(app) as test_client:
+        yield test_client
+    
+    # Clean up
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture

@@ -503,6 +503,8 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 **Query Parameters**:
 - `limit`: integer (default: 20, max: 100)
 - `offset`: integer (default: 0)
+- `sort`: "hot" | "new" | "top" (default: "hot")
+- `time_range`: "hour" | "day" | "week" | "month" | "all" (default: "all", used with "top" sort)
 - `tag`: string (filter by tag)
 - `userId`: uuid (filter by user)
 **Response**:
@@ -539,18 +541,23 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 ```
 
 #### POST /posts
-**Purpose**: Create post from conversation message
+**Purpose**: Create post from conversation message or standalone post
 **Auth Required**: Yes
 **Request Body**:
 ```json
 {
-  "messageId": "uuid",
+  "messageId": "uuid (optional)",
   "title": "string",
-  "content": "string",
+  "content": "string", 
   "tags": ["string"],
-  "isVisible": boolean
+  "isConversationVisible": boolean
 }
 ```
+**Notes**: 
+- If `messageId` is provided, creates post from conversation message (user must own the message)
+- If `messageId` is omitted, creates standalone post
+- `isConversationVisible` is ignored for standalone posts
+
 **Response**:
 ```json
 {

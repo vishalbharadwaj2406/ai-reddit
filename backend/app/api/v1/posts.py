@@ -13,52 +13,208 @@ Posts are created from AI conversations and shared publicly.
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from uuid import UUID
+from typing import Optional
 
 from app.core.database import get_db
-# from app.schemas.post import PostResponse, PostCreate, PostReaction
-# from app.services.post_service import PostService
+from app.schemas.post import PostCreate, PostCreateResponse, PostListResponse
+from app.services.post_service import PostService, PostServiceError
+from app.dependencies.auth import get_current_user, get_current_user_optional
+from app.models.user import User
 
 router = APIRouter()
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_post(
+    post_data: PostCreate,
     db: Session = Depends(get_db),
-    # current_user = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
     """
-    Create a post from a conversation.
+    Create a post from a conversation message.
 
-    Converts an AI conversation into a public post.
+    Converts a conversation message into a public post with user-edited content.
+    
+    **Business Flow:**
+    1. User has a conversation with AI
+    2. User selects a message to turn into a post
+    3. User edits the content in UI text box
+    4. User clicks "Post" button which calls this API
+    5. Post is created and can be shared publicly
+    
+    **Validation:**
+    - Message must exist and belong to user
+    - Conversation must not be archived
+    - Title and content cannot be empty
+    - Tags are auto-created if they don't exist
     """
     try:
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Create post not yet implemented"
+        # Initialize post service
+        post_service = PostService(db)
+        
+        # Create the post
+        created_post = await post_service.create_post_from_message(
+            current_user=current_user,
+            post_data=post_data
         )
+        
+        # Return success response with standard wrapper
+        return {
+            "success": True,
+            "data": created_post.model_dump(),
+            "message": "Post created successfully",
+            "errorCode": None
+        }
+        
+    except PostServiceError as e:
+        # Handle business logic errors
+        error_message = str(e)
+        
+        if "Message not found" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": "Message not found",
+                    "errorCode": "MESSAGE_NOT_FOUND"
+                }
+            )
+        elif "Access denied" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": "Access denied to message",
+                    "errorCode": "FORBIDDEN"
+                }
+            )
+        elif "archived conversation" in error_message:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": "Cannot create posts from archived conversations",
+                    "errorCode": "CONVERSATION_ARCHIVED"
+                }
+            )
+        else:
+            # Generic service error
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": f"Failed to create post: {error_message}",
+                    "errorCode": "POST_CREATION_ERROR"
+                }
+            )
+    
+    except ValueError as e:
+        # Handle validation errors (from Pydantic)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "success": False,
+                "data": None,
+                "message": f"Validation error: {str(e)}",
+                "errorCode": "VALIDATION_ERROR"
+            }
+        )
+        
     except Exception as e:
+        # Handle unexpected errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create post: {str(e)}"
+            detail={
+                "success": False,
+                "data": None,
+                "message": f"Failed to create post: {str(e)}",
+                "errorCode": "POST_CREATION_ERROR"
+            }
         )
 
 
 @router.get("/")
 async def get_posts_feed(
     db: Session = Depends(get_db),
-    limit: int = Query(default=20, le=100),
-    offset: int = Query(default=0, ge=0)
+    limit: int = Query(default=20, ge=1, le=100, description="Number of posts to return"),
+    offset: int = Query(default=0, ge=0, description="Number of posts to skip"),
+    sort: str = Query(default="hot", pattern="^(hot|new|top)$", description="Sort order"),
+    time_range: str = Query(default="all", pattern="^(hour|day|week|month|all)$", description="Time range for top sort"),
+    tag: Optional[str] = Query(None, description="Filter by tag name"),
+    userId: Optional[UUID] = Query(None, description="Filter by user ID"),
+    current_user: Optional[User] = Depends(get_current_user_optional)  # Optional auth for public feed
 ):
-    """Get public posts feed."""
+    """
+    Get public posts feed with ranking, filtering, and pagination.
+    
+    **Features:**
+    - **Hot Ranking**: Time-decay algorithm favoring recent posts with good engagement
+    - **New Sorting**: Posts sorted by creation date (newest first)
+    - **Top Sorting**: Posts sorted by total upvotes within time range
+    - **Tag Filtering**: Filter posts by specific tags
+    - **User Filtering**: Filter posts by specific user
+    - **Pagination**: Limit and offset for efficient loading
+    
+    **Hot Algorithm:**
+    Uses the formula: (upvotes - downvotes) / (age_in_hours + 2)^1.8
+    This gives higher scores to posts that are both recent and well-received.
+    
+    **Public Access:**
+    This endpoint doesn't require authentication, but authenticated users
+    get additional information like their own reactions and view counts.
+    """
     try:
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Get posts feed not yet implemented"
+        # Initialize post service
+        post_service = PostService(db)
+        
+        # Get posts with ranking and filtering
+        posts = await post_service.get_posts_feed(
+            db=db,
+            limit=limit,
+            offset=offset,
+            sort=sort,
+            time_range=time_range,
+            tag=tag,
+            user_id=userId
         )
+        
+        # Return success response with standard wrapper
+        return {
+            "success": True,
+            "data": {
+                "posts": [post.model_dump() for post in posts]
+            },
+            "message": "Posts retrieved successfully",
+            "errorCode": None
+        }
+        
+    except ValueError as e:
+        # Handle validation errors
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "success": False,
+                "data": None,
+                "message": f"Validation error: {str(e)}",
+                "errorCode": "VALIDATION_ERROR"
+            }
+        )
+        
     except Exception as e:
+        # Handle unexpected errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get posts: {str(e)}"
+            detail={
+                "success": False,
+                "data": None,
+                "message": f"Failed to retrieve posts: {str(e)}",
+                "errorCode": "POST_RETRIEVAL_ERROR"
+            }
         )
 
 

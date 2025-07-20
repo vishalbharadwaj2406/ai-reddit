@@ -1,6 +1,6 @@
 # AI Reddit API Implementation Plan
 
-> **Latest Update (July 18, 2025)**: Track A (User & Social) complete! Track B Conversation Management complete! 4/4 conversation endpoints implemented with 7 tests passing. Ready for Post Management implementation.
+> **Latest Update (July 20, 2025)**: Track A (User & Social) complete! Track B Post Management partially complete - POST and GET /posts implemented with 37 tests passing. Individual post retrieval and conversation forking endpoints still pending implementation.
 
 ## Phase 1: Foundation Setup (Days 1-3) ✅ COMPLETE
 
@@ -59,16 +59,17 @@
 - [x] Conversation ownership validation and privacy controls
 - [x] Comprehensive error handling (7 tests passing)
 
-### Day 8: Post Management
-- [ ] POST /posts (create from conversation)
-- [ ] GET /posts (public feed)
-- [ ] GET /posts/{id} (get post)
-- [ ] POST /posts/{id}/expand (fork conversation)
-- [ ] Post visibility controls
-- [ ] POST /posts/{id}/expand (fork conversation)
-- [ ] Post visibility controls
+### Day 8: Post Management ✅ PARTIALLY COMPLETE
+- [x] POST /posts (create from conversation) - 9 unit tests passing
+- [x] GET /posts (public feed with hot ranking algorithm) - 15 E2E + 8 integration + 14 unit tests
+- [x] Hot ranking algorithm implementation (time-decay formula)
+- [x] Tag filtering and user filtering capabilities
+- [x] Time-range filtering for top posts
+- [x] 3-tier testing architecture (37 total tests across POST/GET endpoints)
+- [ ] GET /posts/{id} (individual post retrieval) - endpoint defined, returns 501
+- [ ] POST /posts/{id}/fork (conversation forking) - endpoint defined, returns 501
 
-### Day 7: Social Features
+### Day 9: Social Features
 - [ ] POST /posts/{id}/reaction
 - [ ] GET /posts/{id}/comments
 - [ ] POST /posts/{id}/comments
@@ -133,13 +134,16 @@ def test_pagination_standards()
 - [x] Proper error handling with specific error codes
 - [x] Pagination functional with has_next/has_previous indicators
 
-### Track B: Content & Community APIs (Target)
-- [ ] All conversation and post endpoints functional
-- [ ] 95%+ test coverage on business logic
-- [ ] AI integration working with LangChain + Gemini API
-- [ ] SSE streaming functional
-- [ ] Real-time updates working properly
-- [ ] Content moderation and filtering implemented
+### Track B: Content & Community APIs (In Progress)
+- [x] Core conversation management endpoints complete (7 tests)
+- [x] POST /posts endpoint fully implemented (9 unit tests)
+- [x] GET /posts feed with filtering/pagination (15 E2E + 8 integration + 14 unit tests)
+- [x] Hot ranking algorithm working with time-decay
+- [ ] Individual post retrieval (GET /posts/{id}) - needs implementation
+- [ ] Conversation forking (POST /posts/{id}/fork) - needs implementation
+- [ ] Comment system endpoints pending
+- [ ] AI integration with LangChain + Gemini API pending
+- [ ] SSE streaming for real-time updates pending
 
 ## Success Metrics
 
