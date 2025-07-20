@@ -50,7 +50,7 @@ Technical documentation is available in the [`docs/`](./docs/) folder:
 - **Migration System**: Alembic configured and operational
 - **Testing Framework**: 181 tests passing with comprehensive coverage
 - **API Layer**: Track A (User & Social) complete, Track B (Content) in progress
-- **Frontend**: Planned
+- **Frontend**: Next.js 15 application with glass morphism design - mostly complete (1 known glass effect issue)
 - **Deployment**: Infrastructure ready
 
 ### Database Foundation Complete
@@ -77,10 +77,12 @@ Technical documentation is available in the [`docs/`](./docs/) folder:
 ## Technical Stack
 
 - **Backend**: FastAPI with SQLAlchemy 2.0
+- **Frontend**: Next.js 15 with App Router, Tailwind CSS 4, TypeScript
+- **Authentication**: Google OAuth 2.0 + JWT (NextAuth v5)
 - **Database**: PostgreSQL (Supabase)
-- **Authentication**: Google OAuth 2.0 + JWT
 - **AI Integration**: LangChain + Google Gemini 2.5 Flash (production ready)
-- **Testing**: Pytest with 181 tests passing
+- **Design System**: Royal Ink Glass morphism with backdrop-filter effects
+- **Testing**: Pytest (backend) + Vitest (frontend) with comprehensive coverage
 - **Deployment**: Infrastructure ready (cloud deployment planned)
 
 ## Development
@@ -114,4 +116,4 @@ pytest tests/ -v
 - Production-ready with comprehensive error handling
 - Future-proof architecture for easy provider switching
 
-*Last Updated: July 19, 2025*
+*Last Updated: July 20, 2025*
