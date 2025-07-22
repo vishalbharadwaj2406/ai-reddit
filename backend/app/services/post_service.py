@@ -220,6 +220,165 @@ class PostService:
         
         return post
 
+    async def get_post_detail_by_id(self, post_id: UUID, current_user: Optional[User] = None) -> Optional[dict]:
+        """
+        Retrieve detailed post information including comments, reactions, tags, and user info.
+        
+        Args:
+            post_id: ID of the post to retrieve
+            current_user: Optional current user for permission checks
+            
+        Returns:
+            Detailed post dict or None if not found
+        """
+        from app.models.comment import Comment
+        from app.models.post_reaction import PostReaction
+        from app.models.comment_reaction import CommentReaction
+        from app.models.post_tag import PostTag
+        from app.models.tag import Tag
+        from app.models.conversation import Conversation
+        from sqlalchemy.orm import joinedload
+        from sqlalchemy import func, case
+        
+        # Get the post with all necessary relationships loaded
+        post = self.db.query(Post).options(
+            joinedload(Post.user),
+            joinedload(Post.conversation)
+        ).filter(Post.post_id == post_id).first()
+        
+        if not post:
+            return None
+        
+        # Check visibility permissions
+        if current_user and post.user_id != current_user.user_id:
+            # For now, all posts are visible (add privacy logic later if needed)
+            pass
+        
+        # Get post reactions with counts
+        reaction_counts = self.db.query(
+            PostReaction.reaction,
+            func.count(PostReaction.user_id).label('count')
+        ).filter(
+            PostReaction.post_id == post_id
+        ).group_by(PostReaction.reaction).all()
+        
+        # Create reactions dict
+        reactions = {
+            'upvote': 0,
+            'downvote': 0,
+            'heart': 0,
+            'insightful': 0,
+            'accurate': 0
+        }
+        
+        for reaction, count in reaction_counts:
+            if reaction in reactions:
+                reactions[reaction] = count
+        
+        # Calculate vote count
+        vote_count = reactions['upvote'] - reactions['downvote']
+        
+        # Get post tags
+        post_tags = self.db.query(Tag).join(
+            PostTag, Tag.tag_id == PostTag.tag_id
+        ).filter(PostTag.post_id == post_id).all()
+        
+        tags = [{'tag_id': tag.tag_id, 'name': tag.name} for tag in post_tags]
+        
+        # Get comments with nested structure
+        # First get all comments for this post
+        comments_query = self.db.query(Comment).options(
+            joinedload(Comment.user)
+        ).filter(Comment.post_id == post_id).order_by(Comment.created_at)
+        
+        all_comments = comments_query.all()
+        
+        # Get comment reactions
+        comment_reactions = {}
+        if all_comments:
+            comment_ids = [c.comment_id for c in all_comments]
+            reactions_data = self.db.query(
+                CommentReaction.comment_id,
+                CommentReaction.reaction,
+                func.count(CommentReaction.user_id).label('count')
+            ).filter(
+                CommentReaction.comment_id.in_(comment_ids)
+            ).group_by(CommentReaction.comment_id, CommentReaction.reaction).all()
+            
+            for comment_id, reaction, count in reactions_data:
+                if comment_id not in comment_reactions:
+                    comment_reactions[comment_id] = {
+                        'upvote': 0, 'downvote': 0, 'heart': 0, 
+                        'insightful': 0, 'accurate': 0
+                    }
+                comment_reactions[comment_id][reaction] = count
+        
+        # Build comment tree structure
+        comment_dict = {}
+        root_comments = []
+        
+        for comment in all_comments:
+            comment_reactions_data = comment_reactions.get(comment.comment_id, {
+                'upvote': 0, 'downvote': 0, 'heart': 0, 'insightful': 0, 'accurate': 0
+            })
+            
+            comment_data = {
+                'comment_id': comment.comment_id,
+                'content': comment.content,
+                'created_at': comment.created_at,
+                'user': {
+                    'user_id': comment.user.user_id,
+                    'user_name': comment.user.user_name,
+                    'profile_picture': comment.user.profile_picture
+                },
+                'reactions': comment_reactions_data,
+                'vote_count': comment_reactions_data['upvote'] - comment_reactions_data['downvote'],
+                'parent_comment_id': comment.parent_comment_id,
+                'replies': []
+            }
+            
+            comment_dict[comment.comment_id] = comment_data
+            
+            if comment.parent_comment_id is None:
+                root_comments.append(comment_data)
+            else:
+                # Add to parent's replies
+                if comment.parent_comment_id in comment_dict:
+                    comment_dict[comment.parent_comment_id]['replies'].append(comment_data)
+        
+        # Build conversation info if visible
+        conversation_data = None
+        if post.conversation_id and post.is_conversation_visible and post.conversation:
+            conversation_data = {
+                'conversation_id': post.conversation.conversation_id,
+                'title': post.conversation.title,
+                'created_at': post.conversation.created_at
+            }
+        
+        # Build the detailed response
+        result = {
+            'post_id': post.post_id,
+            'title': post.title,
+            'content': post.content,
+            'status': post.status,
+            'is_conversation_visible': post.is_conversation_visible,
+            'created_at': post.created_at,
+            'updated_at': post.updated_at,
+            'user': {
+                'user_id': post.user.user_id,
+                'user_name': post.user.user_name,
+                'profile_picture': post.user.profile_picture
+            },
+            'tags': tags,
+            'reactions': reactions,
+            'vote_count': vote_count,
+            'comments': root_comments,
+            'conversation_id': post.conversation_id,
+            'conversation': conversation_data
+        }
+        
+        return result
+
     async def get_posts_feed(
         self,
         db: Session,

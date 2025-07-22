@@ -221,18 +221,99 @@ async def get_posts_feed(
 @router.get("/{post_id}")
 async def get_post(
     post_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
-    """Get specific post with comments."""
+    """
+    Get specific post with full details including comments, reactions, and tags.
+    
+    **Business Flow:**
+    1. Validates post_id as valid UUID
+    2. Retrieves post with all related data (comments, reactions, tags, user info)
+    3. Builds nested comment structure with replies
+    4. Calculates reaction counts and vote scores
+    5. Includes conversation link if visible
+    
+    **Response includes:**
+    - Post content and metadata
+    - Author information
+    - All tags associated with post
+    - Reaction counts (upvote, downvote, heart, insightful, accurate)
+    - Complete comment tree with nested replies
+    - Source conversation link (if visible)
+    
+    **Permissions:**
+    - Public endpoint - no authentication required
+    - All published posts are visible to everyone
+    - Private posts may be added later with user permissions
+    """
+    from app.services.post_service import get_post_service
+    from app.schemas.post import PostDetailAPIResponse
+    from uuid import UUID
+    
+    # Validate UUID format
     try:
+        post_uuid = UUID(post_id)
+    except ValueError:
         raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Get post not yet implemented"
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "success": False,
+                "data": None,
+                "message": "Invalid post ID format. Must be a valid UUID.",
+                "errorCode": "INVALID_POST_ID"
+            }
+        )
+    
+    try:
+        post_service = get_post_service(db)
+        
+        # Get detailed post data
+        post_data = await post_service.get_post_detail_by_id(post_uuid, current_user)
+        
+        if not post_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": "Post not found or access denied.",
+                    "errorCode": "POST_NOT_FOUND"
+                }
+            )
+        
+        # Return structured response
+        return {
+            "success": True,
+            "data": {
+                "post": post_data
+            },
+            "message": "Post retrieved successfully",
+            "errorCode": None
+        }
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except PostServiceError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={
+                "success": False,
+                "data": None,
+                "message": f"Failed to retrieve post: {str(e)}",
+                "errorCode": "POST_SERVICE_ERROR"
+            }
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get post: {str(e)}"
+            detail={
+                "success": False,
+                "data": None,
+                "message": f"Failed to get post: {str(e)}",
+                "errorCode": "INTERNAL_SERVER_ERROR"
+            }
         )
 
 

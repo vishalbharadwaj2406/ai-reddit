@@ -263,3 +263,148 @@ class PostExpandRequest(BaseModel):
             }
         }
     )
+
+
+class CommentResponse(BaseModel):
+    """Schema for comment data in API responses"""
+    
+    comment_id: UUID = Field(..., description="Comment unique identifier")
+    content: str = Field(..., description="Comment content")
+    created_at: datetime = Field(..., description="Comment creation timestamp")
+    user: UserSummary = Field(..., description="Comment author information")
+    reactions: PostReactions = Field(default_factory=PostReactions, description="Comment reaction counts")
+    vote_count: int = Field(default=0, description="Net vote count (upvotes - downvotes)")
+    parent_comment_id: Optional[UUID] = Field(None, description="Parent comment ID for nested replies")
+    replies: List['CommentResponse'] = Field(default=[], description="Nested replies to this comment")
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ConversationSummary(BaseModel):
+    """Schema for conversation summary in post responses"""
+    
+    conversation_id: UUID = Field(..., description="Conversation unique identifier")
+    title: str = Field(..., description="Conversation title")
+    created_at: datetime = Field(..., description="Conversation creation timestamp")
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TagResponse(BaseModel):
+    """Schema for tag data in API responses"""
+    
+    tag_id: UUID = Field(..., description="Tag unique identifier")
+    name: str = Field(..., description="Tag name")
+    
+    model_config = ConfigDict(from_attributes=True)
+
+
+class PostDetailResponse(BaseModel):
+    """Schema for detailed post data with comments and full relationships"""
+    
+    post_id: UUID = Field(..., description="Post unique identifier")
+    title: str = Field(..., description="Post title")
+    content: str = Field(..., description="Post content")
+    status: str = Field(..., description="Post status")
+    is_conversation_visible: bool = Field(..., description="Whether source conversation is visible")
+    created_at: datetime = Field(..., description="Post creation timestamp")
+    updated_at: datetime = Field(..., description="Post last update timestamp")
+    
+    # User information
+    user: UserSummary = Field(..., description="Post author information")
+    
+    # Tags
+    tags: List[TagResponse] = Field(default=[], description="Post tags with full info")
+    
+    # Reactions and votes
+    reactions: PostReactions = Field(default_factory=PostReactions, description="Reaction counts")
+    vote_count: int = Field(default=0, description="Net vote count (upvotes - downvotes)")
+    
+    # Comments
+    comments: List[CommentResponse] = Field(default=[], description="Post comments with nested replies")
+    
+    # Conversation link (if visible)
+    conversation_id: Optional[UUID] = Field(None, description="Source conversation ID")
+    conversation: Optional[ConversationSummary] = Field(None, description="Source conversation summary")
+    
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "post_id": "123e4567-e89b-12d3-a456-426614174001",
+                "title": "Understanding Machine Learning",
+                "content": "Machine learning is a fascinating field that combines statistics, computer science, and domain expertise...",
+                "status": "published",
+                "is_conversation_visible": True,
+                "created_at": "2025-07-20T12:00:00Z",
+                "updated_at": "2025-07-20T12:00:00Z",
+                "user": {
+                    "userId": "123e4567-e89b-12d3-a456-426614174002",
+                    "userName": "johndoe",
+                    "profilePicture": "https://example.com/profile.jpg"
+                },
+                "tags": [
+                    {"tag_id": "123e4567-e89b-12d3-a456-426614174010", "name": "machine-learning"},
+                    {"tag_id": "123e4567-e89b-12d3-a456-426614174011", "name": "ai"}
+                ],
+                "reactions": {
+                    "upvote": 15,
+                    "downvote": 2,
+                    "heart": 8,
+                    "insightful": 12,
+                    "accurate": 5
+                },
+                "vote_count": 13,
+                "comments": [
+                    {
+                        "comment_id": "123e4567-e89b-12d3-a456-426614174020",
+                        "content": "Great explanation! Could you elaborate on neural networks?",
+                        "created_at": "2025-07-20T12:30:00Z",
+                        "user": {
+                            "userId": "123e4567-e89b-12d3-a456-426614174003",
+                            "userName": "alice",
+                            "profilePicture": "https://example.com/alice.jpg"
+                        },
+                        "reactions": {"upvote": 3, "downvote": 0, "heart": 1, "insightful": 2, "accurate": 1},
+                        "vote_count": 3,
+                        "parent_comment_id": None,
+                        "replies": []
+                    }
+                ],
+                "conversation_id": "123e4567-e89b-12d3-a456-426614174003",
+                "conversation": {
+                    "conversation_id": "123e4567-e89b-12d3-a456-426614174003",
+                    "title": "ML Discussion",
+                    "created_at": "2025-07-20T11:30:00Z"
+                }
+            }
+        }
+    )
+
+
+class PostDetailAPIResponse(BaseModel):
+    """Complete API response for GET /posts/{post_id}"""
+    
+    success: bool = Field(True, description="Whether the request was successful")
+    message: str = Field("Post retrieved successfully", description="Human-readable message")
+    errorCode: Optional[str] = Field(None, description="Error code if applicable")
+    data: dict = Field(..., description="Response data")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "success": True,
+                "message": "Post retrieved successfully",
+                "errorCode": None,
+                "data": {
+                    "post": {
+                        # PostDetailResponse example would go here
+                    }
+                }
+            }
+        }
+    )
+
+
+# Fix forward reference for CommentResponse
+CommentResponse.model_rebuild()

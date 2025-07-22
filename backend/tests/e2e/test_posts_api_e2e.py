@@ -19,6 +19,9 @@ from app.models.post_tag import PostTag
 from app.models.post_reaction import PostReaction
 from app.models.conversation import Conversation
 
+# Import the comprehensive test data fixture
+from tests.fixtures.posts_fixtures import comprehensive_test_data
+
 
 client = TestClient(app)
 
@@ -188,7 +191,7 @@ class TestGetPostsAPI:
         data = response.json()
         assert len(data["data"]["posts"]) <= 2
     
-    def test_sorting_methods(self, db_session, test_posts, test_reactions):
+    def test_sorting_methods(self, client, comprehensive_test_data):
         """Test all sorting methods work correctly."""
         sort_methods = ["hot", "new", "top"]
         
@@ -272,7 +275,7 @@ class TestGetPostsAPI:
             response = client.get(f"/api/v1/posts?{params}")
             assert response.status_code == expected_status, f"Failed for {params}: got {response.status_code}, expected {expected_status}"
     
-    def test_hot_ranking_algorithm(self, db_session, test_posts, test_reactions):
+    def test_hot_ranking_algorithm(self, client, comprehensive_test_data):
         """Test that hot ranking algorithm works correctly."""
         response = client.get("/api/v1/posts?sort=hot")
         assert response.status_code == 200
@@ -296,7 +299,7 @@ class TestGetPostsAPI:
                 next_time = datetime.fromisoformat(posts[i + 1]["createdAt"].replace('Z', '+00:00'))
                 assert current_time >= next_time
     
-    def test_top_sorting_by_votes(self, db_session, test_posts, test_reactions):
+    def test_top_sorting_by_votes(self, client, comprehensive_test_data):
         """Test that top sorting works with vote counts."""
         response = client.get("/api/v1/posts?sort=top")
         assert response.status_code == 200
