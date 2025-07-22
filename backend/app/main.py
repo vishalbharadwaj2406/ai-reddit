@@ -87,7 +87,7 @@ def create_application() -> FastAPI:
     # Include API routers with version prefix
     # Each router handles a different resource collection
     if AUTH_AVAILABLE:
-        app.include_router(auth_router)
+        app.include_router(auth_router, prefix="/api/v1/auth")
         print("✅ Auth router loaded successfully")
     
     if HEALTH_AVAILABLE:

@@ -29,7 +29,7 @@ from app.core.jwt import JWTManager, create_token_pair, get_token_expiry_seconds
 from app.models.user import User
 
 # Create router for authentication endpoints
-router = APIRouter(prefix="/auth", tags=["authentication"])
+router = APIRouter(tags=["authentication"])
 
 
 @router.post("/google", response_model=TokenResponse)
