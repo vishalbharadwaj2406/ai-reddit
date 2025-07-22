@@ -1,214 +1,89 @@
-// Beautiful login modal with Google OAuth and enhanced UI
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { signIn, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { MessageCircle, Chrome, Sparkles, Users, Zap, Globe } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { signIn } from 'next-auth/react';
+import styles from './LoginModal.module.css';
 
 export default function LoginModal() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const { status } = useSession();
-  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
-  // Redirect if already authenticated
-  if (status === 'authenticated') {
-    router.push('/conversations');
-    return null;
-  }
+  // Listen for open-login-modal event
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener('open-login-modal', handler);
+    return () => window.removeEventListener('open-login-modal', handler);
+  }, []);
 
-  const handleGoogleLogin = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const result = await signIn('google', {
-        callbackUrl: '/conversations',
-        redirect: false,
-      });
-      
-      if (result?.error) {
-        setError('Google login failed. Please try again.');
+  // Close on outside click or ESC
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        setOpen(false);
       }
-    } catch (err) {
-      setError('Login failed. Please try again.');
-      console.error('Login error:', err);
+    }
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [open]);
+
+  // Handle Google sign in using NextAuth
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      await signIn('google', {
+        callbackUrl: '/feed', // Redirect to feed after login
+      });
+    } catch (error) {
+      console.error('Login error:', error);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+      setOpen(false);
     }
   };
 
-  const handleDemoLogin = async () => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      // For demo purposes, we'll simulate a login
-      // In a real app, this would call your demo login endpoint
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      router.push('/conversations');
-    } catch (err) {
-      setError('Demo login failed. Please try again.');
-      console.error('Demo login error:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (!open) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div 
-          className="absolute inset-0 opacity-40"
-          style={{
-            background: `
-              radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
-              radial-gradient(circle at 40% 40%, rgba(236, 72, 153, 0.1) 0%, transparent 50%)
-            `,
-            animation: 'royalFlow 25s ease-in-out infinite'
-          }}
-        />
+    <div className={styles.backdrop}>
+      <div className={styles.modal} ref={modalRef} role="dialog" aria-modal="true">
+        <h2 className={styles.title}>Sign in to AI Social</h2>
         
-        {/* Floating Particles */}
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-2 h-2 bg-white opacity-20 rounded-full animate-pulse"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 5}s`,
-              animationDuration: `${3 + Math.random() * 4}s`
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Main Login Card */}
-      <div className="relative z-10 w-full max-w-lg px-6">
-        <div className="glass-card rounded-3xl p-8 shadow-2xl border border-white/20">
-          {/* Header */}
-          <div className="text-center mb-10">
-            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-purple-500/25">
-              <MessageCircle className="w-10 h-10 text-white" />
-            </div>
-            <h1 className="text-4xl font-bold text-white mb-3 bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              AI Social
-            </h1>
-            <p className="text-gray-300 text-lg">Connect through intelligent conversations</p>
-            <div className="flex items-center justify-center gap-2 mt-3">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm text-gray-400">Powered by advanced AI</span>
-              <Sparkles className="w-4 h-4 text-yellow-400" />
-            </div>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/20 border border-red-500/40 rounded-xl animate-fadeInUp">
-              <p className="text-red-300 text-sm text-center">{error}</p>
-            </div>
+        <button
+          onClick={handleGoogleSignIn}
+          disabled={loading}
+          className={styles.googleSignInButton}
+        >
+          {loading ? (
+            <div className={styles.spinner}></div>
+          ) : (
+            <>
+              <svg className={styles.googleIcon} viewBox="0 0 24 24" width="20" height="20">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Sign in with Google
+            </>
           )}
+        </button>
 
-          {/* Google Login Button */}
-          <button
-            onClick={handleGoogleLogin}
-            disabled={isLoading}
-            className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all duration-300 mb-4 ${
-              isLoading
-                ? 'bg-gray-600 cursor-not-allowed'
-                : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 hover:scale-105 active:scale-95 shadow-lg hover:shadow-red-500/25'
-            }`}
-          >
-            {isLoading ? (
-              <div className="flex items-center justify-center gap-3">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Connecting to Google...</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center gap-3">
-                <Chrome className="w-5 h-5" />
-                <span>Continue with Google</span>
-              </div>
-            )}
-          </button>
-
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-600"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-3 bg-transparent text-gray-400">or</span>
-            </div>
-          </div>
-
-          {/* Demo Login Button */}
-          <button
-            onClick={handleDemoLogin}
-            disabled={isLoading}
-            className={`w-full py-4 px-6 rounded-xl font-semibold text-white transition-all duration-300 ${
-              isLoading
-                ? 'bg-gray-600 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 hover:scale-105 active:scale-95 shadow-lg hover:shadow-blue-500/25'
-            }`}
-          >
-            {isLoading ? (
-              <div className="flex items-center justify-center gap-3">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Loading demo...</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center gap-3">
-                <Zap className="w-5 h-5" />
-                <span>Try Demo Experience</span>
-              </div>
-            )}
-          </button>
-
-          {/* Features Showcase */}
-          <div className="mt-8 space-y-4">
-            <h3 className="text-white font-semibold text-center mb-6">
-              <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                What awaits you
-              </span>
-            </h3>
-            
-            <div className="grid grid-cols-1 gap-4">
-              {[
-                { icon: MessageCircle, text: 'AI-powered conversations that adapt to your interests', color: 'from-blue-400 to-cyan-400' },
-                { icon: Users, text: 'Connect with like-minded individuals worldwide', color: 'from-purple-400 to-pink-400' },
-                { icon: Globe, text: 'Share insights and transform chats into posts', color: 'from-green-400 to-blue-400' }
-              ].map((feature, index) => (
-                <div key={index} className="flex items-center gap-4 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all duration-200">
-                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-r ${feature.color} flex items-center justify-center flex-shrink-0`}>
-                    <feature.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <p className="text-gray-300 text-sm leading-relaxed">{feature.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Privacy Notice */}
-          <div className="mt-8 text-center">
-            <p className="text-gray-500 text-xs leading-relaxed">
-              By continuing, you agree to our terms of service and privacy policy.
-              <br />
-              Your conversations are private and secure.
-            </p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-6">
-          <p className="text-gray-500 text-xs">
-            Built with Next.js, NextAuth, and ❤️
-          </p>
-        </div>
+        <button 
+          className={styles.closeBtn} 
+          onClick={() => setOpen(false)} 
+          aria-label="Close modal"
+        >
+          &times;
+        </button>
       </div>
     </div>
   );

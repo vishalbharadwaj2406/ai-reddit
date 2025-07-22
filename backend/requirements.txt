@@ -22,13 +22,13 @@ httpx==0.25.2
 python-dotenv==1.0.0
 
 # Data validation
-pydantic==2.5.0
-pydantic-settings==2.0.3
+pydantic>=2.7.4,<3.0.0
+pydantic-settings>=2.1.0
 
 # AI Integration - LangChain based (Future-proof)
-langchain==0.3.26
-langchain-google-genai==2.1.8
-langchain-core==0.3.69
+langchain>=0.3.26
+langchain-google-genai>=2.1.8
+langchain-core>=0.3.69
 
 # Google protobuf dependencies (fixed versions to avoid deprecation warnings)
 protobuf>=6.31.1

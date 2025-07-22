@@ -1,0 +1,278 @@
+/* ============================================
+   HEADER COMPONENT STYLES
+   CSS Module for Header component
+   ============================================ */
+
+/* Header Container - Uses glass-header from design system */
+.header {
+  composes: glass-header from '../../styles/design-system.global.css';
+  padding: var(--space-md) var(--space-2xl);
+}
+
+/* Navigation Container */
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1400px;
+  margin: 0 auto;
+  position: relative;
+}
+
+/* Logo Section */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  font-size: var(--text-2xl);
+  font-weight: 800;
+  position: relative;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-lg);
+}
+
+/* Logo Glow Effect */
+.logo::before {
+  content: '';
+  position: absolute;
+  top: calc(var(--space-sm) * -1);
+  left: calc(var(--space-md) * -1);
+  right: calc(var(--space-md) * -1);
+  bottom: calc(var(--space-sm) * -1);
+  background: radial-gradient(ellipse, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+  border-radius: var(--radius-xl);
+  z-index: -1;
+}
+
+/* Logo Image */
+.logoImage {
+  composes: glow-blue from '../../styles/design-system.global.css';
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+
+/* Logo Text */
+.logoText {
+  composes: text-gradient-logo from '../../styles/design-system.global.css';
+}
+
+/* Navigation Items Container */
+.navItems {
+  display: flex;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+/* Individual Navigation Item */
+.navItem {
+  color: rgba(255, 255, 255, 0.95);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: var(--text-base);
+  transition: all 0.3s ease;
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-lg);
+  position: relative;
+  background: transparent;
+}
+
+/* Nav Item Hover Background */
+.navItem::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(ellipse, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
+  border-radius: var(--radius-lg);
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+/* Nav Item Hover Effects */
+.navItem:hover {
+  color: var(--color-brilliant-blue);
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.3));
+}
+
+.navItem:hover::before {
+  opacity: 1;
+}
+
+/* Header Sign In Button - Compact version of primary button */
+.signInButton {
+  composes: glass-button-primary from '../../styles/design-system.global.css';
+  padding: 10px var(--space-lg);
+  font-size: var(--text-sm);
+  min-width: 80px;
+  border-radius: var(--radius-md);
+}
+
+.signInButton:hover {
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   PROFILE PICTURE RING & DROPDOWN
+   ============================================ */
+
+.profilePicWrapper {
+  position: relative;
+  display: inline-block;
+  border-radius: 50%;
+  padding: 3px; /* Ring thickness */
+  background: conic-gradient(from 0deg, #fff, #60A5FA, #3B82F6, #fff 100%);
+  animation: gradient-rotate 4s linear infinite;
+  box-shadow: 0 2px 12px rgba(59,130,246,0.15);
+}
+
+@keyframes gradient-rotate {
+  0% { background: conic-gradient(from 0deg, #fff, #60A5FA, #3B82F6, #fff 100%); }
+  100% { background: conic-gradient(from 360deg, #fff, #60A5FA, #3B82F6, #fff 100%); }
+}
+
+.profilePic {
+  display: block;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  background: #111;
+  border: 2px solid rgba(255,255,255,0.7);
+}
+
+.profileDropdown {
+  composes: glass-header from '../../styles/design-system.global.css';
+  position: absolute;
+  right: 0;
+  top: 48px;
+  min-width: 220px;
+  padding: var(--space-lg);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 8px 32px rgba(30,58,138,0.18);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  animation: dropdown-fade-in 0.2s cubic-bezier(0.4,0,0.2,1);
+  
+  /* Ensure dropdown stays within viewport */
+  max-width: calc(100vw - 32px);
+  
+  /* Prevent overflow on right side */
+  right: 0;
+  left: auto;
+  
+  /* Adjust for mobile screens */
+  @media (max-width: 480px) {
+    right: -8px;
+    min-width: 200px;
+    padding: var(--space-md);
+  }
+  
+  /* Tablet adjustments */
+  @media (max-width: 768px) {
+    right: -4px;
+    min-width: 210px;
+  }
+}
+
+@keyframes dropdown-fade-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.profileDropdownName {
+  font-weight: 700;
+  font-size: var(--text-lg);
+  color: #fff;
+  margin-bottom: 2px;
+}
+
+.profileDropdownUsername {
+  font-size: var(--text-base);
+  color: var(--color-light-blue);
+  margin-bottom: 8px;
+}
+
+.profileDropdownDivider {
+  height: 1px;
+  background: rgba(59,130,246,0.12);
+  margin: 8px 0;
+  border: none;
+}
+
+.profileDropdownSignOut {
+  composes: glass-button-secondary from '../../styles/design-system.global.css';
+  width: 100%;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: #fff;
+  margin-top: 8px;
+  cursor: pointer;
+}
+
+.profileDropdownSignOut:hover {
+  background: rgba(59,130,246,0.12);
+  color: var(--color-brilliant-blue);
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+   ============================================ */
+
+/* Tablet Styles */
+@media (max-width: 768px) {
+  .header {
+    padding: var(--space-sm) var(--space-lg);
+  }
+  
+  .logo {
+    font-size: var(--text-xl);
+    gap: var(--space-sm);
+  }
+  
+  .logoImage {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .signInButton {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--text-xs);
+    min-width: 70px;
+  }
+  
+  .navItem {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--text-sm);
+  }
+}
+
+/* Mobile Styles */
+@media (max-width: 480px) {
+  .header {
+    padding: 10px var(--space-md);
+  }
+  
+  .logo {
+    font-size: var(--text-lg);
+    gap: var(--space-xs);
+  }
+  
+  .logoImage {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .signInButton {
+    padding: 6px var(--space-sm);
+    font-size: var(--text-xs);
+    min-width: 60px;
+  }
+}

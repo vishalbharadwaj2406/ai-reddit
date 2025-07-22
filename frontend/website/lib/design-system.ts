@@ -1,85 +1,69 @@
 /**
- * Design System Constants
- * Based on Royal Ink Glass theme
+ * AI Social Design System - Royal Ink Glass
+ * Design tokens and utilities for the glass morphism system
  */
 
-export const colors = {
-  // Primary Palette
-  black: '#000000',
-  royalBlue: '#1E3A8A',
-  brilliantBlue: '#3B82F6',
-  lightBlue: '#60A5FA',
-  iceWhite: '#E6F3FF',
-
-  // Functional Colors
-  success: '#10B981',
-  warning: '#F59E0B',
-  error: '#EF4444',
-  info: '#3B82F6',
-
-  // Surfaces
-  background: '#000000',
-  glassLevel1: 'rgba(255, 255, 255, 0.03)',
-  glassLevel2: 'rgba(255, 255, 255, 0.05)',
-  glassElevated: 'rgba(30, 58, 138, 0.15)',
-  border: 'rgba(59, 130, 246, 0.2)',
-} as const;
-
-export const spacing = {
-  xs: '4px',
-  sm: '8px',
-  md: '16px',
-  lg: '24px',
-  xl: '32px',
-  '2xl': '48px',
-  '3xl': '64px',
-} as const;
-
-export const typography = {
-  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "SF Pro Display", Roboto, sans-serif',
-  sizes: {
-    display: { size: '48px', lineHeight: '56px' },
-    headingLg: { size: '28px', lineHeight: '36px' },
-    headingMd: { size: '24px', lineHeight: '32px' },
-    bodyLg: { size: '17px', lineHeight: '26px' },
-    body: { size: '16px', lineHeight: '24px' },
-    caption: { size: '14px', lineHeight: '20px' },
+/**
+ * Design Tokens
+ */
+export const designTokens = {
+  colors: {
+    pureBlack: '#000000',
+    royalBlue: '#1E3A8A',
+    brilliantBlue: '#3B82F6',
+    lightBlue: '#60A5FA',
+    iceWhite: '#E6F3FF',
   },
-  weights: {
-    light: 300,
-    regular: 400,
-    medium: 500,
-    semibold: 600,
-    bold: 700,
-    heavy: 800,
+  
+  spacing: {
+    xs: '4px',
+    sm: '8px',
+    md: '16px',
+    lg: '24px',
+    xl: '32px',
+    '2xl': '48px',
   },
-} as const;
+  
+  radius: {
+    sm: '8px',
+    md: '12px', 
+    lg: '16px',
+    xl: '20px',
+    '2xl': '24px',
+  },
+  
+  shadows: {
+    sm: '0 2px 8px rgba(0, 0, 0, 0.1)',
+    md: '0 4px 16px rgba(0, 0, 0, 0.2)',
+    lg: '0 8px 32px rgba(0, 0, 0, 0.3)',
+    xl: '0 20px 60px rgba(0, 0, 0, 0.4)',
+  }
+} as const
 
-export const glassMorphism = {
-  standard: {
-    background: 'rgba(255, 255, 255, 0.03)',
-    backdropFilter: 'blur(32px) saturate(180%)',
-    border: '2px solid rgba(59, 130, 246, 0.2)',
-    borderRadius: '24px',
-  },
-  elevated: {
-    background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.15), rgba(59, 130, 246, 0.08))',
-    backdropFilter: 'blur(40px) saturate(200%)',
-    border: '2px solid rgba(59, 130, 246, 0.35)',
-    borderRadius: '24px',
-  },
-} as const;
+/**
+ * CSS Class Names for Design System Components
+ */
+export const glassClasses = {
+  // Base glass effects
+  base: 'glass-base',
+  card: 'glass-card',
+  elevated: 'glass-elevated',
+  header: 'glass-header',
+  
+  // Button system
+  buttonPrimary: 'glass-button-primary',
+  buttonSecondary: 'glass-button-secondary',
+  
+  // Text system
+  textGradientPrimary: 'text-gradient-primary',
+  textGradientLogo: 'text-gradient-logo',
+  textAccent: 'text-accent',
+  
+  // Utilities
+  glowBlue: 'glow-blue',
+  glowBlueStrong: 'glow-blue-strong',
+  focusRing: 'focus-ring',
+} as const
 
-export const animations = {
-  timing: {
-    quick: '200ms',
-    standard: '300ms',
-    slow: '600ms',
-    ultraSlow: '25s',
-  },
-  easing: {
-    easeOut: 'ease-out',
-    easeInOut: 'ease-in-out',
-    custom: 'cubic-bezier(0.4, 0, 0.2, 1)',
-  },
-} as const;
+// Legacy compatibility
+export const glassHeader = () => glassClasses.header
