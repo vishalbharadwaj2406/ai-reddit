@@ -1,0 +1,197 @@
+/* ============================================
+   ROYAL INK GLASS DESIGN SYSTEM
+   Reusable design tokens and glass morphism effects
+   These are global classes used across the application
+   ============================================ */
+
+/* ============================================
+   BASE GLASS MORPHISM SYSTEM
+   ============================================ */
+
+/* Base Glass Effect - Core reusable pattern */
+.glass-base {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
+  -webkit-backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
+  border: 1px solid var(--glass-border-light);
+  box-shadow: 
+    var(--shadow-lg),
+    0 0 40px rgba(30, 58, 138, 0.12);
+}
+
+/* Glass Card - For content containers */
+.glass-card {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
+  -webkit-backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
+  border: 1px solid var(--glass-border-light);
+  box-shadow: 
+    var(--shadow-lg),
+    0 0 40px rgba(30, 58, 138, 0.12);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-xl);
+}
+
+/* Glass Elevated - For special emphasis */
+.glass-elevated {
+  background: linear-gradient(135deg, 
+    rgba(30, 58, 138, 0.15) 0%,
+    rgba(59, 130, 246, 0.08) 100%);
+  backdrop-filter: var(--glass-blur-heavy) saturate(200%);
+  -webkit-backdrop-filter: var(--glass-blur-heavy) saturate(200%);
+  border: 2px solid var(--glass-border-heavy);
+  box-shadow: 
+    var(--shadow-xl),
+    inset 0 2px 0 rgba(59, 130, 246, 0.3),
+    0 0 80px rgba(59, 130, 246, 0.12);
+  border-radius: var(--radius-2xl);
+}
+
+/* Glass Header - Fixed header styling */
+.glass-header {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
+  -webkit-backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
+  border: 1px solid var(--glass-border-light);
+  box-shadow: 
+    var(--shadow-lg),
+    0 0 40px rgba(30, 58, 138, 0.12);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  border-bottom: 1px solid var(--glass-border-light);
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+
+/* ============================================
+   BUTTON SYSTEM
+   ============================================ */
+
+/* Primary Glass Button */
+.glass-button-primary {
+  background: linear-gradient(135deg, 
+    rgba(30, 58, 138, 0.6) 0%,
+    rgba(59, 130, 246, 0.4) 100%);
+  backdrop-filter: var(--glass-blur-light) saturate(150%);
+  -webkit-backdrop-filter: var(--glass-blur-light) saturate(150%);
+  border: 1px solid var(--glass-border-medium);
+  color: #FFFFFF;
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 4px 16px rgba(30, 58, 138, 0.2),
+    0 0 16px rgba(59, 130, 246, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.glass-button-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 6px 20px rgba(30, 58, 138, 0.3),
+    0 0 24px rgba(59, 130, 246, 0.2);
+  border-color: var(--glass-border-heavy);
+  color: #FFFFFF;
+}
+
+/* Secondary Glass Button */
+.glass-button-secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-lg);
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  backdrop-filter: var(--glass-blur-light);
+  -webkit-backdrop-filter: var(--glass-blur-light);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.glass-button-secondary:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: var(--glass-border-medium);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   TEXT SYSTEM
+   ============================================ */
+
+/* Gradient Text Effect */
+.text-gradient-primary {
+  background: linear-gradient(135deg, #FFFFFF, #60A5FA, #FFFFFF);
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
+}
+
+/* Gradient Text - Logo variant */
+.text-gradient-logo {
+  background: linear-gradient(135deg, #E6F3FF, #3B82F6, #E6F3FF, #60A5FA, #E6F3FF);
+  background-size: 400% 400%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5));
+}
+
+/* Accent Text */
+.text-accent {
+  color: var(--color-light-blue);
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.2));
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Glow Effects */
+.glow-blue {
+  filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.4));
+}
+
+.glow-blue-strong {
+  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.6));
+}
+
+/* Focus States */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--color-brilliant-blue);
+  outline-offset: 2px;
+}
+
+/* Responsive Hide/Show */
+.hide-mobile {
+  display: block;
+}
+
+.show-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none;
+  }
+  
+  .show-mobile {
+    display: block;
+  }
+}

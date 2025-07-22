@@ -1,94 +1,121 @@
-// Shared authentication logic using Zustand
+"use client";
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { User, AuthState } from '../types';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
-interface AuthStore extends AuthState {
-  login: (user: User, token: string) => void;
-  logout: () => void;
-  updateUser: (updates: Partial<User>) => void;
-  setLoading: (loading: boolean) => void;
+// User type (customize as needed)
+interface User {
+  user_id: string;
+  user_name: string;
+  email: string;
+  profile_picture?: string;
+  is_private?: boolean;
+  created_at?: string;
 }
 
-// Demo user for MVP
-const DEMO_USER: User = {
-  id: 'demo-user-1',
-  userName: 'Demo User',
-  email: 'demo@aisocial.com',
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
+interface AuthContextType {
+  user: User | null;
+  accessToken: string | null;
+  refreshToken: string | null;
+  loading: boolean;
+  error: string | null;
+  loginWithGoogle: (googleIdToken: string) => Promise<void>;
+  signOut: () => void;
+}
 
-export const useAuthStore = create<AuthStore>()(
-  persist(
-    (set, get) => ({
-      user: null,
-      token: null,
-      isAuthenticated: false,
-      isLoading: false,
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-      login: (user: User, token: string) => {
-        set({
-          user,
-          token,
-          isAuthenticated: true,
-          isLoading: false,
-        });
-      },
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [refreshToken, setRefreshToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-      logout: () => {
-        set({
-          user: null,
-          token: null,
-          isAuthenticated: false,
-          isLoading: false,
-        });
-      },
-
-      updateUser: (updates: Partial<User>) => {
-        const currentUser = get().user;
-        if (currentUser) {
-          set({
-            user: { ...currentUser, ...updates },
-          });
-        }
-      },
-
-      setLoading: (loading: boolean) => {
-        set({ isLoading: loading });
-      },
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-        isAuthenticated: state.isAuthenticated,
-      }),
+  // Load from localStorage on mount
+  useEffect(() => {
+    const storedUser = localStorage.getItem('ai-social-user');
+    const storedAccess = localStorage.getItem('ai-social-access');
+    const storedRefresh = localStorage.getItem('ai-social-refresh');
+    if (storedUser && storedAccess && storedRefresh) {
+      setUser(JSON.parse(storedUser));
+      setAccessToken(storedAccess);
+      setRefreshToken(storedRefresh);
     }
-  )
-);
+  }, []);
 
-// Demo login function for MVP
-export const loginWithDemo = async (): Promise<void> => {
-  const { login, setLoading } = useAuthStore.getState();
-  
-  setLoading(true);
-  
-  // Simulate API call delay
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  const demoToken = 'demo-jwt-token-' + Date.now();
-  login(DEMO_USER, demoToken);
-};
+  // Save to localStorage on change
+  useEffect(() => {
+    if (user && accessToken && refreshToken) {
+      localStorage.setItem('ai-social-user', JSON.stringify(user));
+      localStorage.setItem('ai-social-access', accessToken);
+      localStorage.setItem('ai-social-refresh', refreshToken);
+    } else {
+      localStorage.removeItem('ai-social-user');
+      localStorage.removeItem('ai-social-access');
+      localStorage.removeItem('ai-social-refresh');
+    }
+  }, [user, accessToken, refreshToken]);
 
-// Hook for easier usage in React components
-export const useAuth = () => {
-  const store = useAuthStore();
-  
-  return {
-    ...store,
-    loginWithDemo,
+  // Google login handler
+  const loginWithGoogle = useCallback(async (googleIdToken: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL;
+      console.log('Making API call to:', `${API_URL}/auth/google`);
+      console.log('Token being sent:', googleIdToken?.substring(0, 50) + '...');
+      const res = await fetch(`${API_URL}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ google_token: googleIdToken }),
+      });
+      console.log('Response status:', res.status);
+      if (!res.ok) {
+        const err = await res.json();
+        console.log('Backend error details:', err);
+        throw new Error(err.detail?.message || 'Login failed');
+      }
+      const data = await res.json();
+      console.log('Login successful, user data:', data.user);
+      setUser(data.user);
+      setAccessToken(data.access_token);
+      setRefreshToken(data.refresh_token);
+      setLoading(false);
+    } catch (e: unknown) {
+      console.error('Login error:', e);
+      setError(e instanceof Error ? e.message : 'Login failed');
+      setLoading(false);
+    }
+  }, []);
+
+  // Logout handler
+  const signOut = useCallback(async () => {
+    setUser(null);
+    setAccessToken(null);
+    setRefreshToken(null);
+    setError(null);
+    setLoading(false);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL;
+      await fetch(`${API_URL}/auth/logout`, { method: 'POST' });
+    } catch {}
+  }, []);
+
+  const value: AuthContextType = {
+    user,
+    accessToken,
+    refreshToken,
+    loading,
+    error,
+    loginWithGoogle,
+    signOut,
   };
-};
+
+  return React.createElement(AuthContext.Provider, { value }, children);
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
+  return ctx;
+}
