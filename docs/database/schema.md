@@ -70,11 +70,25 @@ This schema is designed for a minimal, production-ready MVP of the [APP_NAME] pl
 | conversation_id | UUID (FK) | References conversations(conversation_id)           |
 | title           | VARCHAR   |                                                     |
 | content         | TEXT      |                                                     |
+| fork_count      | INTEGER   | Number of times this post has been forked, default 0 |
 | is_conversation_visible | BOOLEAN   | If TRUE, the conversation linked to this post is viewable by others (subject to user/conversation privacy). If FALSE, only the post content is visible. |
 | created_at      | TIMESTAMP |                                                     |
 | updated_at      | TIMESTAMP | Last modification time                              |
 | edited          | BOOLEAN   | True if post has been edited                        |
 | status          | VARCHAR   | Record status: 'active', 'archived', etc.           |
+
+---
+
+## Post Forks
+| Field           | Type      | Constraints / Notes                                 |
+|-----------------|-----------|-----------------------------------------------------|
+| user_id         | UUID (FK) | References users(user_id), who forked the post      |
+| post_id         | UUID (FK) | References posts(post_id), the original post        |
+| conversation_id | UUID (FK) | References conversations(conversation_id), the new forked conversation |
+| forked_at       | TIMESTAMP | When the fork was created                            |
+| original_conversation_included | VARCHAR | 'true' or 'false', whether original conversation context was included |
+| status          | VARCHAR   | Record status: 'active', 'archived', etc.           |
+| PRIMARY KEY     | (user_id, post_id, forked_at)                       |
 
 ---
 
