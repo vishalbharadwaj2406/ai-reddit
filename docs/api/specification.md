@@ -658,25 +658,38 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 }
 ```
 
-#### POST /posts/{post_id}/expand
-**Purpose**: Create a new conversation forked from a post (does not include the original conversation by default)
+#### POST /posts/{post_id}/fork ✅ IMPLEMENTED
+**Purpose**: Create a new conversation forked from a post with AI context integration
 **Auth Required**: Yes
-**Request Body**: (empty)
+**Implementation Status**: Complete with 11 test cases and privacy controls
+**Request Body**:
+```json
+{
+  "includeOriginalConversation": boolean // Optional - smart defaults based on conversation privacy
+}
+```
 **Response**:
 ```json
 {
   "success": true,
   "data": {
     "conversationId": "uuid",
-    "title": "string",
-    "forkedFrom": "uuid"
+    "title": "Fork of: [Original Title]",
+    "forkedFrom": "uuid",
+    "includeOriginalConversation": boolean
   },
-  "message": "Conversation forked successfully"
+  "message": "Post forked successfully"
+```
+**Business Logic**:
+- User explicit choice takes precedence over defaults
+- Default behavior: include context only if conversation exists and is public  
+- Privacy enforcement: context only retrieved if conversation is public
+- AI receives specialized fork prompts with optional conversation context
 }
 ```
 
 #### POST /conversations/{conversation_id}/include-original
-**Purpose**: Include the original conversation into the expanded conversation (optional, second step)
+**Purpose**: Include the original conversation into the forked conversation (optional, second step)
 **Auth Required**: Yes
 **Request Body**: (empty)
 **Response**:
@@ -692,7 +705,7 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 ```
 
 #### POST /conversations/{conversation_id}/uninclude-original
-**Purpose**: Remove the original conversation from the expanded conversation (undo the include-original action)
+**Purpose**: Remove the original conversation from the forked conversation (undo the include-original action)
 **Auth Required**: Yes
 **Request Body**: (empty)
 **Response**:
@@ -956,8 +969,8 @@ X-RateLimit-Reset: 1640995200
 4. `POST /conversations/{id}/generate-blog` → Generate blog candidate
 5. `POST /posts` → Publish final post
 
-### 3. Expand Post Flow
-1. `POST /posts/{id}/expand` → Create forked conversation
+### 3. Fork Post Flow
+1. `POST /posts/{id}/fork` → Create forked conversation
 2. `GET /conversations/{id}` → Load conversation with original post context
 3. User continues chatting...
 

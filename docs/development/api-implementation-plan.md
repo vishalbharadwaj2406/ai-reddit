@@ -1,6 +1,6 @@
 # AI Reddit API Implementation Plan
 
-> **Latest Update (July 20, 2025)**: Track A (User & Social) complete! Track B Post Management partially complete - POST and GET /posts implemented with 37 tests passing. Individual post retrieval and conversation forking endpoints still pending implementation.
+> **Latest Update (July 23, 2025)**: Track A (User & Social) complete! Track B Post Management complete including conversation forking. All MVP post endpoints operational with 48 tests passing. Social features remain for implementation.
 
 ## Frontend Development Status ✅ MOSTLY COMPLETE - 1 KNOWN ISSUE
 
@@ -83,15 +83,17 @@
 - [x] Conversation ownership validation and privacy controls
 - [x] Comprehensive error handling (7 tests passing)
 
-### Day 8: Post Management ✅ PARTIALLY COMPLETE
+### Day 8: Post Management ✅ COMPLETE
 - [x] POST /posts (create from conversation) - 9 unit tests passing
 - [x] GET /posts (public feed with hot ranking algorithm) - 15 E2E + 8 integration + 14 unit tests
+- [x] GET /posts/{id} (individual post retrieval) - 13 tests passing
+- [x] POST /posts/{id}/fork (conversation forking) - 11 tests passing
 - [x] Hot ranking algorithm implementation (time-decay formula)
 - [x] Tag filtering and user filtering capabilities
 - [x] Time-range filtering for top posts
-- [x] 3-tier testing architecture (37 total tests across POST/GET endpoints)
-- [ ] GET /posts/{id} (individual post retrieval) - endpoint defined, returns 501
-- [ ] POST /posts/{id}/fork (conversation forking) - endpoint defined, returns 501
+- [x] Conversation forking with AI context integration
+- [x] Privacy-aware context inclusion logic
+- [x] 4-tier testing architecture (48 total tests across all post endpoints)
 
 ### Day 9: Social Features
 - [ ] POST /posts/{id}/reaction

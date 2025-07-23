@@ -408,3 +408,67 @@ class PostDetailAPIResponse(BaseModel):
 
 # Fix forward reference for CommentResponse
 CommentResponse.model_rebuild()
+
+
+# Fork Related Schemas
+
+class PostForkRequest(BaseModel):
+    """Schema for forking a post into a new conversation"""
+    
+    includeOriginalConversation: Optional[bool] = Field(
+        None, 
+        description="Whether to include the original conversation context. Defaults to True if original conversation is public, False otherwise."
+    )
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "includeOriginalConversation": True
+            }
+        }
+    )
+
+
+class PostForkResponse(BaseModel):
+    """Schema for post fork response"""
+    
+    conversationId: UUID = Field(..., description="ID of the newly created forked conversation")
+    title: str = Field(..., description="Title of the forked conversation")
+    forkedFrom: UUID = Field(..., description="ID of the original post that was forked")
+    includeOriginalConversation: bool = Field(..., description="Whether original conversation context was included")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "conversationId": "550e8400-e29b-41d4-a716-446655440000",
+                "title": "Re: Original Post Title",
+                "forkedFrom": "123e4567-e89b-12d3-a456-426614174000",
+                "includeOriginalConversation": True
+            }
+        }
+    )
+
+
+class PostForkAPIResponse(BaseModel):
+    """API wrapper for post fork response"""
+    
+    success: bool = Field(True, description="Whether the operation was successful")
+    data: PostForkResponse = Field(..., description="Fork response data")
+    message: str = Field(..., description="Human readable success message")
+    errorCode: Optional[str] = Field(None, description="Error code if any")
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "success": True,
+                "data": {
+                    "conversationId": "550e8400-e29b-41d4-a716-446655440000",
+                    "title": "Re: Original Post Title", 
+                    "forkedFrom": "123e4567-e89b-12d3-a456-426614174000",
+                    "includeOriginalConversation": True
+                },
+                "message": "Conversation forked successfully",
+                "errorCode": None
+            }
+        }
+    )

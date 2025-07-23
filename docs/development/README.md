@@ -7,6 +7,9 @@ Developer setup, testing strategies, and contribution guidelines for the AI Soci
 ### [API Implementation Plan](./api-implementation-plan.md)
 10-day plan for implementing the complete API layer with testing and deployment preparation.
 
+### [Conversation Forking Implementation](./conversation-forking.md)
+Complete technical documentation for the conversation forking feature, including API contracts, privacy controls, and AI context integration.
+
 **Phase Breakdown:**
 - **Days 1-3**: Foundation setup (dependencies, auth, core structure)
 - **Days 4-7**: Content management APIs (users, conversations, posts, social features)

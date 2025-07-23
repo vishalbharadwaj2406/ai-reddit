@@ -105,6 +105,13 @@ class Conversation(Base):
         cascade="all, delete-orphan"
     )
 
+    # Fork tracking - conversations created from this one
+    forked_from_post_forks = relationship(
+        "PostFork",
+        back_populates="conversation",
+        doc="Fork records where this conversation was created from a post"
+    )
+
     # posts = relationship(
     #     "Post",
     #     back_populates="conversation",

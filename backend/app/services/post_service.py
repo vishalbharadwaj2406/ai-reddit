@@ -16,6 +16,7 @@ encapsulating all business rules and logic.
 from typing import List, Optional, Dict, Any
 from uuid import UUID, uuid4
 from datetime import datetime, timedelta
+import logging
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import func, case, and_, or_, desc, asc, text, extract
@@ -29,8 +30,16 @@ from app.models.post_tag import PostTag
 from app.models.post_reaction import PostReaction
 from app.models.comment import Comment
 from app.models.post_view import PostView
-from app.schemas.post import PostCreate, PostCreateResponse, PostResponse, UserSummary, PostReactions
+from app.models.post_fork import PostFork
+from app.schemas.post import (
+    PostCreate, PostCreateResponse, PostResponse, UserSummary, PostReactions,
+    PostForkRequest, PostForkResponse
+)
 from app.core.database import get_db
+from app.prompts.fork_prompts import fork_prompts
+
+
+logger = logging.getLogger(__name__)
 
 
 class PostServiceError(Exception):
@@ -553,6 +562,187 @@ class PostService:
         """
         # TODO: Implement when needed
         return None
+
+    def fork_post(self, post_id: UUID, user_id: UUID, request: PostForkRequest) -> PostForkResponse:
+        """
+        Fork a post by creating a new conversation with proper context integration.
+        
+        This implements the complete fork vision:
+        - Creates new conversation with post context
+        - Optionally includes full original conversation context
+        - Sets up proper AI prompts for context-aware responses
+        - Tracks fork relationship and analytics
+        
+        Args:
+            post_id: UUID of the post to fork
+            user_id: UUID of the user creating the fork
+            request: Fork request containing context preferences
+            
+        Returns:
+            PostForkResponse with conversation details
+            
+        Raises:
+            PostServiceError: If post doesn't exist or fork creation fails
+        """
+        try:
+            # Get the post to fork with full context
+            post = self.db.query(Post).options(
+                joinedload(Post.conversation)
+            ).filter(
+                Post.post_id == post_id,
+                Post.status == "active"
+            ).first()
+            
+            if not post:
+                raise PostServiceError(f"Post with id {post_id} not found", "POST_NOT_FOUND")
+            
+            # Determine if we should include original conversation based on:
+            # 1. User's explicit choice in the request
+            # 2. Whether original conversation exists and is public
+            include_original = False
+            
+            if request and request.includeOriginalConversation is not None:
+                # User made an explicit choice
+                include_original = request.includeOriginalConversation
+            elif post.conversation_id and post.is_conversation_visible:
+                # Default to True only if conversation exists and is public
+                include_original = True
+            # Otherwise defaults to False
+            
+            # Get original conversation context if requested, available, and public
+            original_conversation_context = None
+            if include_original and post.conversation_id and post.is_conversation_visible:
+                original_conversation_context = self._get_conversation_context(post.conversation_id)
+            
+            # Create new conversation with post-aware title
+            conversation = Conversation(
+                conversation_id=uuid4(),
+                user_id=user_id,
+                title=f"Fork of: {post.title[:50]}{'...' if len(post.title) > 50 else ''}",
+                forked_from=post_id,  # Set the forked_from relationship
+                status="active"
+            )
+            
+            self.db.add(conversation)
+            self.db.flush()  # Get the conversation ID
+            
+            # Create proper context message using fork prompts
+            context_prompt = fork_prompts.get_fork_context_prompt(
+                post_title=post.title,
+                post_content=post.content,
+                original_conversation=original_conversation_context,
+                include_original_conversation=include_original
+            )
+            
+            # Create system message with fork context
+            system_message = Message(
+                message_id=uuid4(),
+                conversation_id=conversation.conversation_id,
+                user_id=None,  # System message
+                role="system",
+                content=context_prompt
+            )
+            
+            self.db.add(system_message)
+            
+            # Create welcome message for the user
+            welcome_message = fork_prompts.get_fork_welcome_message(
+                post_title=post.title,
+                include_original_conversation=include_original
+            )
+            
+            # Create AI welcome message
+            ai_welcome = Message(
+                message_id=uuid4(),
+                conversation_id=conversation.conversation_id,
+                user_id=None,  # AI message
+                role="assistant",
+                content=welcome_message
+            )
+            
+            self.db.add(ai_welcome)
+            
+            # Create fork record with proper context tracking
+            fork = PostFork(
+                user_id=user_id,
+                post_id=post_id,
+                conversation_id=conversation.conversation_id,
+                original_conversation_included="true" if include_original else "false"
+            )
+            
+            self.db.add(fork)
+            
+            # Update post fork count analytics
+            post.fork_count = (post.fork_count or 0) + 1
+            
+            self.db.commit()
+            
+            return PostForkResponse(
+                conversationId=conversation.conversation_id,
+                title=conversation.title,
+                forkedFrom=post_id,
+                includeOriginalConversation=include_original
+            )
+            
+        except PostServiceError:
+            # Re-raise our custom errors
+            self.db.rollback()
+            raise
+        except SQLAlchemyError as e:
+            self.db.rollback()
+            # Handle duplicate fork attempts
+            if "duplicate key value violates unique constraint" in str(e) and "post_forks_pkey" in str(e):
+                logger.info(f"User {user_id} attempted to fork post {post_id} multiple times - allowing duplicate fork")
+                # For MVP: Allow multiple forks by same user to same post
+                # This creates a new conversation each time
+                # Alternative: Could return existing fork or prevent duplicates
+                # But for now, we'll allow it by adding microsecond precision to avoid collision
+                import time
+                time.sleep(0.001)  # Small delay to ensure different timestamp
+                # Retry the fork operation once
+                try:
+                    return self.fork_post(post_id, user_id, request)
+                except Exception:
+                    raise PostServiceError("Unable to create fork due to timing constraints. Please try again.")
+            else:
+                logger.error(f"Database error during post fork: {str(e)}")
+                raise PostServiceError(f"Database error during post fork: {str(e)}")
+        except Exception as e:
+            self.db.rollback()
+            logger.error(f"Unexpected error during post fork: {str(e)}")
+            raise PostServiceError(f"Unexpected error during post fork: {str(e)}")
+    
+    def _get_conversation_context(self, conversation_id: UUID) -> str:
+        """
+        Retrieve the full conversation context for fork integration.
+        
+        Args:
+            conversation_id: ID of the conversation to retrieve
+            
+        Returns:
+            Formatted conversation context string
+        """
+        try:
+            # Get all messages in the conversation, ordered by creation time
+            messages = self.db.query(Message).filter(
+                Message.conversation_id == conversation_id,
+                Message.role.in_(["user", "assistant"])  # Exclude system messages
+            ).order_by(Message.created_at).all()
+            
+            if not messages:
+                return ""
+            
+            # Format conversation as readable context
+            context_lines = []
+            for message in messages:
+                role_label = "User" if message.role == "user" else "Assistant"
+                context_lines.append(f"{role_label}: {message.content}")
+            
+            return "\n\n".join(context_lines)
+            
+        except Exception as e:
+            logger.warning(f"Failed to retrieve conversation context for {conversation_id}: {str(e)}")
+            return ""
 
 
 def get_post_service(db: Session = None) -> PostService:

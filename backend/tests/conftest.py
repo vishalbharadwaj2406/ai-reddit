@@ -18,6 +18,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "app"))
 from app.core.database import get_db, Base
 from app.models.user import User
 from app.models.conversation import Conversation
+# Import all models to ensure they are registered with SQLAlchemy
+from app.models import *  # This imports all models including PostFork
 from app.main import app
 
 
@@ -60,7 +62,8 @@ def db_session():
     3. Provides a clean database session with production parity  
     4. Rolls back the transaction after each test (no data persists)
     """
-    # Create all tables in the local PostgreSQL test database
+    # Drop all tables and recreate them in the local PostgreSQL test database
+    Base.metadata.drop_all(bind=test_engine)
     Base.metadata.create_all(bind=test_engine)
     
     # Create a connection and start a transaction

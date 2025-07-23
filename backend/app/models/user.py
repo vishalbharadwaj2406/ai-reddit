@@ -183,6 +183,14 @@ class User(Base):
         doc="Shares made by this user"
     )
 
+    # Fork tracking
+    post_forks = relationship(
+        "PostFork",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        doc="Posts forked by this user"
+    )
+
     def __repr__(self):
         """String representation of User for debugging."""
         return f"<User(id={self.user_id}, username={self.user_name})>"

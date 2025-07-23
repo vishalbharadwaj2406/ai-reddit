@@ -22,6 +22,7 @@ from app.models.tag import Tag
 from app.models.post_tag import PostTag
 from app.models.post_view import PostView
 from app.models.post_share import PostShare
+from app.models.post_fork import PostFork
 
 # TODO: Import these as we create the models
 # from app.models.post_share import PostShare

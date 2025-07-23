@@ -39,7 +39,7 @@ Based on the posts table in mvp_db_sc    # Relationships
 - Source for conversation forking
 """
 
-from sqlalchemy import Column, String, Text, Boolean, DateTime, func, ForeignKey, CheckConstraint
+from sqlalchemy import Column, String, Text, Boolean, DateTime, Integer, func, ForeignKey, CheckConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 import uuid
@@ -121,6 +121,14 @@ class Post(Base):
         comment="Record status: 'active', 'archived', etc."
     )
 
+    # Analytics
+    fork_count = Column(
+        Integer,
+        default=0,
+        nullable=False,
+        comment="Number of times this post has been forked"
+    )
+
     # Timestamps
     created_at = Column(
         DateTime(timezone=True),
@@ -180,6 +188,14 @@ class Post(Base):
         back_populates="post",
         cascade="all, delete-orphan",
         doc="Shares of this post"
+    )
+
+    # Fork tracking relationships
+    forks = relationship(
+        "PostFork",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        doc="Fork records tracking when this post was forked into new conversations"
     )
 
     # forked_conversations = relationship(

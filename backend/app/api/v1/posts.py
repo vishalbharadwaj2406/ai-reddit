@@ -17,7 +17,10 @@ from uuid import UUID
 from typing import Optional
 
 from app.core.database import get_db
-from app.schemas.post import PostCreate, PostCreateResponse, PostListResponse
+from app.schemas.post import (
+    PostCreate, PostCreateResponse, PostListResponse,
+    PostForkRequest, PostForkAPIResponse
+)
 from app.services.post_service import PostService, PostServiceError
 from app.dependencies.auth import get_current_user, get_current_user_optional
 from app.models.user import User
@@ -317,18 +320,56 @@ async def get_post(
         )
 
 
-@router.post("/{post_id}/fork")
+@router.post("/{post_id}/fork", response_model=PostForkAPIResponse)
 async def fork_post(
-    post_id: str,
+    post_id: UUID,
+    request: PostForkRequest,
     db: Session = Depends(get_db),
-    # current_user = Depends(get_current_user)
+    current_user: User = Depends(get_current_user)
 ):
-    """Fork an existing post to continue the conversation."""
+    """
+    Fork an existing post to continue the conversation.
+    
+    Creates a new conversation with the post content as the starting context.
+    This allows users to engage with and build upon existing posts.
+    
+    **Args:**
+    - **post_id**: UUID of the post to fork
+    - **request**: Fork request parameters
+    
+    **Returns:**
+    - **PostForkAPIResponse**: Details of the created fork and conversation
+    
+    **Raises:**
+    - **404**: Post not found
+    - **500**: Internal server error
+    """
     try:
-        raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Fork post not yet implemented"
+        post_service = PostService(db)
+        
+        fork_response = post_service.fork_post(
+            post_id=post_id,
+            user_id=current_user.user_id,
+            request=request
         )
+        
+        return PostForkAPIResponse(
+            success=True,
+            message="Post forked successfully",
+            data=fork_response
+        )
+        
+    except PostServiceError as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e)
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
