@@ -49,6 +49,8 @@ export const glassClasses = {
   card: 'glass-card',
   elevated: 'glass-elevated',
   header: 'glass-header',
+  sidebar: 'glass-sidebar',
+  dropdown: 'glass-dropdown',
   
   // Button system
   buttonPrimary: 'glass-button-primary',

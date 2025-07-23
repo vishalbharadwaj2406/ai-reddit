@@ -47,15 +47,9 @@
   border-radius: var(--radius-2xl);
 }
 
-/* Glass Header - Fixed header styling */
+/* Glass Header - Glass base + header positioning */
 .glass-header {
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
-  -webkit-backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
-  border: 1px solid var(--glass-border-light);
-  box-shadow: 
-    var(--shadow-lg),
-    0 0 40px rgba(30, 58, 138, 0.12);
+  composes: glass-base;
   position: fixed;
   top: 0;
   left: 0;
@@ -65,6 +59,29 @@
   border-left: none;
   border-right: none;
   border-top: none;
+}
+
+/* Glass Sidebar - Glass base + sidebar positioning */
+.glass-sidebar {
+  composes: glass-base;
+  position: fixed;
+  z-index: 99;
+  /* Component will handle top, left, width, height */
+}
+
+/* Glass Dropdown - Enhanced blue prominence for readability */
+.glass-dropdown {
+  background: rgba(15, 23, 42, 0.95); /* More blue-tinted dark background */
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 2px solid rgba(59, 130, 246, 0.6); /* Stronger blue border */
+  box-shadow: 
+    0 16px 40px rgba(0, 0, 0, 0.7),
+    0 0 100px rgba(59, 130, 246, 0.25), /* Enhanced blue glow */
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: absolute;
+  border-radius: var(--radius-lg);
+  z-index: 200;
 }
 
 /* ============================================

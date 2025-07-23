@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header";
+import AppLayout from "@/components/Layout/AppLayout";
 import "./globals.css";
 import { SessionProvider } from 'next-auth/react';
 import LoginModal from '@/components/LoginModal';
@@ -34,9 +35,9 @@ export default function RootLayout({
           <div className="bg-pattern"></div>
           <Header />
           <LoginModal />
-          <main>
+          <AppLayout>
             {children}
-          </main>
+          </AppLayout>
         </SessionProvider>
       </body>
     </html>
