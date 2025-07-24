@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { MessageSquarePlus } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import styles from './SidebarButton.module.css'
 import { useSidebarStore } from '@/lib/stores/sidebarStore'
 
@@ -12,10 +13,10 @@ interface SidebarButtonProps {
 
 export default function SidebarButton({ onClick, className = '' }: SidebarButtonProps) {
   const { isExpanded } = useSidebarStore()
+  const router = useRouter()
 
   const handleClick = () => {
-    // TODO: Implement new chat functionality
-    console.log('New chat clicked')
+    router.push('/conversations/new')
     onClick?.()
   }
 

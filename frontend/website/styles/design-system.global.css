@@ -1,14 +1,13 @@
 /* ============================================
    ROYAL INK GLASS DESIGN SYSTEM
-   Reusable design tokens and glass morphism effects
-   These are global classes used across the application
+   Dark theme with subtle glass morphism effects
    ============================================ */
 
 /* ============================================
    BASE GLASS MORPHISM SYSTEM
    ============================================ */
 
-/* Base Glass Effect - Core reusable pattern */
+/* Base Glass Effect - Core reusable pattern (RESTORED) */
 .glass-base {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
@@ -19,7 +18,7 @@
     0 0 40px rgba(30, 58, 138, 0.12);
 }
 
-/* Glass Card - For content containers */
+/* Glass Card - For content containers (RESTORED) */
 .glass-card {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
@@ -30,9 +29,17 @@
     0 0 40px rgba(30, 58, 138, 0.12);
   border-radius: var(--radius-2xl);
   padding: var(--space-xl);
+  transition: all 0.3s ease;
 }
 
-/* Glass Elevated - For special emphasis */
+.glass-card:hover {
+  box-shadow: 
+    var(--shadow-xl),
+    0 0 50px rgba(30, 58, 138, 0.18);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+/* Glass Elevated - For special emphasis (RESTORED) */
 .glass-elevated {
   background: linear-gradient(135deg, 
     rgba(30, 58, 138, 0.15) 0%,
@@ -47,48 +54,309 @@
   border-radius: var(--radius-2xl);
 }
 
-/* Glass Header - Glass base + header positioning */
+/* Glass Header - Fixed positioning with proper backdrop (RESTORED) */
 .glass-header {
-  composes: glass-base;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
+  -webkit-backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
+  border-bottom: 1px solid var(--glass-border-light);
+  box-shadow: 
+    var(--shadow-lg),
+    0 0 40px rgba(30, 58, 138, 0.12);
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 100;
-  border-bottom: 1px solid var(--glass-border-light);
-  border-left: none;
-  border-right: none;
-  border-top: none;
 }
 
-/* Glass Sidebar - Glass base + sidebar positioning */
+/* Glass Sidebar - Fixed positioning (RESTORED) */
 .glass-sidebar {
-  composes: glass-base;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
+  -webkit-backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
+  border: 1px solid var(--glass-border-light);
+  box-shadow: 
+    var(--shadow-lg),
+    0 0 40px rgba(30, 58, 138, 0.12);
   position: fixed;
   z-index: 99;
-  /* Component will handle top, left, width, height */
-}
-
-/* Glass Dropdown - Enhanced blue prominence for readability */
-.glass-dropdown {
-  background: rgba(15, 23, 42, 0.95); /* More blue-tinted dark background */
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 2px solid rgba(59, 130, 246, 0.6); /* Stronger blue border */
-  box-shadow: 
-    0 16px 40px rgba(0, 0, 0, 0.7),
-    0 0 100px rgba(59, 130, 246, 0.25), /* Enhanced blue glow */
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  position: absolute;
-  border-radius: var(--radius-lg);
-  z-index: 200;
 }
 
 /* ============================================
-   BUTTON SYSTEM
+   SAMPLE WEBSITE GLASS EFFECTS (from website-sample.html)
    ============================================ */
 
-/* Primary Glass Button */
+/* Glass Panel - From sample website styling */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(32px) saturate(180%) brightness(1.1);
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.1);
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 60px rgba(30, 58, 138, 0.15);
+  border-radius: 24px;
+  transition: all 0.4s ease;
+}
+
+.glass-panel:hover {
+  background: rgba(30, 58, 138, 0.05);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 80px rgba(30, 58, 138, 0.2);
+}
+
+/* Glass Panel Subdued - For reference content (Original Blog) */
+.glass-panel-subdued {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  transition: all 0.4s ease;
+}
+
+.glass-panel-subdued:hover {
+  background: rgba(0, 0, 0, 0.75);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 
+    0 10px 36px rgba(0, 0, 0, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Glass Panel Active - For working content (Generated Blog) */
+.glass-panel-active {
+  background: rgba(15, 30, 60, 0.4);
+  backdrop-filter: blur(32px) saturate(160%);
+  -webkit-backdrop-filter: blur(32px) saturate(160%);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(59, 130, 246, 0.2),
+    0 0 40px rgba(30, 58, 138, 0.2);
+  border-radius: 24px;
+  transition: all 0.4s ease;
+}
+
+.glass-panel-active:hover {
+  background: rgba(20, 35, 70, 0.5);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 
+    0 16px 50px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(59, 130, 246, 0.3),
+    0 0 60px rgba(30, 58, 138, 0.25);
+}
+
+/* Sample Chat Panel - From website-sample.html */
+.sample-chat-panel {
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  height: fit-content;
+  min-height: 700px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(32px) saturate(180%) brightness(1.1);
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.1);
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 60px rgba(30, 58, 138, 0.15);
+  border-radius: 24px;
+}
+
+/* Sample Social Panel - From website-sample.html */
+.sample-social-panel {
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(32px) saturate(180%) brightness(1.1);
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.1);
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 60px rgba(30, 58, 138, 0.15);
+  border-radius: 24px;
+}
+
+/* Sample Message Bubbles - From website-sample.html */
+.sample-message {
+  padding: 24px 32px;
+  border-radius: 20px;
+  max-width: 85%;
+  animation: fadeSlide 0.4s ease-out;
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+.sample-message.user {
+  align-self: flex-end;
+  background: linear-gradient(135deg, #1E3A8A, #3B82F6);
+  color: white;
+  box-shadow: 0 12px 32px rgba(30, 58, 138, 0.4);
+}
+
+.sample-message.ai {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(59, 130, 246, 0.25);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Sample Post Card - From website-sample.html */
+.sample-post-card {
+  padding: 32px;
+  margin-bottom: 24px;
+  transition: all 0.4s ease;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(32px) saturate(180%) brightness(1.1);
+  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.1);
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 60px rgba(30, 58, 138, 0.15);
+  border-radius: 24px;
+}
+
+.sample-post-card:hover {
+  background: rgba(30, 58, 138, 0.05);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 
+    0 16px 50px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15),
+    0 0 80px rgba(30, 58, 138, 0.2);
+}
+
+/* Sample Input Field - From website-sample.html */
+.sample-input-field {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-radius: 20px;
+  padding: 20px 28px;
+  color: #FFFFFF;
+  font-size: 17px;
+  font-weight: 500;
+  resize: none;
+  min-height: 64px;
+  max-height: 140px;
+  transition: all 0.3s ease;
+}
+
+.sample-input-field:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 32px rgba(59, 130, 246, 0.2);
+}
+
+.sample-input-field::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Sample Button - From website-sample.html */
+.sample-btn {
+  background: linear-gradient(135deg, #1E3A8A, #3B82F6);
+  border: none;
+  border-radius: 20px;
+  padding: 20px 32px;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(30, 58, 138, 0.3);
+}
+
+.sample-btn:hover {
+  box-shadow: 0 12px 32px rgba(30, 58, 138, 0.4);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+}
+
+/* Glass Dropdown - Enhanced visibility */
+.glass-dropdown {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 2px solid rgba(59, 130, 246, 0.6);
+  box-shadow: 
+    0 16px 40px rgba(0, 0, 0, 0.7),
+    0 0 100px rgba(59, 130, 246, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  position: absolute;
+  border-radius: 16px;
+  z-index: 200;
+  animation: glassDropdownAppear 0.2s ease-out;
+}
+
+@keyframes glassDropdownAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Glass Input - For form fields */
+.glass-input {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-radius: 20px;
+  color: #FFFFFF;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 
+    0 6px 24px rgba(0, 0, 0, 0.4),
+    0 0 32px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.glass-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ============================================
+   ENHANCED BUTTON SYSTEM
+   ============================================ */
+
+/* Primary Glass Button (RESTORED & TONED DOWN) */
 .glass-button-primary {
   background: linear-gradient(135deg, 
     rgba(30, 58, 138, 0.6) 0%,
@@ -111,7 +379,6 @@
 }
 
 .glass-button-primary:hover {
-  transform: translateY(-2px);
   box-shadow: 
     0 6px 20px rgba(30, 58, 138, 0.3),
     0 0 24px rgba(59, 130, 246, 0.2);
@@ -119,7 +386,36 @@
   color: #FFFFFF;
 }
 
-/* Secondary Glass Button */
+/* Generate Blog Button - Subtle special styling */
+.glass-button-generate {
+  background: linear-gradient(135deg, 
+    rgba(30, 58, 138, 0.7) 0%,
+    rgba(59, 130, 246, 0.5) 100%);
+  backdrop-filter: var(--glass-blur-light) saturate(160%);
+  -webkit-backdrop-filter: var(--glass-blur-light) saturate(160%);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #FFFFFF;
+  border-radius: var(--radius-lg);
+  font-weight: 700;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 6px 20px rgba(30, 58, 138, 0.25),
+    0 0 24px rgba(59, 130, 246, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.glass-button-generate:hover {
+  box-shadow: 
+    0 8px 28px rgba(30, 58, 138, 0.35),
+    0 0 32px rgba(59, 130, 246, 0.25);
+  border-color: rgba(59, 130, 246, 0.6);
+}
+
+/* Secondary Glass Button (RESTORED) */
 .glass-button-secondary {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -140,14 +436,79 @@
   background: rgba(59, 130, 246, 0.1);
   border-color: var(--glass-border-medium);
   color: #FFFFFF;
-  transform: translateY(-1px);
+}
+
+/* Toggle Button - For panel toggles */
+.glass-button-toggle {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  padding: 8px 16px;
+}
+
+.glass-button-toggle:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: #FFFFFF;
+  border-color: rgba(59, 130, 246, 0.5);
+}
+
+.glass-button-toggle.active {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60A5FA;
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
 }
 
 /* ============================================
-   TEXT SYSTEM
+   ENHANCED TYPOGRAPHY SYSTEM
    ============================================ */
 
-/* Gradient Text Effect */
+/* Display Text - For major headings */
+.text-display {
+  font-size: clamp(32px, 6vw, 48px);
+  font-weight: 900;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+/* Heading Text - For section headings */
+.text-heading {
+  font-size: clamp(24px, 4vw, 32px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* Subheading Text - For subsection headings */
+.text-subheading {
+  font-size: clamp(18px, 3vw, 24px);
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+/* Body Text - For regular content */
+.text-body {
+  font-size: clamp(16px, 2vw, 18px);
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* Caption Text - For small text */
+.text-caption {
+  font-size: clamp(14px, 1.5vw, 16px);
+  font-weight: 500;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Gradient Text Effect - Enhanced */
 .text-gradient-primary {
   background: linear-gradient(135deg, #FFFFFF, #60A5FA, #FFFFFF);
   background-size: 200% 200%;
@@ -156,9 +517,15 @@
   -webkit-text-fill-color: transparent;
   color: transparent;
   filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
+  animation: gradientShimmer 4s ease-in-out infinite;
 }
 
-/* Gradient Text - Logo variant */
+@keyframes gradientShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Gradient Text - Logo variant with constant animation */
 .text-gradient-logo {
   background: linear-gradient(135deg, #E6F3FF, #3B82F6, #E6F3FF, #60A5FA, #E6F3FF);
   background-size: 400% 400%;
@@ -167,6 +534,15 @@
   -webkit-text-fill-color: transparent;
   color: transparent;
   filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5));
+  animation: gradientShift 25s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  25% { background-position: 100% 50%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* Accent Text */
@@ -175,8 +551,79 @@
   filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.2));
 }
 
+/* Message Text - For chat messages */
+.text-message {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.9);
+}
+
 /* ============================================
-   UTILITY CLASSES
+   CONVERSATION SPECIFIC COMPONENTS
+   ============================================ */
+
+/* Message Bubble - User */
+.glass-message-user {
+  background: linear-gradient(135deg, #1E3A8A, #3B82F6);
+  border-radius: 20px 20px 4px 20px;
+  padding: 16px 24px;
+  color: #FFFFFF;
+  box-shadow: 0 8px 24px rgba(30, 58, 138, 0.3);
+  margin-left: auto;
+  max-width: 85%;
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+/* Message Bubble - AI */
+.glass-message-ai {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 2px solid rgba(59, 130, 246, 0.25);
+  border-radius: 20px 20px 20px 4px;
+  padding: 16px 24px;
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 85%;
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Character Counter */
+.glass-counter {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 12px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.glass-counter.warning {
+  color: #F59E0B;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.glass-counter.error {
+  color: #EF4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ============================================
+   UTILITY CLASSES - ENHANCED
    ============================================ */
 
 /* Glow Effects */
@@ -188,10 +635,42 @@
   filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.6));
 }
 
+.glow-blue-intense {
+  filter: drop-shadow(0 0 32px rgba(59, 130, 246, 0.8));
+}
+
 /* Focus States */
 .focus-ring:focus-visible {
   outline: 2px solid var(--color-brilliant-blue);
   outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+/* Smooth Transitions */
+.transition-smooth {
+  transition: all 0.3s ease;
+}
+
+.transition-fast {
+  transition: all 0.15s ease;
+}
+
+.transition-slow {
+  transition: all 0.6s ease;
+}
+
+/* Loading Animation */
+.loading-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Responsive Hide/Show */
@@ -203,6 +682,14 @@
   display: none;
 }
 
+.hide-tablet {
+  display: block;
+}
+
+.show-tablet {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .hide-mobile {
     display: none;
@@ -210,5 +697,63 @@
   
   .show-mobile {
     display: block;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .hide-tablet {
+    display: none;
+  }
+  
+  .show-tablet {
+    display: block;
+  }
+}
+
+/* ============================================
+   RESPONSIVE LAYOUT HELPERS
+   ============================================ */
+
+/* Three-panel responsive behavior */
+@media (max-width: 768px) {
+  /* Mobile: Force single column */
+  .grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  /* Tablet: Maximum 2 columns */
+  .grid-cols-3 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* Conversation workspace responsive padding */
+@media (max-width: 768px) {
+  .px-12 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  .py-12 {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .px-12 {
+    padding-left: 2rem !important;
+    padding-right: 2rem !important;
+  }
+  
+  .py-12 {
+    padding-top: 2.5rem !important;
+    padding-bottom: 2.5rem !important;
   }
 }

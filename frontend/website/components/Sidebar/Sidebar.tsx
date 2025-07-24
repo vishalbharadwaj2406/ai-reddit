@@ -87,7 +87,7 @@ export default function Sidebar() {
               icon={MessageCircle}
               label="Conversations"
               href="/conversations"
-              isActive={pathname === '/conversations'}
+              isActive={pathname.startsWith('/conversations')}
             />
           </nav>
         </div>
