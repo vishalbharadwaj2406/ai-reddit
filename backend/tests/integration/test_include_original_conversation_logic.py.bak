@@ -29,7 +29,7 @@ class TestIncludeOriginalConversationLogic:
                 json={"includeOriginalConversation": False}
             )
             
-            assert response.status_code == 201
+            assert response.status_code == 200
             data = response.json()
             assert data["success"] is True
             
@@ -55,7 +55,7 @@ class TestIncludeOriginalConversationLogic:
                 json={"includeOriginalConversation": True}
             )
             
-            assert response.status_code == 201
+            assert response.status_code == 200
             data = response.json()
             assert data["success"] is True
             
@@ -83,7 +83,7 @@ class TestIncludeOriginalConversationLogic:
                 json={}
             )
             
-            assert response.status_code == 201
+            assert response.status_code == 200
             data = response.json()
             assert data["success"] is True
             
@@ -122,8 +122,8 @@ class TestIncludeOriginalConversationLogic:
             )
             
             # Both should succeed
-            assert response_false.status_code == 201
-            assert response_true.status_code == 201
+            assert response_false.status_code == 200
+            assert response_true.status_code == 200
             
             data_false = response_false.json()
             data_true = response_true.json()
@@ -156,7 +156,7 @@ class TestIncludeOriginalConversationLogic:
                 json={"includeOriginalConversation": False}
             )
             
-            assert response.status_code == 201
+            assert response.status_code == 200
             data = response.json()
             
             fork_data = data["data"]

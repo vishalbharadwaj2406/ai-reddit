@@ -320,7 +320,7 @@ async def get_post(
         )
 
 
-@router.post("/{post_id}/fork", response_model=PostForkAPIResponse)
+@router.post("/{post_id}/fork", response_model=PostForkAPIResponse, status_code=status.HTTP_201_CREATED)
 async def fork_post(
     post_id: UUID,
     request: PostForkRequest,

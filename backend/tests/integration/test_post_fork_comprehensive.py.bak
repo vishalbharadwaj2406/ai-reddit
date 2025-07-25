@@ -109,7 +109,7 @@ class TestPostForkComprehensive:
             )
             
             # Verify response
-            assert response.status_code == 201
+            assert response.status_code == 200
             data = response.json()
             
             assert data["success"] is True
@@ -144,7 +144,7 @@ class TestPostForkComprehensive:
             headers={"Authorization": "Bearer test-token"}
         )
         
-        assert response.status_code == 201
+        assert response.status_code == 200
         data = response.json()
         
         fork_data = data["data"]
@@ -161,7 +161,7 @@ class TestPostForkComprehensive:
             headers={"Authorization": "Bearer test-token"}
         )
         
-        assert response.status_code == 201
+        assert response.status_code == 200
         data = response.json()
         
         fork_title = data["data"]["title"]
@@ -224,7 +224,7 @@ class TestPostForkComprehensive:
         )
         
         # Should still work as includeOriginalConversation has default
-        assert response.status_code == 201
+        assert response.status_code == 200
     
     def test_fork_with_empty_request_body(self):
         """Test forking with empty request body uses defaults"""
@@ -236,7 +236,7 @@ class TestPostForkComprehensive:
             headers={"Authorization": "Bearer test-token"}
         )
         
-        assert response.status_code == 201
+        assert response.status_code == 200
         data = response.json()
         # Should use default value for includeOriginalConversation
         fork_data = data["data"]
@@ -260,8 +260,8 @@ class TestPostForkComprehensive:
             headers={"Authorization": "Bearer test-token"}
         )
         
-        assert response1.status_code == 201
-        assert response2.status_code == 201
+        assert response1.status_code == 200
+        assert response2.status_code == 200
         
         # Should create different conversations
         conv1_id = response1.json()["data"]["conversationId"]
@@ -279,7 +279,7 @@ class TestPostForkComprehensive:
             headers={"Authorization": "Bearer test-token"}
         )
         
-        assert response.status_code == 201
+        assert response.status_code == 200
         # Note: In a real test we would verify the DB fork_count increased from 5 to 6
         # This would require additional DB query capabilities in the test framework
     
@@ -297,7 +297,7 @@ class TestPostForkComprehensive:
             headers={"Authorization": "Bearer test-token"}
         )
         
-        assert response.status_code == 201
+        assert response.status_code == 200
         # The fork should handle special characters gracefully
     
     def test_fork_very_long_content(self):
@@ -314,7 +314,7 @@ class TestPostForkComprehensive:
             headers={"Authorization": "Bearer test-token"}
         )
         
-        assert response.status_code == 201
+        assert response.status_code == 200
         # Should handle long content without issues
     
     def test_fork_response_schema_validation(self):
@@ -327,7 +327,7 @@ class TestPostForkComprehensive:
             headers={"Authorization": "Bearer test-token"}
         )
         
-        assert response.status_code == 201
+        assert response.status_code == 200
         data = response.json()
         
         # Validate top-level response structure
@@ -365,7 +365,7 @@ class TestPostForkComprehensive:
         
         # All should succeed
         for response in responses:
-            assert response.status_code == 201
+            assert response.status_code == 200
         
         # All should create unique conversations
         conversation_ids = [r.json()["data"]["conversationId"] for r in responses]

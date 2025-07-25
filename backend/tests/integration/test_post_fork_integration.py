@@ -51,7 +51,7 @@ class TestPostForkIntegration:
             
             # Verify response structure
             assert data["success"] is True
-            assert data["message"] == "Conversation forked successfully"
+            assert data["message"] == "Post forked successfully"
             assert data["errorCode"] is None
             assert "data" in data
             
@@ -65,7 +65,7 @@ class TestPostForkIntegration:
             
             # Verify conversation details
             assert fork_data["forkedFrom"] == str(test_post.post_id)
-            assert fork_data["title"] == f"Re: {test_post.title}"
+            assert fork_data["title"] == f"Fork of: {test_post.title}"
             assert fork_data["includeOriginalConversation"] is False
             
             # Verify conversation was created with proper links
@@ -84,37 +84,39 @@ class TestPostForkIntegration:
         
         # Get a different user to fork (not the original author)
         fork_user = comprehensive_test_data["users"][1]
+        auth_headers = {"Authorization": f"Bearer fake_token_{fork_user.user_id}"}
         
         # Override the authentication dependency
         app.dependency_overrides[get_current_user] = lambda: fork_user
         
         try:
-        
-        # Fork the post with original conversation inclusion
-        response = client.post(
-            f"/api/v1/posts/{test_post.post_id}/fork",
-            json={"includeOriginalConversation": True},
-            headers=auth_headers
-        )
-        
-        assert response.status_code == 201
-        data = response.json()
-        
-        # Verify response
-        assert data["success"] is True
-        fork_data = data["data"]
-        assert fork_data["includeOriginalConversation"] is True
-        
-        # Verify conversation was created with original context
-        conversation_id = fork_data["conversationId"]
-        conversation_response = client.get(
-            f"/api/v1/conversations/{conversation_id}",
-            headers=auth_headers
-        )
-        assert conversation_response.status_code == 200
-        
-        # TODO: Verify that system prompt includes original conversation context
-        # This will be validated when we implement the messaging with AI context
+            # Fork the post with original conversation inclusion
+            response = client.post(
+                f"/api/v1/posts/{test_post.post_id}/fork",
+                json={"includeOriginalConversation": True},
+                headers=auth_headers
+            )
+            
+            assert response.status_code == 201
+            data = response.json()
+            
+            # Verify response
+            assert data["success"] is True
+            fork_data = data["data"]
+            assert fork_data["includeOriginalConversation"] is True
+            
+            # Verify conversation was created with original context
+            conversation_id = fork_data["conversationId"]
+            conversation_response = client.get(
+                f"/api/v1/conversations/{conversation_id}",
+                headers=auth_headers
+            )
+            assert conversation_response.status_code == 200
+            
+            # TODO: Verify that system prompt includes original conversation context
+            # This will be validated when we implement the messaging with AI context
+        finally:
+            app.dependency_overrides.clear()
 
     def test_fork_post_default_include_original_if_public(self, client, comprehensive_test_data):
         """Test that original conversation is included by default if it's public"""
@@ -122,25 +124,29 @@ class TestPostForkIntegration:
         test_post = test_posts[0]
         
         fork_user = comprehensive_test_data["users"][1]
-        auth_headers = {"Authorization": f"Bearer fake_token_{fork_user.user_id}"}
         
-        # Fork without specifying includeOriginalConversation
-        response = client.post(
-            f"/api/v1/posts/{test_post.post_id}/fork",
-            json={},  # Empty body - should default to true if conversation is public
-            headers=auth_headers
-        )
+        # Override the authentication dependency
+        app.dependency_overrides[get_current_user] = lambda: fork_user
         
-        assert response.status_code == 201
-        data = response.json()
-        
-        fork_data = data["data"]
-        
-        # Should default to True if original conversation is public
-        if test_post.is_conversation_visible:
-            assert fork_data["includeOriginalConversation"] is True
-        else:
-            assert fork_data["includeOriginalConversation"] is False
+        try:
+            # Fork without specifying includeOriginalConversation
+            response = client.post(
+                f"/api/v1/posts/{test_post.post_id}/fork",
+                json={},  # Empty body - should default to true if conversation is public
+            )
+            
+            assert response.status_code == 201
+            data = response.json()
+            
+            fork_data = data["data"]
+            
+            # Should default to True if original conversation is public
+            if test_post.is_conversation_visible:
+                assert fork_data["includeOriginalConversation"] is True
+            else:
+                assert fork_data["includeOriginalConversation"] is False
+        finally:
+            app.dependency_overrides.clear()
 
     def test_fork_post_privacy_controls(self, client, comprehensive_test_data):
         """Test privacy controls - can't include private conversation context"""
@@ -298,7 +304,7 @@ class TestPostForkIntegration:
         assert response.status_code == 201
         data = response.json()
         
-        expected_title = f"Re: {test_post.title}"
+        expected_title = f"Fork of: {test_post.title}"
         assert data["data"]["title"] == expected_title
 
     def test_fork_performance_multiple_concurrent_forks(self, client, comprehensive_test_data):

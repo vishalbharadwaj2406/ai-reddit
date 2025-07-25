@@ -32,7 +32,7 @@ class TestForkFunctionality:
             )
             
             # Verify response
-            assert response.status_code == 200  # Fork endpoint returns 200
+            assert response.status_code == 201  # Fork endpoint returns 201 Created
             data = response.json()
             assert data["success"] is True
             assert "data" in data
@@ -63,7 +63,7 @@ class TestForkFunctionality:
             )
             
             # Verify response
-            assert response.status_code == 200
+            assert response.status_code == 201
             data = response.json()
             assert data["success"] is True
             
@@ -94,7 +94,7 @@ class TestForkFunctionality:
             )
             
             # Verify response
-            assert response.status_code == 200
+            assert response.status_code == 201
             data = response.json()
             assert data["success"] is True
             

@@ -417,7 +417,7 @@ class PostService:
         
         # Apply time range filter for "top" sorting
         if sort == "top" and time_range != "all":
-            from datetime import datetime, timedelta
+            from datetime import datetime, timedelta, timezone
             
             time_deltas = {
                 "hour": timedelta(hours=1),
@@ -427,7 +427,7 @@ class PostService:
             }
             
             if time_range in time_deltas:
-                cutoff_time = datetime.utcnow() - time_deltas[time_range]
+                cutoff_time = datetime.now(timezone.utc) - time_deltas[time_range]
                 query = query.filter(Post.created_at >= cutoff_time)
         
         # Apply sorting

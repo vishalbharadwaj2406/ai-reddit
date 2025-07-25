@@ -35,6 +35,7 @@ try:
     from app.api.v1.users import router as users_router
     from app.api.v1.conversations import router as conversations_router
     from app.api.v1.posts import router as posts_router
+    from app.api.v1.comments import router as comments_router
 except ImportError as e:
     print(f"⚠️  Warning: Some API modules couldn't be imported: {e}")
     print("This is normal during initial setup. Routes will be added as modules are implemented.")
@@ -109,6 +110,11 @@ def create_application() -> FastAPI:
             posts_router,
             prefix="/api/v1/posts",
             tags=["posts"]
+        )
+        app.include_router(
+            comments_router,
+            prefix="/api/v1",
+            tags=["comments"]
         )
     except NameError:
         print("⚠️  Some routers not available yet - they'll be added as modules are implemented")
