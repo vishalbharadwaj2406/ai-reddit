@@ -11,7 +11,7 @@ Security Features:
 - Optional authentication support
 """
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -145,3 +145,104 @@ async def get_current_user_optional(
     except HTTPException:
         # If authentication fails, return None instead of raising
         return None
+
+
+async def get_current_user_sse(
+    token: Optional[str] = Query(None, description="JWT token for SSE authentication"),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
+    """
+    Extract and validate current user for Server-Sent Events endpoints.
+    
+    SSE endpoints can't use Authorization headers, so we accept JWT tokens
+    as URL parameters while maintaining compatibility with header auth.
+    
+    Args:
+        token: JWT token from URL parameter (for SSE)
+        credentials: HTTP Bearer token credentials (fallback)
+        db: Database session
+        
+    Returns:
+        Current authenticated user
+        
+    Raises:
+        HTTPException: If token is invalid or user not found
+    """
+    # Try URL parameter first (for SSE), then Authorization header
+    jwt_token = token or (credentials.credentials if credentials else None)
+    
+    if not jwt_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "error": "AUTH_REQUIRED",
+                "message": "Authentication required"
+            }
+        )
+    
+    try:
+        # Decode JWT token
+        payload = JWTManager.decode_token(jwt_token)
+        
+        # Extract user ID from token
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "error": "INVALID_TOKEN",
+                    "message": "Token missing user ID"
+                }
+            )
+        
+        # Verify token type is access token
+        token_type = payload.get("type")
+        if token_type != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "error": "INVALID_TOKEN",
+                    "message": "Invalid token type"
+                }
+            )
+        
+        # Get user from database
+        stmt = select(User).where(
+            User.user_id == user_id,
+            User.status == 'active'
+        )
+        user = db.execute(stmt).scalar_one_or_none()
+        
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={
+                    "error": "INVALID_TOKEN",
+                    "message": "User not found or inactive"
+                }
+            )
+        
+        return user
+        
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={
+                "error": "INVALID_TOKEN",
+                "message": "Invalid or expired token"
+            }
+        )
+    except HTTPException:
+        # Re-raise HTTP exceptions (like user not found)
+        raise
+    except Exception as e:
+        # Log the error for debugging
+        print(f"SSE Auth error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "AUTH_ERROR",
+                "message": "Authentication failed"
+            }
+        )

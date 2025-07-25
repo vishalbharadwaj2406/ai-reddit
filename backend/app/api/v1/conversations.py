@@ -22,7 +22,7 @@ from app.schemas.conversation import ConversationCreate, ConversationResponse, C
 from app.schemas.message import MessageCreate, MessageResponse
 from app.models.conversation import Conversation
 from app.models.message import Message
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import get_current_user, get_current_user_sse
 from app.models.user import User
 from app.services.ai_service import generate_ai_response
 
@@ -436,7 +436,7 @@ async def stream_ai_response(
     conversation_id: UUID,
     message_id: UUID = Query(..., description="ID of the user message to respond to"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_sse)
 ):
     """
     Stream AI response to a user message via Server-Sent Events.
