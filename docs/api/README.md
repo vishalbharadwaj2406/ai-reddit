@@ -1,27 +1,15 @@
 # API Documentation
 
-API specification, endpoints, and integration guides for the AI Social platform.
-
-## Contents
-
-### [API Specification](./specification.md)
-Complete REST API specification with endpoints, request/response formats, and authentication.
-
-**Key Features:**
-- RESTful design with OpenAPI documentation
-- JWT-based authentication with Google OAuth
-- SSE streaming support for real-time AI conversations
-- Comprehensive error handling and validation
-- Rate limiting and security controls
+REST API specification with JWT authentication, real-time streaming, and social features.
 
 ## API Overview
 
 ### Architecture
 - **Framework**: FastAPI with automatic OpenAPI generation
 - **Authentication**: JWT tokens via Google OAuth 2.0
+- **Documentation**: Interactive Swagger UI at `/docs`
 - **Validation**: Pydantic schemas for all requests/responses
-- **Documentation**: Interactive Swagger UI and ReDoc
-- **Real-time**: SSE streaming connections for AI conversations
+- **Real-time**: Server-Sent Events for AI conversations
 
 ### Base URL
 ```
@@ -29,124 +17,179 @@ Development: http://localhost:8000
 Production: TBD
 ```
 
-### Authentication
-All authenticated endpoints require JWT tokens obtained via Google OAuth:
-```
-Authorization: Bearer <jwt_token>
-```
+## Authentication
 
-### Response Format
-All API responses follow a standard wrapper format:
+### OAuth Flow
+1. **Google OAuth**: Users authenticate via Google OAuth 2.0
+2. **JWT Tokens**: API returns access and refresh tokens
+3. **Token Usage**: Include `Authorization: Bearer <token>` in requests
+4. **Token Refresh**: Automatic refresh token rotation
+
+### Protected Endpoints
+Most endpoints require authentication. Public endpoints include:
+- `GET /health` - System health check
+- `POST /auth/google` - Google OAuth login
+- `GET /posts` - Public post feed (limited)
+
+## Core Endpoints
+
+### User Management
+- `POST /auth/google` - Google OAuth authentication
+- `GET /users/me` - Get current user profile
+- `PUT /users/me` - Update user profile
+- `POST /users/{user_id}/follow` - Follow/unfollow user
+- `GET /users/{user_id}/followers` - Get user followers
+- `GET /users/{user_id}/following` - Get users being followed
+
+### Content Creation
+- `POST /conversations` - Create new AI conversation
+- `POST /conversations/{id}/messages` - Send message to AI
+- `GET /conversations/{id}/stream` - SSE stream for real-time AI responses
+- `POST /posts` - Create post from conversation
+- `PUT /posts/{id}` - Update post content
+- `DELETE /posts/{id}` - Soft delete post
+
+### Social Interactions
+- `GET /posts` - Get post feed with filtering and pagination
+- `GET /posts/{id}` - Get specific post with comments
+- `POST /posts/{id}/fork` - Fork post into new conversation
+- `POST /posts/{id}/reactions` - Add/update post reaction
+- `POST /posts/{id}/comments` - Add comment to post
+- `PUT /comments/{id}` - Update comment
+- `POST /comments/{id}/reactions` - Add/update comment reaction
+
+### Content Discovery
+- `GET /tags` - Get available tags
+- `GET /posts/tagged/{tag}` - Get posts by tag
+- `GET /search/posts` - Search posts by content
+- `GET /users/{id}/posts` - Get user's posts
+
+## Request/Response Format
+
+### Standard Response Structure
 ```json
 {
-  "success": boolean,
-  "data": object | array | null,
-  "message": string,
-  "errorCode": string | null
+  "success": true,
+  "data": { ... },
+  "message": "Operation completed successfully",
+  "timestamp": "2025-08-01T21:30:00Z"
 }
 ```
 
-## Endpoint Categories
+### Error Response Structure
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid input data",
+    "details": { ... }
+  },
+  "timestamp": "2025-08-01T21:30:00Z"
+}
+```
 
-### Authentication Endpoints
-- `POST /auth/google` - Google OAuth authentication
-- `POST /auth/refresh` - Refresh JWT token
-- `POST /auth/logout` - Logout user
+### Pagination
+```json
+{
+  "data": [...],
+  "pagination": {
+    "page": 1,
+    "per_page": 20,
+    "total": 100,
+    "pages": 5,
+    "has_next": true,
+    "has_prev": false
+  }
+}
+```
 
-### User Management
-- `GET /users/me` - Get current user profile
-- `PATCH /users/me` - Update user profile
-- `GET /users/{user_id}` - Get public user profile
-- `POST /users/{user_id}/follow` - Follow/unfollow user
+## Real-time Features
 
-### Conversation Management
-- `POST /conversations` - Create new conversation
-- `GET /conversations/{id}` - Get conversation details
-- `POST /conversations/{id}/messages` - Add message to conversation
-- `GET /conversations/{id}/messages` - Get conversation messages
-- `GET /conversations/{id}/stream` - Real-time SSE conversation streaming
+### AI Conversation Streaming
+- **Endpoint**: `GET /conversations/{id}/stream`
+- **Protocol**: Server-Sent Events (SSE)
+- **Format**: JSON chunks with message deltas
+- **Connection**: Persistent connection for real-time AI responses
 
-### Content Management
-- `GET /posts` - Get public feed
-- `POST /posts` - Create new post
-- `GET /posts/{id}` - Get post details
-- `POST /posts/{id}/expand` - Fork post into new conversation
-- `POST /posts/{id}/reaction` - Add/remove reaction
-- `GET /posts/{id}/comments` - Get post comments
-- `POST /posts/{id}/comments` - Add comment to post
+### Example SSE Response
+```
+event: message_chunk
+data: {"type": "chunk", "content": "Here's my response...", "conversation_id": "123"}
 
-### Social Features
-- `GET /users/{id}/posts` - Get user's posts
-- `GET /users/{id}/followers` - Get user's followers
-- `GET /users/{id}/following` - Get users being followed
-- `GET /feed/following` - Get personalized feed
+event: message_complete
+data: {"type": "complete", "message_id": "456", "conversation_id": "123"}
+```
 
-### Health & System
-- `GET /health` - Basic health check
-- `GET /health/database` - Database connectivity check
-- `GET /health/` - Comprehensive system health
+## Rate Limiting
 
-## Implementation Status
+- **Authentication**: 100 requests per minute
+- **Post Creation**: 10 posts per hour
+- **AI Conversations**: 50 messages per hour
+- **Reactions**: 200 reactions per minute
+- **Comments**: 30 comments per hour
 
-### Complete
-- Health check endpoints
-- Authentication infrastructure (JWT + Google OAuth)
-- Database models and relationships
-- Request/response schemas
-- Error handling framework
-- Conversation Management: Complete (4 endpoints with comprehensive testing)
+## Status Codes
 
-### Ready for Implementation
-- User management endpoints
-- Conversation and message endpoints
-- Post creation and management
-- Social interaction features
-- SSE real-time communication
+- `200` - Success
+- `201` - Created
+- `400` - Bad Request (validation error)
+- `401` - Unauthorized (invalid/missing token)
+- `403` - Forbidden (insufficient permissions)
+- `404` - Not Found
+- `429` - Too Many Requests (rate limit exceeded)
+- `500` - Internal Server Error
 
-### Future Enhancements
-- Advanced search capabilities
-- Content recommendation algorithms
-- Analytics and reporting endpoints
-- Administrative management interfaces
-- Third-party integrations
+## Data Validation
 
-## Development Guidelines
+### Post Creation
+```json
+{
+  "title": "string (1-200 chars)",
+  "content": "string (1-10000 chars)",
+  "conversation_id": "uuid",
+  "is_conversation_visible": "boolean",
+  "tags": ["string array (max 5 tags)"]
+}
+```
 
-### Request Validation
-- All requests validated using Pydantic schemas
-- Comprehensive error messages for invalid requests
-- Type checking and automatic documentation
+### Comment Creation
+```json
+{
+  "content": "string (1-2000 chars)",
+  "parent_comment_id": "uuid (optional)"
+}
+```
 
-### Error Handling
-- Consistent error response format across all endpoints
-- HTTP status codes following REST conventions
-- Detailed error codes for client-side handling
+### User Profile Update
+```json
+{
+  "user_name": "string (3-30 chars, alphanumeric + underscore)",
+  "profile_picture": "string (valid URL, optional)",
+  "is_private": "boolean"
+}
+```
 
-### Security
-- JWT token validation on all protected endpoints
-- Rate limiting to prevent abuse
-- Input sanitization and SQL injection prevention
-- CORS configuration for frontend integration
+## Security Features
 
-### Performance
-- Efficient database queries with proper indexing
-- Pagination for large result sets
-- Caching strategies for frequently accessed data
-- Async request handling where appropriate
+### Input Validation
+- All inputs validated with Pydantic schemas
+- SQL injection prevention via ORM
+- XSS protection with content sanitization
+- File upload validation (future feature)
 
-## Testing Strategy
+### Authentication Security
+- JWT token expiration (15 minutes access, 7 days refresh)
+- Token rotation on refresh
+- Secure HTTP-only cookie option
+- CORS configuration for web clients
 
-### API Testing
-- Comprehensive endpoint testing with real database
-- Authentication flow testing
-- Error condition validation
-- Performance and load testing
+### Privacy Controls
+- User privacy settings (public/private accounts)
+- Conversation visibility controls
+- Content access based on follow relationships
+- Anonymous post sharing support
 
-### Integration Testing
-- End-to-end user workflow testing
-- Third-party service integration testing
-- Database transaction testing
-- Real-time SSE streaming communication testing
+---
 
-*For database schema, see the [Database](../database/) section.*
-*For system architecture, see the [Architecture](../architecture/) section.*
+Interactive API documentation available at `/docs` endpoint.

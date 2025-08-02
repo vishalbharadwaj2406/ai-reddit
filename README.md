@@ -4,116 +4,149 @@ Social media platform combining AI-assisted content creation with threaded discu
 
 ## Overview
 
-AI Social allows users to engage in conversations with AI to develop and refine their thoughts, then share those insights with a community. Key features include AI-powered content creation, fork-based exploration of ideas, and privacy-first social networking.
+We present a social platform that transforms how content is created and discussed through AI conversation forking. Users develop ideas via interactive AI dialogue, then publish posts that can spawn new conversation threads while preserving full context and discussion lineage.
 
-### Core Features
+Our implementation introduces post forking with conversation lineage tracking, AI-based content development workflows, and a conversation-to-content pipeline that bridges private AI interaction with public community discussion.
 
-- **AI Conversations**: Real-time chat with AI to develop ideas into structured content
-- **Post Forking**: Expand any post into a new AI conversation thread
-- **Quality Reactions**: Upvote, downvote, heart, insightful, and accurate reactions
-- **Privacy Controls**: User privacy settings and conversation visibility controls
-- **Threaded Discussions**: Nested comment system for in-depth conversations
+### Features
 
-### Planned Features
+- **AI Conversations**: Real-time chat interface with AI for content development
+- **Post Forking**: Create new AI conversation threads from existing posts with context preservation
+- **Reaction System**: Upvote, downvote, heart, insightful, and accurate reactions
+- **Privacy Controls**: User privacy settings and conversation visibility management
+- **Threaded Comments**: Nested comment system for discussions
+- **Content Organization**: Tag-based categorization and filtering
 
-- Multi-user (e.g., 2-person) conversations and collaborative debates
-- Advanced topic discovery: trending tags, semantic search, recommendations
-- AI-generated scores and feedback for debates
-- More privacy controls and content moderation tools
+## Technical Architecture
 
-## Documentation
+### Backend
+- **Framework**: FastAPI with SQLAlchemy 2.0 ORM
+- **Database**: PostgreSQL with 13 normalized tables
+- **Authentication**: Google OAuth 2.0 + JWT token management
+- **AI Integration**: LangChain + Google Gemini 2.5 Flash with streaming responses
+- **API Design**: RESTful with OpenAPI documentation and SSE streaming
 
-Technical documentation is available in the [`docs/`](./docs/) folder:
+### Frontend
+- **Framework**: Next.js 15 with App Router and TypeScript
+- **Styling**: Tailwind CSS 4 with custom glass morphism design system
+- **Authentication**: NextAuth v5 with Google OAuth integration
+- **State Management**: React Context with optimistic updates
+- **Real-time**: Server-Sent Events for AI conversation streaming
 
-- **[Documentation Overview](./docs/README.md)** - Navigation and structure
-- **[Architecture](./docs/architecture/)** - System design and technical decisions
-- **[API](./docs/api/)** - API specification and integration guides
-- **[Database](./docs/database/)** - Schema design and model documentation
-- **[Development](./docs/development/)** - Setup guides and testing strategies
-- **[LLM Agent](./docs/llm-agent/)** - Documentation for AI agents
-- **[Product](./docs/product/)** - Product requirements and user stories
-- **[Deployment](./docs/deployment/)** - Production deployment and operations
+### Database Design
+- **13 Production Tables**: Users, conversations, posts, comments, reactions, follows, tags
+- **Scalable Architecture**: UUID primary keys, proper indexing, soft deletion
+- **Relationship Modeling**: Many-to-many joins, foreign key constraints
+- **Migration System**: Alembic for version-controlled schema changes
 
-### Quick Links
-- **New Developers**: [Development Setup](./docs/development/README.md)
-- **API Integration**: [API Specification](./docs/api/specification.md)
-- **Database Work**: [Schema Design](./docs/database/schema.md)
-- **LLM Agents**: [Models Reference](./docs/llm-agent/models-reference.md)
+## Development Status
 
-## Current Status
+### Implementation Complete
+- **Database Layer**: 13 tables implemented with 181 passing tests
+- **Authentication**: Google OAuth + JWT implementation
+- **AI Service**: LangChain + Gemini integration with streaming responses
+- **API Foundation**: User management and social features
+- **Frontend**: Next.js application with glass morphism design
+- **Health Monitoring**: Database connectivity and system health endpoints
 
-- **Database Layer**: Complete (12/12 models, 181 tests passing)
-- **Database Tables**: 13 tables created in PostgreSQL (Supabase)
-- **Authentication System**: Google OAuth + JWT implementation complete
-- **AI Service**: LangChain + Gemini 2.5 Flash integration complete (production ready)
-- **Health Monitoring**: Database and system health endpoints active
-- **Migration System**: Alembic configured and operational
-- **Testing Framework**: 181 tests passing with comprehensive coverage
-- **API Layer**: Track A (User & Social) complete, Track B (Content) in progress
-- **Frontend**: Next.js 15 application with glass morphism design - mostly complete (1 known glass effect issue)
-- **Deployment**: Infrastructure ready
+### Current Development
+- **Content Management API**: Post creation, forking, and comment systems
+- **Frontend Integration**: API connection and real-time features
+- **Content Discovery**: Tag-based filtering and search
 
-### Database Foundation Complete
-- **Tables Created**: 13 tables (12 models + 1 Alembic version tracking)
-- **Migration Applied**: Initial migration `fa51e3bf0f60` successfully applied
-- **Health Checks**: Database connectivity and table verification working
-- **Test Coverage**: All models thoroughly tested with relationship validation
+### Future Work
+- Multi-user conversations and collaborative features
+- Advanced content discovery with semantic search
+- AI-generated content feedback and scoring
+- Enhanced privacy and content moderation
 
-### AI Integration Complete
-- **Framework**: LangChain abstraction layer for future-proof provider switching
-- **Model**: Google Gemini 2.5 Flash for optimal cost-performance
-- **Features**: Real-time streaming responses, conversation context, error handling
-- **Production Status**: Fully functional with real API integration
-
-### Ready for Content API Development
-- **Database**: Production-ready PostgreSQL setup with Supabase
-- **Models**: All SQLAlchemy models implemented and tested
-- **Schemas**: Pydantic schemas for API request/response validation
-- **Authentication**: Google OAuth and JWT token management
-- **AI Service**: LangChain + Gemini streaming responses working
-- **Health Monitoring**: Real-time database and system health endpoints
-- **Migration System**: Alembic for database version control
-
-## Technical Stack
-
-- **Backend**: FastAPI with SQLAlchemy 2.0
-- **Frontend**: Next.js 15 with App Router, Tailwind CSS 4, TypeScript
-- **Authentication**: Google OAuth 2.0 + JWT (NextAuth v5)
-- **Database**: PostgreSQL (Supabase)
-- **AI Integration**: LangChain + Google Gemini 2.5 Flash (production ready)
-- **Design System**: Royal Ink Glass morphism with backdrop-filter effects
-- **Testing**: Pytest (backend) + Vitest (frontend) with comprehensive coverage
-- **Deployment**: Infrastructure ready (cloud deployment planned)
-
-## Development
+## Getting Started
 
 ### Prerequisites
 - Python 3.12+
-- PostgreSQL 17.4+
-- Git
-- Google API key for Gemini (for AI features)
+- Node.js 18+
+- PostgreSQL 17+
+- Google API credentials for OAuth and Gemini
 
-### Setup
+### Backend Setup
 ```bash
-git clone https://github.com/vishalbharadwaj2406/ai-reddit.git
-cd ai-reddit/backend
+cd backend
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
-# Copy .env.example to .env and add your API keys
-pytest tests/ -v
+# Configure .env with database and API credentials
+pytest tests/ -v  # Run test suite (181 tests)
+uvicorn app.main:app --reload  # Start development server
 ```
 
-### Database
+### Frontend Setup
+```bash
+cd frontend/website
+npm install
+# Configure .env.local with authentication credentials
+npm run dev  # Start development server
+```
+
+### Database Setup
 - PostgreSQL database hosted on Supabase
-- 13 tables created via Alembic migrations
-- Health monitoring endpoints active
-- 181 tests passing for all models and relationships
+- Run migrations: `alembic upgrade head`
+- Verify setup: `pytest tests/test_database.py -v`
 
-### AI Service
-- LangChain framework with Gemini 2.5 Flash model
-- Real-time streaming responses via SSE
-- Production-ready with comprehensive error handling
-- Future-proof architecture for easy provider switching
+## API Documentation
 
-*Last Updated: July 20, 2025*
+Interactive API documentation available at:
+- **Swagger UI**: `http://localhost:8000/docs`
+- **ReDoc**: `http://localhost:8000/redoc`
+
+Key API features:
+- JWT-based authentication with Google OAuth
+- Server-Sent Events for real-time AI conversations
+- RESTful endpoints with comprehensive validation
+- Rate limiting and security controls
+
+## Technical Highlights
+
+### AI Integration
+- **Streaming Responses**: Real-time conversation implementation using Server-Sent Events
+- **Context Preservation**: Full conversation history maintained across post forks
+- **Provider Abstraction**: LangChain framework enables model switching
+- **Error Handling**: Comprehensive error handling and fallback strategies
+
+### Data Architecture
+- **Conversation-Centric Design**: Posts derived from AI conversations, maintaining context and enabling exploration pathways
+- **Forking System**: Post expansion preserves conversation lineage, creating branching discussion trees
+- **Context Preservation**: Full conversation history maintained across forks, enabling deep contextual exploration
+- **Privacy Controls**: Granular visibility settings for users and conversations
+- **Scalable Foundation**: UUID keys, proper indexing, soft deletion patterns
+
+### Frontend Implementation
+- **Glass Morphism UI**: Custom design system with backdrop-filter effects
+- **Responsive Design**: Mobile-first approach with Tailwind CSS
+- **Type Safety**: Full TypeScript implementation with strict checking
+- **Performance**: Optimized bundle splitting and lazy loading
+
+## Repository Structure
+
+```
+├── backend/           # FastAPI application
+│   ├── app/          # Application code
+│   ├── tests/        # Test suite (181 tests)
+│   └── alembic/      # Database migrations
+├── frontend/         # Next.js application
+│   └── website/      # Main web application
+└── docs/            # Technical documentation
+    ├── api/         # API specifications
+    ├── database/    # Schema documentation
+    └── architecture/ # System design
+```
+
+## Testing
+
+- **Backend**: 181 comprehensive tests with pytest
+- **Database**: Full model and relationship testing
+- **API**: Endpoint validation and error handling
+- **Frontend**: Component and integration testing with Vitest
+
+---
+
+Social platform for AI-assisted content creation and discussion.
