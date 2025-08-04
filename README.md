@@ -145,8 +145,3 @@ Key API features:
 - **Backend**: 181 comprehensive tests with pytest
 - **Database**: Full model and relationship testing
 - **API**: Endpoint validation and error handling
-- **Frontend**: Component and integration testing with Vitest
-
----
-
-Social platform for AI-assisted content creation and discussion.
