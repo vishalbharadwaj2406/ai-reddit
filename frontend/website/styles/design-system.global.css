@@ -588,6 +588,24 @@
   animation: messageSlideIn 0.3s ease-out;
 }
 
+/* Message Bubble - Blog */
+.glass-message-blog {
+  background: linear-gradient(135deg, 
+    rgba(30, 58, 138, 0.15) 0%,
+    rgba(59, 130, 246, 0.08) 100%);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 2px solid rgba(59, 130, 246, 0.4);
+  border-radius: 20px 20px 20px 4px;
+  padding: 16px 24px;
+  color: rgba(255, 255, 255, 0.95);
+  max-width: 85%;
+  box-shadow: 
+    0 8px 32px rgba(30, 58, 138, 0.2),
+    0 0 40px rgba(59, 130, 246, 0.15);
+  animation: messageSlideIn 0.3s ease-out;
+}
+
 @keyframes messageSlideIn {
   from {
     opacity: 0;

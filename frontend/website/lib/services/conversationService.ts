@@ -231,6 +231,112 @@ export class ConversationService {
   }
 
   /**
+   * Generate blog from conversation via Server-Sent Events
+   */
+  async generateBlogFromConversation(
+    conversationId: string,
+    additionalContext: string,
+    onChunk: (chunk: string) => void,
+    onComplete: (fullResponse: string, messageId: string) => void,
+    onError: (error: string) => void
+  ): Promise<void> {
+    try {
+      // Use apiClient to make POST request with streaming response
+      let fullResponse = '';
+      let blogMessageId = '';
+      
+      // Create headers for the fetch request
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+      };
+      
+      // Get auth token from localStorage (similar to apiClient)
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('ai_social_backend_jwt');
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+      }
+      
+      const response = await fetch(`${(apiClient as any).baseURL}${endpoints.conversations.generateBlog(conversationId)}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          additional_context: additionalContext
+        })
+      });
+      
+      if (!response.ok) {
+        throw new ConversationServiceError(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new ConversationServiceError('Failed to get response stream');
+      }
+      
+      const decoder = new TextDecoder();
+      let buffer = '';
+      
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) break;
+          
+          buffer += decoder.decode(value, { stream: true });
+          
+          // Process complete SSE messages
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+          
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                if (data.success && data.data) {
+                  const chunk = data.data;
+                  
+                  if (chunk.content) {
+                    if (chunk.message_id) {
+                      blogMessageId = chunk.message_id;
+                    }
+                    
+                    if (chunk.is_complete) {
+                      fullResponse = chunk.content;
+                      onComplete(fullResponse, blogMessageId);
+                      return;
+                    } else {
+                      onChunk(chunk.content);
+                    }
+                  }
+                }
+              } catch (parseError) {
+                console.error('Error parsing SSE data:', parseError);
+              }
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+      }
+      
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        onError('Blog generation was cancelled');
+      } else if (error.message?.includes('Authentication required') ||
+          error.message?.includes('AUTH_REQUIRED') ||
+          error.message?.includes('HTTP 401')) {
+        throw new AuthenticationRequiredError();
+      } else {
+        onError(`Blog generation failed: ${error.message}`);
+      }
+    }
+  }
+
+  /**
    * Stream AI response to a user message via Server-Sent Events
    */
   async streamAIResponse(

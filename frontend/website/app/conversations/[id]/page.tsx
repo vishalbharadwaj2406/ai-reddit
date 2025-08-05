@@ -18,6 +18,9 @@ export default function ConversationPage() {
   const [isSending, setIsSending] = useState(false);
   const [isAIResponding, setIsAIResponding] = useState(false);
   
+  // ✨ NEW: Blog generation state
+  const [isGeneratingBlog, setIsGeneratingBlog] = useState(false);
+  
   // Real conversation data state
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -174,6 +177,117 @@ export default function ConversationPage() {
     setMessageText(text);
   };
 
+  // ✨ NEW: Blog generation handler
+  const handleGenerateBlog = async () => {
+    if (!conversation || isGeneratingBlog) return;
+
+    try {
+      setIsGeneratingBlog(true);
+      
+      // Get current message text as additional context
+      const additionalContext = messageText.trim();
+      
+      // Add placeholder blog message immediately for optimistic UI
+      const blogMessage: Message = {
+        messageId: `blog-${Date.now()}`,
+        role: 'assistant',
+        content: '', // Will be updated as streaming progresses
+        isBlog: true,
+        createdAt: new Date().toISOString()
+      };
+      
+      addMessageToConversation(blogMessage);
+      
+      // Auto-open the blog panel to show generation
+      setShowGeneratedBlog(true);
+      
+      // Clear the message text since we're using it for blog generation
+      setMessageText('');
+      
+      // Start blog generation streaming with additional context
+      await conversationService.generateBlogFromConversation(
+        conversationId,
+        additionalContext,
+        // onChunk: Update the blog message content in real-time
+        (chunk: string) => {
+          // Update the last blog message in conversation
+          setConversation(prev => {
+            if (!prev) return null;
+            
+            const messages = [...prev.messages];
+            const lastBlogIndex = messages.length - 1;
+            
+            if (lastBlogIndex >= 0 && messages[lastBlogIndex].isBlog) {
+              messages[lastBlogIndex] = {
+                ...messages[lastBlogIndex],
+                content: chunk
+              };
+            }
+            
+            return {
+              ...prev,
+              messages: messages
+            };
+          });
+        },
+        // onComplete: Final blog content with message ID
+        (fullResponse: string, messageId: string) => {
+          setIsGeneratingBlog(false);
+          
+          // Update with final content and real message ID
+          setConversation(prev => {
+            if (!prev) return null;
+            
+            const messages = [...prev.messages];
+            const lastBlogIndex = messages.length - 1;
+            
+            if (lastBlogIndex >= 0 && messages[lastBlogIndex].isBlog) {
+              messages[lastBlogIndex] = {
+                ...messages[lastBlogIndex],
+                messageId: messageId || messages[lastBlogIndex].messageId,
+                content: fullResponse
+              };
+            }
+            
+            return {
+              ...prev,
+              messages: messages
+            };
+          });
+        },
+        // onError: Handle blog generation errors
+        (error: string) => {
+          setIsGeneratingBlog(false);
+          console.error('Blog generation error:', error);
+          
+          // Update the blog message with error content
+          setConversation(prev => {
+            if (!prev) return null;
+            
+            const messages = [...prev.messages];
+            const lastBlogIndex = messages.length - 1;
+            
+            if (lastBlogIndex >= 0 && messages[lastBlogIndex].isBlog) {
+              messages[lastBlogIndex] = {
+                ...messages[lastBlogIndex],
+                content: 'Sorry, I encountered an error generating the blog. Please try again.'
+              };
+            }
+            
+            return {
+              ...prev,
+              messages: messages
+            };
+          });
+        }
+      );
+      
+    } catch (err: any) {
+      console.error('Failed to generate blog:', err);
+      setIsGeneratingBlog(false);
+    }
+  };
+
   // Show loading state
   if (loading) {
     return (
@@ -208,17 +322,22 @@ export default function ConversationPage() {
   // Check if conversation has messages (excluding system messages)
   const hasUserMessages = conversation.messages.some(m => m.role === 'user');
   
+  // ✨ NEW: Blog detection logic
+  const blogMessages = conversation.messages.filter(m => m.isBlog === true);
+  const hasBlogMessages = blogMessages.length > 0;
+  const mostRecentBlogMessage = hasBlogMessages ? blogMessages[blogMessages.length - 1] : null;
+  
   // Calculate panel layout classes - conditional based on forked status
   const getPanelLayoutClasses = () => {
     if (isForked) {
       // Forked conversation can show all 3 panels
-      const panelsVisible = [showOriginalBlog, true, showGeneratedBlog].filter(Boolean).length;
+      const panelsVisible = [showOriginalBlog, true, showGeneratedBlog && hasBlogMessages].filter(Boolean).length;
       if (panelsVisible === 1) return 'grid-cols-1';
       if (panelsVisible === 2) return 'grid-cols-2';
       return 'grid-cols-3';
     } else {
-      // New conversation only shows conversation + generated blog
-      return showGeneratedBlog ? 'grid-cols-2' : 'grid-cols-1';
+      // New conversation only shows conversation + generated blog (if it exists)
+      return (showGeneratedBlog && hasBlogMessages) ? 'grid-cols-2' : 'grid-cols-1';
     }
   };
 
@@ -253,12 +372,15 @@ export default function ConversationPage() {
                     👁 Original Blog
                   </button>
                 )}
-                <button 
-                  className={`glass-button-toggle px-4 py-2 text-sm ${showGeneratedBlog ? 'active' : ''}`}
-                  onClick={() => setShowGeneratedBlog(!showGeneratedBlog)}
-                >
-                  📝 Generated Blog
-                </button>
+                {/* ✨ NEW: Only show Generated Blog toggle if blog messages exist */}
+                {hasBlogMessages && (
+                  <button 
+                    className={`glass-button-toggle px-4 py-2 text-sm ${showGeneratedBlog ? 'active' : ''}`}
+                    onClick={() => setShowGeneratedBlog(!showGeneratedBlog)}
+                  >
+                    📝 Generated Blog
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -307,11 +429,22 @@ export default function ConversationPage() {
                     {conversation.messages.filter(m => m.role !== 'system').map((message, index) => {
                       const isLastAIMessage = message.role === 'assistant' && 
                                             index === conversation.messages.filter(m => m.role !== 'system').length - 1;
-                      const isTyping = isAIResponding && isLastAIMessage;
+                      const isTyping = (isAIResponding && isLastAIMessage && !message.isBlog) || 
+                                     (isGeneratingBlog && isLastAIMessage && message.isBlog);
                       
                       return (
                         <div key={message.messageId} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`${message.role === 'user' ? 'glass-message-user' : 'glass-message-ai'} max-w-[85%]`}>
+                          <div className={`${message.role === 'user' ? 'glass-message-user' : 
+                                          message.isBlog ? 'glass-message-blog' : 'glass-message-ai'} max-w-[85%]`}>
+                            {/* ✨ NEW: Blog message indicator */}
+                            {message.isBlog && (
+                              <div className="flex items-center gap-2 mb-2 text-xs text-blue-300">
+                                <span className="px-2 py-1 bg-blue-900/30 rounded-full">📝 Blog</span>
+                                <button className="glass-button-generate px-2 py-1 text-xs">
+                                  ✍️ Edit and Post
+                                </button>
+                              </div>
+                            )}
                             <div className="text-message">
                               {message.content || (isTyping ? (
                                 <div className="flex items-center space-x-1">
@@ -325,12 +458,26 @@ export default function ConversationPage() {
                               )}
                             </div>
                             <div className="text-xs opacity-70 mt-2">
-                              {isTyping ? 'Typing...' : new Date(message.createdAt).toLocaleTimeString()}
+                              {isTyping ? (message.isBlog ? 'Generating blog...' : 'Typing...') : 
+                               new Date(message.createdAt).toLocaleTimeString()}
                             </div>
                           </div>
                         </div>
                       );
                     })}
+
+                    {/* ✨ NEW: Floating Generate Blog Button (when conversation has messages) */}
+                    {hasUserMessages && (
+                      <div className="flex justify-center pt-6">
+                        <button 
+                          className="glass-button-generate px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                          onClick={handleGenerateBlog}
+                          disabled={isGeneratingBlog}
+                        >
+                          {isGeneratingBlog ? '✨ Generating Blog...' : '✍️ Generate Blog'}
+                        </button>
+                      </div>
+                    )}
                     
 
                     
@@ -340,9 +487,13 @@ export default function ConversationPage() {
                 ) : (
                   /* Empty State - ChatGPT Style */
                   <div className="h-full flex flex-col items-center justify-center space-y-8">
-                    {/* Floating Write Custom Blog Button */}
-                    <button className="glass-button-generate px-8 py-4 text-lg font-medium">
-                      ✍️ Write Custom Blog
+                    {/* ✨ NEW: Generate Blog Button */}
+                    <button 
+                      className="glass-button-generate px-8 py-4 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handleGenerateBlog}
+                      disabled={isGeneratingBlog}
+                    >
+                      {isGeneratingBlog ? '✨ Generating Blog...' : '✍️ Write Custom Blog'}
                     </button>
                     
                     {/* Autofill Suggestions */}
@@ -381,48 +532,27 @@ export default function ConversationPage() {
             </div>
 
             {/* Right Panel - Generated Blog */}
-            {showGeneratedBlog && (
+            {showGeneratedBlog && hasBlogMessages && mostRecentBlogMessage && (
               <div className="glass-panel-active p-6 flex flex-col overflow-hidden">
                 <div className="flex items-center justify-between mb-6 flex-shrink-0">
                   <h3 className="text-subheading text-blue-300">Generated Blog Draft</h3>
                   <button className="glass-button-generate px-4 py-2 text-sm">
-                    📤 Publish Post
+                    ✍️ Edit and Post
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto text-body text-blue-100 space-y-4">
-                  <input 
-                    type="text"
-                    className="glass-input w-full p-3 text-lg font-semibold"
-                    placeholder="Blog post title..."
-                    defaultValue="Ensuring Fairness in AI-Powered Hiring"
-                  />
-                  <div className="space-y-4">
-                    <p>
-                      The integration of artificial intelligence in hiring processes represents both 
-                      an opportunity and a challenge for modern organizations. While AI can help 
-                      streamline recruitment and reduce human bias, it also introduces new forms 
-                      of potential discrimination that we must carefully address.
-                    </p>
-                    <p>
-                      Key considerations include ensuring diverse training data, regular bias 
-                      auditing, and maintaining human oversight in final decisions. The goal 
-                      is to leverage AI's efficiency while preserving fairness and transparency 
-                      in the hiring process.
-                    </p>
+                  {/* ✨ NEW: Display actual blog message content */}
+                  <div className="prose prose-invert max-w-none">
+                    <div 
+                      className="whitespace-pre-wrap text-blue-100"
+                      style={{ lineHeight: '1.6' }}
+                    >
+                      {mostRecentBlogMessage.content}
+                    </div>
                   </div>
-                  <div className="flex gap-3 pt-4 border-t border-blue-800">
-                    <span className="px-3 py-1 bg-blue-900/30 text-blue-300 rounded-full text-sm">
-                      #AIEthics
-                    </span>
-                    <span className="px-3 py-1 bg-blue-900/30 text-blue-300 rounded-full text-sm">
-                      #Hiring
-                    </span>
-                    <span className="px-3 py-1 bg-blue-900/30 text-blue-300 rounded-full text-sm">
-                      #Fairness
-                    </span>
-                  </div>
-                  <div className="text-caption text-blue-400 pt-2">
-                    Draft • 847 words • Ready to publish
+                  <div className="text-caption text-blue-400 pt-4 border-t border-blue-800">
+                    Generated {new Date(mostRecentBlogMessage.createdAt).toLocaleString()} • 
+                    {mostRecentBlogMessage.content.split(' ').length} words • Ready to edit
                   </div>
                 </div>
               </div>

@@ -23,3 +23,8 @@ class MessageResponse(BaseModel):
 class MessageCreate(BaseModel):
     """Message creation request model"""
     content: str = Field(..., min_length=1, description="Message content")
+
+
+class BlogGenerateRequest(BaseModel):
+    """Blog generation request model"""
+    additional_context: str = Field(default="", description="Additional context or current message text for blog generation")

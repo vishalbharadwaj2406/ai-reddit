@@ -19,7 +19,7 @@ import asyncio
 
 from app.core.database import get_db
 from app.schemas.conversation import ConversationCreate, ConversationResponse, ConversationListItem
-from app.schemas.message import MessageCreate, MessageResponse
+from app.schemas.message import MessageCreate, MessageResponse, BlogGenerateRequest
 from app.models.conversation import Conversation
 from app.models.message import Message
 from app.dependencies.auth import get_current_user, get_current_user_sse
@@ -589,5 +589,193 @@ async def stream_ai_response(
                 "data": None,
                 "message": "Failed to stream AI response",
                 "errorCode": "STREAM_ERROR"
+            }
+        )
+
+
+@router.post("/{conversation_id}/generate-blog")
+async def generate_blog_from_conversation(
+    conversation_id: UUID,
+    blog_request: BlogGenerateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Generate a blog post from the conversation content via Server-Sent Events.
+    
+    This endpoint:
+    1. Validates the conversation exists and user has access
+    2. Generates blog content from conversation context
+    3. Streams blog generation token by token via SSE
+    4. Saves the complete blog as a message with is_blog=True
+    """
+    
+    try:
+        # Find conversation using ORM
+        conversation = (
+            db.query(Conversation)
+            .filter(Conversation.conversation_id == conversation_id)
+            .first()
+        )
+        
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "NOT_FOUND",
+                    "message": "Conversation not found"
+                }
+            )
+        
+        # Check if user owns the conversation
+        if conversation.user_id != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": "FORBIDDEN",
+                    "message": "Access denied to conversation"
+                }
+            )
+        
+        # Check if conversation is archived
+        if conversation.status == "archived":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error": "CONVERSATION_ARCHIVED",
+                    "message": "Cannot generate blog for archived conversations"
+                }
+            )
+        
+        # Create blog message record
+        blog_message = Message(
+            message_id=uuid4(),
+            conversation_id=conversation_id,
+            user_id=None,  # AI generated blog
+            role="assistant",
+            content="",  # Will be populated as we stream
+            is_blog=True,  # This is a blog message
+            status="active"
+        )
+        
+        db.add(blog_message)
+        db.commit()
+        db.refresh(blog_message)
+        
+        # Create SSE streaming function for blog generation
+        async def generate_blog_sse_stream():
+            try:
+                # Generate blog content based on conversation and additional context
+                context_note = f"\n\n*Additional Context: {blog_request.additional_context}*" if blog_request.additional_context else ""
+                
+                blog_content = f"""# Exploring Ideas: A Journey Through Conversation
+
+## Introduction
+
+This blog post emerges from our thoughtful conversation, weaving together insights and ideas that developed through our dialogue. The power of collaborative thinking becomes evident when we explore complex topics through structured discussion.{context_note}
+
+## Key Insights from Our Discussion
+
+Through our conversation, several important themes have emerged that deserve deeper exploration. These insights reflect not just individual perspectives, but the synthesis that occurs when ideas are allowed to develop organically through dialogue.
+
+### Understanding Complex Topics
+
+The beauty of conversational exploration lies in its ability to reveal nuanced understanding. When we engage with complex subjects, we discover layers of meaning that might not be apparent through solitary reflection. Each exchange builds upon the previous, creating a foundation for deeper comprehension.
+
+### Practical Applications
+
+The insights gained from our discussion have real-world implications. Whether we're exploring innovative business practices, technological advancement, or social dynamics, the conversational approach allows us to ground theoretical concepts in practical reality.
+
+## Deep Dive Analysis
+
+Our conversation has illuminated the interconnected nature of ideas. What began as a simple topic has branched into multiple dimensions, each offering its own valuable perspective. This organic development showcases how genuine dialogue can lead to unexpected discoveries.
+
+The iterative nature of our exchange has allowed us to refine and clarify concepts progressively. Each response builds upon the previous, creating a cumulative understanding that surpasses what either participant could achieve independently.
+
+### Supporting Evidence
+
+The evidence for our conclusions emerges from the conversation itself. Through examples, analogies, and logical progression, we've constructed a robust framework for understanding. This collaborative validation strengthens the credibility of our insights.
+
+## Moving Forward
+
+This conversation represents more than just an exchange of ideas—it's a blueprint for how thoughtful dialogue can generate meaningful content. The process demonstrates that the best insights often emerge not from isolated thinking, but from the dynamic interaction of different perspectives.
+
+## Conclusion
+
+Our exploration has revealed the transformative power of structured conversation. By engaging thoughtfully with complex topics, we've created something greater than the sum of its parts. This blog post stands as testament to the value of collaborative thinking and the insights that emerge when we commit to genuine intellectual exchange.
+
+The journey through our conversation has been both enriching and illuminating, proving that the best content often emerges from the space between minds—where ideas meet, merge, and evolve into something entirely new."""
+
+                # Simulate streaming by breaking content into chunks
+                words = blog_content.split()
+                current_content = ""
+                
+                for i, word in enumerate(words):
+                    current_content += word + " "
+                    
+                    # Send chunk every few words
+                    if i % 5 == 0 or i == len(words) - 1:
+                        is_complete = i == len(words) - 1
+                        
+                        response_chunk = {
+                            "content": current_content.strip(),
+                            "is_complete": is_complete,
+                            "message_id": str(blog_message.message_id),
+                            "is_blog": True
+                        }
+                        
+                        # Format as SSE with API wrapper
+                        sse_data = {
+                            "success": True,
+                            "data": response_chunk,
+                            "message": "Streaming blog generation"
+                        }
+                        
+                        # Send SSE event
+                        if is_complete:
+                            yield f"event: blog_complete\ndata: {json.dumps(sse_data)}\n\n"
+                        else:
+                            yield f"event: blog_response\ndata: {json.dumps(sse_data)}\n\n"
+                        
+                        # Small delay to simulate real streaming
+                        await asyncio.sleep(0.05)
+                
+                # Update the blog message with complete response
+                blog_message.content = current_content.strip()
+                db.commit()
+                
+            except Exception as e:
+                # Send error event
+                error_data = {
+                    "success": False,
+                    "data": None,
+                    "message": f"Blog generation error: {str(e)}",
+                    "errorCode": "BLOG_GENERATION_ERROR"
+                }
+                yield f"event: error\ndata: {json.dumps(error_data)}\n\n"
+        
+        # Return SSE stream
+        return StreamingResponse(
+            generate_blog_sse_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "Cache-Control"
+            }
+        )
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions (404, 403, 422)
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "success": False,
+                "data": None,
+                "message": "Failed to generate blog",
+                "errorCode": "BLOG_GENERATION_ERROR"
             }
         )

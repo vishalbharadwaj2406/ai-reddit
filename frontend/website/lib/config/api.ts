@@ -24,6 +24,7 @@ export const endpoints = {
     getById: (id: string) => `/conversations/${id}`,
     sendMessage: (id: string) => `/conversations/${id}/messages`,
     streamAI: (id: string) => `/conversations/${id}/stream`,
+    generateBlog: (id: string) => `/conversations/${id}/generate-blog`,
     archive: (id: string) => `/conversations/${id}`,
   },
   
