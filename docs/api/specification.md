@@ -471,26 +471,31 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 - Returns streaming response (see Streaming section)
 - Returns 404 Not Found if the conversation does not exist
 
-#### POST /conversations/{conversation_id}/generate-blog
-**Purpose**: Generate blog post from conversation
+#### POST /conversations/{conversation_id}/generate-blog ✅ IMPLEMENTED
+**Purpose**: Generate blog post from conversation using AI
 **Auth Required**: Yes
+**Implementation Status**: Complete with LangChain + Gemini 2.5 Flash streaming
 **Request Body**:
 ```json
 {
   "additionalContext": "string | null"
 }
 ```
-**Response**:
-```json
-{
-  "success": true,
-  "data": {
-    "messageId": "uuid",
-    "content": "string",
-    "createdAt": "timestamp"
-  },
-  "message": "Blog generated successfully"
-}
+**Response**: Streaming via Server-Sent Events
+**Content-Type**: `text/event-stream`
+**Features**:
+- Streams blog generation token-by-token using Gemini 2.5 Flash
+- Uses conversation history as context for blog creation
+- Supports additional context instructions
+- Returns blog content with `is_blog: true` flag
+
+### SSE Blog Generation Format:
+```
+event: blog_response
+data: {"success": true, "data": {"content": "# Blog Title\n\nPartial content...", "is_complete": false, "message_id": "uuid", "is_blog": true}, "message": "Streaming blog generation"}
+
+event: blog_complete
+data: {"success": true, "data": {"content": "# Complete Blog\n\nFull blog content here...", "is_complete": true, "message_id": "uuid", "is_blog": true}, "message": "Blog generation complete"}
 ```
 
 ---
@@ -827,9 +832,12 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 
 ## 🔄 Real-time Streaming (Server-Sent Events)
 
-### POST /conversations/{conversation_id}/messages
+AI responses are streamed in real-time using Server-Sent Events (SSE) powered by LangChain + Google Gemini 2.5 Flash.
+
+### POST /conversations/{conversation_id}/messages ✅ IMPLEMENTED
 **Purpose**: Send user message and trigger AI response
 **Auth Required**: Yes (Bearer token)
+**Implementation Status**: Complete with LangChain + Gemini 2.5 Flash integration
 **Request Body**:
 ```json
 {
@@ -845,16 +853,22 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
     "message_id": "uuid",
     "content": "User message content",
     "role": "user",
-    "created_at": "2025-07-19T10:30:00Z"
+    "created_at": "2025-08-05T10:30:00Z"
   },
   "message": "Message sent successfully"
 }
 ```
 
-### GET /conversations/{conversation_id}/stream?message_id={message_id}
-**Purpose**: Stream AI response via Server-Sent Events
+### GET /conversations/{conversation_id}/stream?message_id={message_id} ✅ IMPLEMENTED
+**Purpose**: Stream AI response via Server-Sent Events using LangChain + Gemini 2.5 Flash
 **Auth Required**: Yes (Bearer token)
+**Implementation Status**: Complete with real-time streaming, conversation context, error handling
 **Content-Type**: `text/event-stream`
+**Features**:
+- Real-time token-by-token streaming from Gemini 2.5 Flash
+- Conversation history context preservation
+- Graceful error handling with fallback to mock mode
+- Database session isolation for streaming contexts
 
 ### SSE Message Format:
 ```

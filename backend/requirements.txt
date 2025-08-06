@@ -25,10 +25,11 @@ python-dotenv==1.0.0
 pydantic>=2.7.4,<3.0.0
 pydantic-settings>=2.1.0
 
-# AI Integration - LangChain based (Future-proof)
+# AI Integration - LangChain + Gemini 2.5 Flash (Production Ready)
 langchain>=0.3.26
 langchain-google-genai>=2.1.8
 langchain-core>=0.3.69
+google-generativeai>=0.8.3
 
 # Google protobuf dependencies (fixed versions to avoid deprecation warnings)
 protobuf>=6.31.1

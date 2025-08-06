@@ -24,7 +24,7 @@ from app.models.conversation import Conversation
 from app.models.message import Message
 from app.dependencies.auth import get_current_user, get_current_user_sse
 from app.models.user import User
-from app.services.ai_service import generate_ai_response
+from app.services.ai_service import AIService
 
 router = APIRouter()
 
@@ -420,6 +420,12 @@ async def send_message(
         raise
     except Exception as e:
         db.rollback()
+        # Add logging to debug the issue
+        import logging
+        logging.error(f"Message send error: {str(e)}")
+        import traceback
+        logging.error(f"Traceback: {traceback.format_exc()}")
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
@@ -504,33 +510,34 @@ async def stream_ai_response(
                 }
             )
         
-        # Create AI message record
-        ai_message = Message(
-            message_id=uuid4(),
-            conversation_id=conversation_id,
-            user_id=None,  # AI message
-            role="assistant",
-            content="",  # Will be populated as we stream
-            is_blog=False,
-            status="active"
-        )
+        # Get conversation history for context before streaming
+        conversation_history = []
+        for msg in conversation.messages:
+            if msg.role in ["user", "assistant"] and msg.status == "active":
+                conversation_history.append({
+                    "role": msg.role,
+                    "content": msg.content
+                })
         
-        db.add(ai_message)
-        db.commit()
-        db.refresh(ai_message)
+        # Create AI message ID for the response
+        ai_message_id = uuid4()
         
         # Create SSE streaming function
         async def generate_sse_stream():
             try:
                 complete_response = ""
                 
-                # Generate AI response
-                async for response_chunk in generate_ai_response(
+                # Create AI service instance
+                ai_service = AIService()
+                
+                # Generate AI response with conversation context
+                async for response_chunk in ai_service.generate_ai_response(
                     user_message=user_message.content,
+                    conversation_history=conversation_history,
                     conversation_id=conversation_id
                 ):
                     # Update message_id in response
-                    response_chunk["message_id"] = str(ai_message.message_id)
+                    response_chunk["message_id"] = str(ai_message_id)
                     
                     # Build complete response
                     if response_chunk.get("is_complete", False):
@@ -549,12 +556,28 @@ async def stream_ai_response(
                     else:
                         yield f"event: ai_response\ndata: {json.dumps(sse_data)}\n\n"
                     
-                    # Small delay to simulate real streaming
-                    await asyncio.sleep(0.01)
+                    # Small delay removed - real AI streaming has natural timing
                 
-                # Update the AI message with complete response
-                ai_message.content = complete_response
-                db.commit()
+                # After streaming is complete, save the AI message to database
+                # Use a new database session to avoid conflicts
+                from app.core.database import SessionLocal
+                new_db = SessionLocal()
+                try:
+                    ai_message = Message(
+                        message_id=ai_message_id,
+                        conversation_id=conversation_id,
+                        user_id=None,  # AI message
+                        role="assistant",
+                        content=complete_response,
+                        is_blog=False,
+                        status="active"
+                    )
+                    
+                    new_db.add(ai_message)
+                    new_db.commit()
+                    new_db.refresh(ai_message)
+                finally:
+                    new_db.close()
                 
             except Exception as e:
                 # Send error event
@@ -647,102 +670,69 @@ async def generate_blog_from_conversation(
                 }
             )
         
-        # Create blog message record
-        blog_message = Message(
-            message_id=uuid4(),
-            conversation_id=conversation_id,
-            user_id=None,  # AI generated blog
-            role="assistant",
-            content="",  # Will be populated as we stream
-            is_blog=True,  # This is a blog message
-            status="active"
-        )
+        # Get conversation content for blog generation before streaming
+        conversation_content = ""
+        for msg in conversation.messages:
+            if msg.role in ["user", "assistant"] and msg.status == "active":
+                role_name = "User" if msg.role == "user" else "AI" 
+                conversation_content += f"{role_name}: {msg.content}\n"
         
-        db.add(blog_message)
-        db.commit()
-        db.refresh(blog_message)
+        # Create blog message ID for the response
+        blog_message_id = uuid4()
         
         # Create SSE streaming function for blog generation
         async def generate_blog_sse_stream():
             try:
-                # Generate blog content based on conversation and additional context
-                context_note = f"\n\n*Additional Context: {blog_request.additional_context}*" if blog_request.additional_context else ""
+                # Create AI service instance
+                ai_service = AIService()
                 
-                blog_content = f"""# Exploring Ideas: A Journey Through Conversation
-
-## Introduction
-
-This blog post emerges from our thoughtful conversation, weaving together insights and ideas that developed through our dialogue. The power of collaborative thinking becomes evident when we explore complex topics through structured discussion.{context_note}
-
-## Key Insights from Our Discussion
-
-Through our conversation, several important themes have emerged that deserve deeper exploration. These insights reflect not just individual perspectives, but the synthesis that occurs when ideas are allowed to develop organically through dialogue.
-
-### Understanding Complex Topics
-
-The beauty of conversational exploration lies in its ability to reveal nuanced understanding. When we engage with complex subjects, we discover layers of meaning that might not be apparent through solitary reflection. Each exchange builds upon the previous, creating a foundation for deeper comprehension.
-
-### Practical Applications
-
-The insights gained from our discussion have real-world implications. Whether we're exploring innovative business practices, technological advancement, or social dynamics, the conversational approach allows us to ground theoretical concepts in practical reality.
-
-## Deep Dive Analysis
-
-Our conversation has illuminated the interconnected nature of ideas. What began as a simple topic has branched into multiple dimensions, each offering its own valuable perspective. This organic development showcases how genuine dialogue can lead to unexpected discoveries.
-
-The iterative nature of our exchange has allowed us to refine and clarify concepts progressively. Each response builds upon the previous, creating a cumulative understanding that surpasses what either participant could achieve independently.
-
-### Supporting Evidence
-
-The evidence for our conclusions emerges from the conversation itself. Through examples, analogies, and logical progression, we've constructed a robust framework for understanding. This collaborative validation strengthens the credibility of our insights.
-
-## Moving Forward
-
-This conversation represents more than just an exchange of ideas—it's a blueprint for how thoughtful dialogue can generate meaningful content. The process demonstrates that the best insights often emerge not from isolated thinking, but from the dynamic interaction of different perspectives.
-
-## Conclusion
-
-Our exploration has revealed the transformative power of structured conversation. By engaging thoughtfully with complex topics, we've created something greater than the sum of its parts. This blog post stands as testament to the value of collaborative thinking and the insights that emerge when we commit to genuine intellectual exchange.
-
-The journey through our conversation has been both enriching and illuminating, proving that the best content often emerges from the space between minds—where ideas meet, merge, and evolve into something entirely new."""
-
-                # Simulate streaming by breaking content into chunks
-                words = blog_content.split()
-                current_content = ""
-                
-                for i, word in enumerate(words):
-                    current_content += word + " "
+                # Generate blog from conversation using real AI service
+                complete_response = ""
+                async for response_chunk in ai_service.generate_blog_from_conversation(
+                    conversation_content=conversation_content,
+                    additional_context=blog_request.additional_context
+                ):
+                    # Update message_id and blog flag in response
+                    response_chunk["message_id"] = str(blog_message_id)
+                    response_chunk["is_blog"] = True
                     
-                    # Send chunk every few words
-                    if i % 5 == 0 or i == len(words) - 1:
-                        is_complete = i == len(words) - 1
-                        
-                        response_chunk = {
-                            "content": current_content.strip(),
-                            "is_complete": is_complete,
-                            "message_id": str(blog_message.message_id),
-                            "is_blog": True
-                        }
-                        
-                        # Format as SSE with API wrapper
-                        sse_data = {
-                            "success": True,
-                            "data": response_chunk,
-                            "message": "Streaming blog generation"
-                        }
-                        
-                        # Send SSE event
-                        if is_complete:
-                            yield f"event: blog_complete\ndata: {json.dumps(sse_data)}\n\n"
-                        else:
-                            yield f"event: blog_response\ndata: {json.dumps(sse_data)}\n\n"
-                        
-                        # Small delay to simulate real streaming
-                        await asyncio.sleep(0.05)
+                    # Build complete response
+                    if response_chunk.get("is_complete", False):
+                        complete_response = response_chunk["content"]
+                    
+                    # Format as SSE with API wrapper
+                    sse_data = {
+                        "success": True,
+                        "data": response_chunk,
+                        "message": "Streaming blog generation"
+                    }
+                    
+                    # Send SSE event
+                    if response_chunk.get("is_complete", False):
+                        yield f"event: blog_complete\ndata: {json.dumps(sse_data)}\n\n"
+                    else:
+                        yield f"event: blog_response\ndata: {json.dumps(sse_data)}\n\n"
                 
-                # Update the blog message with complete response
-                blog_message.content = current_content.strip()
-                db.commit()
+                # After streaming is complete, save the blog message to database
+                # Use a new database session to avoid conflicts
+                from app.core.database import SessionLocal
+                new_db = SessionLocal()
+                try:
+                    blog_message = Message(
+                        message_id=blog_message_id,
+                        conversation_id=conversation_id,
+                        user_id=None,  # AI generated blog
+                        role="assistant",
+                        content=complete_response,
+                        is_blog=True,  # This is a blog message
+                        status="active"
+                    )
+                    
+                    new_db.add(blog_message)
+                    new_db.commit()
+                    new_db.refresh(blog_message)
+                finally:
+                    new_db.close()
                 
             except Exception as e:
                 # Send error event

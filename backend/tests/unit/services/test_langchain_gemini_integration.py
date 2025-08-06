@@ -335,3 +335,92 @@ class TestAIServiceGlobalInstance:
             
         assert len(responses) > 0
         assert responses[-1]["is_complete"] is True
+
+    @pytest.mark.asyncio
+    async def test_api_key_validation_missing_key(self):
+        """Test AI service initialization without API key"""
+        with patch('app.core.config.settings.GOOGLE_GEMINI_API_KEY', ''):
+            service = AIService()
+            
+            # Should initialize in mock mode
+            assert service.mock_mode is True
+            assert service.llm is None
+
+    @pytest.mark.asyncio
+    async def test_api_key_validation_invalid_key(self):
+        """Test AI service initialization with invalid API key"""
+        with patch('app.core.config.settings.GOOGLE_GEMINI_API_KEY', 'invalid-key'):
+            with patch('app.services.ai_service.ChatGoogleGenerativeAI') as mock_chat:
+                mock_chat.side_effect = Exception("Invalid API key")
+                
+                service = AIService()
+                
+                # Should fall back to mock mode
+                assert service.mock_mode is True
+                assert service.llm is None
+
+    @pytest.mark.asyncio
+    async def test_langchain_connection_failure_graceful_fallback(self):
+        """Test graceful fallback when LangChain connection fails"""
+        ai_service = AIService()
+        
+        with patch.object(ai_service, 'llm') as mock_llm:
+            # Mock LangChain to raise connection error
+            mock_llm.astream = AsyncMock(side_effect=Exception("Connection timeout"))
+            ai_service.mock_mode = False  # Force production mode
+            
+            responses = []
+            async for response in ai_service.generate_ai_response("test message"):
+                responses.append(response)
+                
+            # Should fall back to mock response
+            assert len(responses) > 0
+            assert responses[-1]["is_complete"] is True
+
+    @pytest.mark.asyncio
+    async def test_health_check_production_mode_success(self):
+        """Test health check in production mode with successful connection"""
+        ai_service = AIService()
+        
+        with patch.object(ai_service, 'llm') as mock_llm:
+            # Mock successful health check response
+            mock_response = Mock()
+            mock_response.content = "OK - AI service is working"
+            mock_llm.ainvoke = AsyncMock(return_value=mock_response)
+            
+            ai_service.mock_mode = False
+            
+            health = await ai_service.health_check()
+            
+            assert health["status"] == "healthy"
+            assert health["mode"] == "production"
+            assert health["provider"] == "google_gemini"
+
+    @pytest.mark.asyncio
+    async def test_health_check_production_mode_failure(self):
+        """Test health check in production mode with connection failure"""
+        ai_service = AIService()
+        
+        with patch.object(ai_service, 'llm') as mock_llm:
+            # Mock connection failure
+            mock_llm.ainvoke = AsyncMock(side_effect=Exception("API connection failed"))
+            
+            ai_service.mock_mode = False
+            
+            health = await ai_service.health_check()
+            
+            assert health["status"] == "unhealthy"
+            assert health["mode"] == "production"
+            assert "API connection failed" in health["message"]
+
+    @pytest.mark.asyncio
+    async def test_health_check_mock_mode(self):
+        """Test health check in mock mode"""
+        ai_service = AIService()
+        ai_service.mock_mode = True
+        
+        health = await ai_service.health_check()
+        
+        assert health["status"] == "healthy"
+        assert health["mode"] == "mock"
+        assert health["provider"] == "mock"

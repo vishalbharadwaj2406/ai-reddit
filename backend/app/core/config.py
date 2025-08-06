@@ -83,30 +83,58 @@ class Settings(BaseSettings):
         description="Default rate limit per minute"
     )
 
-    # AI Configuration
+    # AI Configuration - Gemini 2.5 Flash Optimized
     GOOGLE_GEMINI_API_KEY: str = Field(
         default="",
-        description="Google Gemini API key for AI features"
+        description="Google Gemini API key for AI features - Get from https://aistudio.google.com/app/apikey"
     )
     AI_MODEL_NAME: str = Field(
-        default="gemini-2.5-flash",
-        description="Gemini model to use for AI responses (recommended: gemini-2.5-flash for MVP)"
+        default="gemini-2.5-flash-latest",
+        description="Gemini model to use for AI responses (gemini-2.5-flash-latest for best performance)"
     )
     AI_TEMPERATURE: float = Field(
         default=0.7,
+        ge=0.0,
+        le=1.0,
         description="AI response creativity (0.0 = deterministic, 1.0 = very creative)"
     )
     AI_MAX_TOKENS: int = Field(
         default=2048,
-        description="Maximum tokens for AI responses"
+        ge=1,
+        le=8192,
+        description="Maximum tokens for AI responses (Gemini 2.5 Flash supports up to 8192)"
     )
     AI_TOP_P: float = Field(
         default=0.9,
+        ge=0.0,
+        le=1.0,
         description="AI nucleus sampling parameter"
     )
     AI_TOP_K: int = Field(
         default=40,
+        ge=1,
+        le=100,
         description="AI top-k sampling parameter"
+    )
+    
+    # AI Service Configuration
+    AI_ENABLE_SAFETY_FILTERS: bool = Field(
+        default=True,
+        description="Enable Google's safety filters for content moderation"
+    )
+    AI_REQUEST_TIMEOUT: int = Field(
+        default=30,
+        description="Timeout for AI API requests in seconds"
+    )
+    
+    # Rate Limiting for AI
+    AI_RATE_LIMIT_RPM: int = Field(
+        default=15,
+        description="AI requests per minute limit (Gemini free tier: 15 RPM)"
+    )
+    AI_RATE_LIMIT_TPM: int = Field(
+        default=1000000,
+        description="AI tokens per minute limit (Gemini free tier: 1M TPM)"
     )
 
     model_config = ConfigDict(
