@@ -13,6 +13,25 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "@tiptap/extension-blockquote": "^3.0.9",
+    "@tiptap/extension-bold": "^3.0.9",
+    "@tiptap/extension-bullet-list": "^3.0.9",
+    "@tiptap/extension-code-block": "^3.0.9",
+    "@tiptap/extension-color": "^3.0.9",
+    "@tiptap/extension-heading": "^3.0.9",
+    "@tiptap/extension-horizontal-rule": "^3.0.9",
+    "@tiptap/extension-image": "^3.0.9",
+    "@tiptap/extension-italic": "^3.0.9",
+    "@tiptap/extension-link": "^3.0.9",
+    "@tiptap/extension-list-item": "^3.0.9",
+    "@tiptap/extension-ordered-list": "^3.0.9",
+    "@tiptap/extension-strike": "^3.0.9",
+    "@tiptap/extension-text-align": "^3.0.9",
+    "@tiptap/extension-text-style": "^3.0.9",
+    "@tiptap/extension-underline": "^3.0.9",
+    "@tiptap/react": "^3.0.9",
+    "@tiptap/starter-kit": "^3.0.9",
+    "@types/turndown": "^5.0.5",
     "clsx": "^2.1.1",
     "google-auth-library": "^10.1.0",
     "lucide-react": "^0.525.0",
@@ -20,6 +39,7 @@
     "next-auth": "^5.0.0-beta.25",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "turndown": "^7.2.0",
     "zustand": "^5.0.6"
   },
   "devDependencies": {

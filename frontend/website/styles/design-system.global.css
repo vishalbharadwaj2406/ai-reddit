@@ -775,3 +775,414 @@
     padding-bottom: 2.5rem !important;
   }
 }
+
+/* ============================================
+   BLOG EDITOR COMPONENTS - GLASS MORPHISM
+   ============================================ */
+
+/* Blog Editor Container */
+.blog-editor-container {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px) saturate(120%);
+  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 16px;
+  padding: 24px;
+  min-height: 400px;
+  transition: all 0.3s ease;
+}
+
+.blog-editor-container:focus-within {
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+/* Blog Editor Content Area */
+.blog-editor-content {
+  color: rgba(255, 255, 255, 0.9);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  min-height: 300px;
+  padding: 0;
+  border: none;
+  outline: none;
+}
+
+.blog-editor-content h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 1.5rem 0 1rem 0;
+  line-height: 1.2;
+}
+
+.blog-editor-content h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #E6F3FF;
+  margin: 1.25rem 0 0.75rem 0;
+  line-height: 1.3;
+}
+
+.blog-editor-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #BFDBFE;
+  margin: 1rem 0 0.5rem 0;
+  line-height: 1.4;
+}
+
+.blog-editor-content p {
+  margin: 0.75rem 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.blog-editor-content strong {
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.blog-editor-content em {
+  font-style: italic;
+  color: #E6F3FF;
+}
+
+.blog-editor-content u {
+  text-decoration: underline;
+  text-decoration-color: rgba(59, 130, 246, 0.6);
+}
+
+.blog-editor-content s {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* Blog Editor Lists */
+.blog-bullet-list,
+.blog-ordered-list {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+.blog-bullet-list li {
+  list-style-type: disc;
+  margin: 0.5rem 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.blog-ordered-list li {
+  list-style-type: decimal;
+  margin: 0.5rem 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Blog Editor Code Block */
+.blog-code-block {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #E6F3FF;
+  overflow-x: auto;
+}
+
+.blog-code-block pre {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+/* Blog Editor Blockquote */
+.blog-blockquote {
+  border-left: 4px solid rgba(59, 130, 246, 0.6);
+  background: rgba(30, 58, 138, 0.1);
+  margin: 1rem 0;
+  padding: 1rem 1.5rem;
+  border-radius: 0 8px 8px 0;
+  font-style: italic;
+  color: #BFDBFE;
+}
+
+/* Blog Editor Links */
+.blog-link {
+  color: #60A5FA;
+  text-decoration: underline;
+  text-decoration-color: rgba(96, 165, 250, 0.5);
+  transition: all 0.2s ease;
+}
+
+.blog-link:hover {
+  color: #93C5FD;
+  text-decoration-color: rgba(147, 197, 253, 0.8);
+}
+
+/* ============================================
+   BLOG EDITOR TOOLBAR - BEAUTIFUL & INTUITIVE
+   ============================================ */
+
+/* Main Toolbar Container */
+.blog-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(30, 58, 138, 0.15);
+  flex-wrap: wrap;
+}
+
+/* Toolbar Button Groups */
+.blog-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 4px;
+}
+
+/* Individual Toolbar Buttons */
+.blog-toolbar-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.blog-toolbar-button:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.blog-toolbar-button.active {
+  background: rgba(59, 130, 246, 0.4);
+  color: #60A5FA;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+.blog-toolbar-button.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.blog-toolbar-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Toolbar Dividers */
+.blog-toolbar-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(59, 130, 246, 0.3);
+  margin: 0 8px;
+}
+
+/* ============================================
+   BLOG LINK DIALOG - ELEGANT POPUP
+   ============================================ */
+
+/* Link Dialog Overlay */
+.blog-link-dialog {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Link Dialog Content */
+.blog-link-dialog-content {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(32px) saturate(150%);
+  -webkit-backdrop-filter: blur(32px) saturate(150%);
+  border: 2px solid rgba(59, 130, 246, 0.4);
+  border-radius: 16px;
+  padding: 24px;
+  min-width: 400px;
+  max-width: 90vw;
+  box-shadow: 
+    0 16px 40px rgba(0, 0, 0, 0.8),
+    0 0 60px rgba(30, 58, 138, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+/* Link Input Field */
+.blog-link-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  color: #FFFFFF;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.3s ease;
+  margin-bottom: 16px;
+}
+
+.blog-link-input:focus {
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.2);
+}
+
+.blog-link-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Link Dialog Actions */
+.blog-link-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.blog-link-cancel {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.blog-link-cancel:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.blog-link-confirm {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.8), rgba(59, 130, 246, 0.6));
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  border-radius: 8px;
+  color: #FFFFFF;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.blog-link-confirm:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.9), rgba(59, 130, 246, 0.7));
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.blog-link-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   BLOG EDITOR ANIMATIONS
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================
+   BLOG EDITOR RESPONSIVE DESIGN
+   ============================================ */
+
+@media (max-width: 768px) {
+  .blog-toolbar {
+    padding: 8px 12px;
+    gap: 2px;
+  }
+  
+  .blog-toolbar-group {
+    gap: 1px;
+    padding: 2px;
+  }
+  
+  .blog-toolbar-button {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .blog-toolbar-button svg {
+    width: 14px;
+    height: 14px;
+  }
+  
+  .blog-toolbar-divider {
+    margin: 0 4px;
+    height: 20px;
+  }
+  
+  .blog-link-dialog-content {
+    min-width: 300px;
+    padding: 20px;
+  }
+  
+  .blog-editor-container {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .blog-toolbar {
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+  }
+  
+  .blog-toolbar-group {
+    justify-content: center;
+  }
+  
+  .blog-toolbar-divider {
+    display: none;
+  }
+}

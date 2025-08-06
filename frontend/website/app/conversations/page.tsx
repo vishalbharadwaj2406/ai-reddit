@@ -228,13 +228,22 @@ export default function ConversationsPage() {
                   <div className="flex-1">
                     <div className="text-sm font-medium text-red-300">Connection Error</div>
                     <div className="text-xs text-red-400">{error}</div>
+                    <div className="text-xs text-red-500 mt-1">
+                      {error.includes('Token expired') ? (
+                        <>Session expired. Please sign out and sign back in.</>
+                      ) : (
+                        <>Please check your connection and try again.</>
+                      )}
+                    </div>
                   </div>
-                  <button 
-                    onClick={loadConversations}
-                    className="px-3 py-1 text-xs bg-red-700/30 hover:bg-red-700/50 text-red-300 rounded transition-colors"
-                  >
-                    Retry
-                  </button>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={loadConversations}
+                      className="px-3 py-1 text-xs bg-red-700/30 hover:bg-red-700/50 text-red-300 rounded transition-colors"
+                    >
+                      Retry
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

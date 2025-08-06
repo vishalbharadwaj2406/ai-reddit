@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header/Header";
-import { AppLayout } from "@/components/layout";
+import { AppLayout } from "@/components/Layout";
 import LoginModal from "@/components/LoginModal";
 import "./globals.css";
 import { SessionProvider } from 'next-auth/react';

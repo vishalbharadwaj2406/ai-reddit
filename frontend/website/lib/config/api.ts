@@ -137,6 +137,9 @@ export class ApiClient {
   /**
    * Get authentication token - now integrated with backend auth
    */
+  /**
+   * Enhanced token management with automatic refresh
+   */
   private async getAuthToken(): Promise<string | null> {
     if (typeof window === 'undefined') return null;
     
@@ -149,11 +152,65 @@ export class ApiClient {
       // Check if token expires in more than 5 minutes
       if (expiryTime > Date.now() + (5 * 60 * 1000)) {
         return cachedJWT;
+      } else {
+        // Token is about to expire, try to refresh it
+        const refreshed = await this.refreshBackendToken();
+        if (refreshed) {
+          return localStorage.getItem('ai_social_backend_jwt');
+        }
       }
     }
     
     // No valid cached token available
     return null;
+  }
+
+  /**
+   * Attempt to refresh backend token using current session
+   */
+  private async refreshBackendToken(): Promise<boolean> {
+    try {
+      // Get current session
+      const sessionResponse = await fetch('/api/auth/session');
+      if (!sessionResponse.ok) return false;
+      
+      const session = await sessionResponse.json();
+      const googleIdToken = session?.idToken;
+      
+      if (!googleIdToken) return false;
+
+      // Check if Google token is still valid
+      const tokenPayload = JSON.parse(atob(googleIdToken.split('.')[1]));
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      if (tokenPayload.exp <= currentTime) {
+        console.warn('Google token is expired, cannot refresh backend token automatically');
+        return false;
+      }
+
+      // Refresh backend token
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ google_token: googleIdToken }),
+      });
+
+      if (response.ok) {
+        const authData = await response.json();
+        
+        if (authData.access_token && authData.expires_in) {
+          const expiryTime = Date.now() + (authData.expires_in * 1000);
+          localStorage.setItem('ai_social_backend_jwt', authData.access_token);
+          localStorage.setItem('ai_social_backend_jwt_expiry', expiryTime.toString());
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Failed to refresh backend token:', error);
+      return false;
+    }
   }
 
   /**
@@ -182,60 +239,77 @@ export class ApiClient {
   }
 
   /**
-   * Simple request method
+   * Enhanced request method with automatic token refresh on 401 errors
    */
   async request<T>(
     endpoint: string, 
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     return this.circuitBreaker.execute(async () => {
-      // Simple URL construction
-      const baseUrl = endpoint.startsWith('/health') 
-        ? API_BASE_URL.replace('/api/v1', '')  
-        : this.baseURL;
+      const makeRequest = async (isRetry = false): Promise<ApiResponse<T>> => {
+        // Simple URL construction
+        const baseUrl = endpoint.startsWith('/health') 
+          ? API_BASE_URL.replace('/api/v1', '')  
+          : this.baseURL;
+          
+        const url = `${baseUrl}${endpoint}`;
+        const headers = await this.getHeaders(options.headers as Record<string, string>);
         
-      const url = `${baseUrl}${endpoint}`;
-      const headers = await this.getHeaders(options.headers as Record<string, string>);
-      
-      const config: RequestInit = {
-        ...options,
-        headers,
+        const config: RequestInit = {
+          ...options,
+          headers,
+        };
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+        
+        try {
+          const response = await fetch(url, {
+            ...config,
+            signal: controller.signal,
+          });
+          
+          clearTimeout(timeoutId);
+          
+          // Handle 401 authentication errors
+          if (response.status === 401 && !isRetry) {
+            const refreshed = await this.refreshBackendToken();
+            
+            if (refreshed) {
+              // Retry the request with new token
+              return makeRequest(true);
+            } else {
+              // Refresh failed, throw auth error with helpful message
+              throw new Error('Authentication expired. Please sign out and sign back in to refresh your session.');
+            }
+          }
+          
+          // Simple error handling for other errors
+          if (!response.ok) {
+            const errorData = await this.parseErrorResponse(response);
+            throw new Error(errorData.message);
+          }
+          
+          const result = await response.json();
+          
+          // Simple response wrapping
+          if (typeof result === 'object' && result !== null && 'success' in result) {
+            return result as ApiResponse<T>;
+          }
+          
+          return {
+            success: true,
+            data: result as T,
+            message: 'Request successful',
+          };
+          
+        } catch (error) {
+          clearTimeout(timeoutId);
+          throw error;
+        }
       };
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-      
-      try {
-        const response = await fetch(url, {
-          ...config,
-          signal: controller.signal,
-        });
-        
-        clearTimeout(timeoutId);
-        
-        // Simple error handling
-        if (!response.ok) {
-          const errorData = await this.parseErrorResponse(response);
-          throw new Error(errorData.message);
-        }
-        
-        const result = await response.json();
-        
-        // Simple response wrapping
-        if (typeof result === 'object' && result !== null && 'success' in result) {
-          return result as ApiResponse<T>;
-        }
-        
-        return {
-          success: true,
-          data: result as T,
-          message: 'Request successful',
-        };
-        
-      } catch (error) {
-        clearTimeout(timeoutId);
-        throw error;
-      }
+      return makeRequest();
     });
   }
 

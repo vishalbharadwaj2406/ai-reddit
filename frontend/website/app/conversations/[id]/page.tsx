@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { conversationService, ConversationDetail, Message, AuthenticationRequiredError, ConversationServiceError } from '../../../lib/services/conversationService';
+import { postService } from '../../../lib/services/postService';
+import { BlogEditor } from '../../../components/BlogEditor';
 
 export default function ConversationPage() {
   const params = useParams();
@@ -12,6 +14,10 @@ export default function ConversationPage() {
   // Panel visibility state
   const [showOriginalBlog, setShowOriginalBlog] = useState(false);
   const [showGeneratedBlog, setShowGeneratedBlog] = useState(false);
+  
+  // ✨ NEW: Blog editor state
+  const [isEditingBlog, setIsEditingBlog] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   
   // Chat state
   const [messageText, setMessageText] = useState('');
@@ -288,6 +294,54 @@ export default function ConversationPage() {
     }
   };
 
+  // ✨ NEW: Blog editor handlers
+  const handleEditBlog = () => {
+    setIsEditingBlog(true);
+    setShowGeneratedBlog(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingBlog(false);
+    // Don't clear showGeneratedBlog - keep the read-only view
+  };
+
+  const handleSaveDraft = (markdown: string) => {
+    // Just update local storage - already handled by BlogEditor
+    console.log('Draft saved:', markdown.length, 'characters');
+  };
+
+  const handlePublishBlog = async (markdown: string) => {
+    if (!conversation || !markdown.trim()) return;
+
+    try {
+      setIsPublishing(true);
+      
+      // Generate title from content or use conversation title
+      const title = conversation.title || 'Blog Post';
+      
+      // Publish the blog as a post
+      const publishedPost = await postService.publishBlogAsPost(
+        markdown,
+        title,
+        conversationId
+      );
+      
+      console.log('Blog published as post:', publishedPost.post_id);
+      
+      // Close editor and show success
+      setIsEditingBlog(false);
+      setIsPublishing(false);
+      
+      // Optional: Show success notification
+      // TODO: Add toast notification here
+      
+    } catch (error: any) {
+      console.error('Failed to publish blog:', error);
+      setIsPublishing(false);
+      // TODO: Show error notification
+    }
+  };
+
   // Show loading state
   if (loading) {
     return (
@@ -440,7 +494,10 @@ export default function ConversationPage() {
                             {message.isBlog && (
                               <div className="flex items-center gap-2 mb-2 text-xs text-blue-300">
                                 <span className="px-2 py-1 bg-blue-900/30 rounded-full">📝 Blog</span>
-                                <button className="glass-button-generate px-2 py-1 text-xs">
+                                <button 
+                                  className="glass-button-generate px-2 py-1 text-xs"
+                                  onClick={handleEditBlog}
+                                >
                                   ✍️ Edit and Post
                                 </button>
                               </div>
@@ -533,29 +590,42 @@ export default function ConversationPage() {
 
             {/* Right Panel - Generated Blog */}
             {showGeneratedBlog && hasBlogMessages && mostRecentBlogMessage && (
-              <div className="glass-panel-active p-6 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                  <h3 className="text-subheading text-blue-300">Generated Blog Draft</h3>
-                  <button className="glass-button-generate px-4 py-2 text-sm">
-                    ✍️ Edit and Post
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto text-body text-blue-100 space-y-4">
-                  {/* ✨ NEW: Display actual blog message content */}
-                  <div className="prose prose-invert max-w-none">
-                    <div 
-                      className="whitespace-pre-wrap text-blue-100"
-                      style={{ lineHeight: '1.6' }}
+              isEditingBlog ? (
+                <BlogEditor
+                  initialContent={mostRecentBlogMessage.content}
+                  onSave={handleSaveDraft}
+                  onCancel={handleCancelEdit}
+                  onPublish={handlePublishBlog}
+                  isPublishing={isPublishing}
+                />
+              ) : (
+                <div className="glass-panel-active p-6 flex flex-col overflow-hidden">
+                  <div className="flex items-center justify-between mb-6 flex-shrink-0">
+                    <h3 className="text-subheading text-blue-300">Generated Blog Draft</h3>
+                    <button 
+                      className="glass-button-generate px-4 py-2 text-sm"
+                      onClick={handleEditBlog}
                     >
-                      {mostRecentBlogMessage.content}
+                      ✍️ Edit and Post
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto text-body text-blue-100 space-y-4">
+                    {/* ✨ NEW: Display actual blog message content */}
+                    <div className="prose prose-invert max-w-none">
+                      <div 
+                        className="whitespace-pre-wrap text-blue-100"
+                        style={{ lineHeight: '1.6' }}
+                      >
+                        {mostRecentBlogMessage.content}
+                      </div>
+                    </div>
+                    <div className="text-caption text-blue-400 pt-4 border-t border-blue-800">
+                      Generated {new Date(mostRecentBlogMessage.createdAt).toLocaleString()} • 
+                      {mostRecentBlogMessage.content.split(' ').length} words • Ready to edit
                     </div>
                   </div>
-                  <div className="text-caption text-blue-400 pt-4 border-t border-blue-800">
-                    Generated {new Date(mostRecentBlogMessage.createdAt).toLocaleString()} • 
-                    {mostRecentBlogMessage.content.split(' ').length} words • Ready to edit
-                  </div>
                 </div>
-              </div>
+              )
             )}
           </div>
         </div>
