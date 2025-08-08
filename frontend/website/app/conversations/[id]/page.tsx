@@ -1,11 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { conversationService, ConversationDetail, Message, AuthenticationRequiredError, ConversationServiceError } from '../../../lib/services/conversationService';
 import { postService } from '../../../lib/services/postService';
 import { BlogEditor } from '../../../components/BlogEditor';
+
+const getErrorMessage = (err: unknown): string => {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  return 'Unknown error';
+};
 
 export default function ConversationPage() {
   const params = useParams();
@@ -35,19 +41,8 @@ export default function ConversationPage() {
   // Auto-scroll ref
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when messages change or AI is typing
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [conversation?.messages, isAIResponding]);
-
-  // Load conversation data
-  useEffect(() => {
-    if (conversationId) {
-      loadConversation();
-    }
-  }, [conversationId]);
-
-  const loadConversation = async () => {
+  // Declare the loader first so effects can reference it safely
+  const loadConversation = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -55,7 +50,7 @@ export default function ConversationPage() {
       const conversationData = await conversationService.getConversation(conversationId);
       setConversation(conversationData);
       
-    } catch (err: any) {
+    } catch (err) {
       if (err instanceof AuthenticationRequiredError) {
         setError('Please sign in to view this conversation');
       } else if (err instanceof ConversationServiceError) {
@@ -66,7 +61,19 @@ export default function ConversationPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [conversationId]);
+
+  // Auto-scroll to bottom when messages change or AI is typing
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [conversation?.messages, isAIResponding]);
+
+  // Load conversation data
+  useEffect(() => {
+    if (conversationId) {
+      loadConversation();
+    }
+  }, [conversationId, loadConversation]);
 
   const addMessageToConversation = (newMessage: Message) => {
     if (!conversation) return;
@@ -128,7 +135,7 @@ export default function ConversationPage() {
       });
 
       // Update the temp message with real message ID
-      const messageId = (sentMessage as any).message_id || sentMessage.messageId;
+      const messageId = (sentMessage as unknown as { message_id?: string }).message_id || sentMessage.messageId;
       
       // Add placeholder AI message immediately
       const aiMessage: Message = {
@@ -164,8 +171,8 @@ export default function ConversationPage() {
         }
       );
       
-    } catch (err: any) {
-      console.error('Failed to send message:', err);
+    } catch (err) {
+      console.error('Failed to send message:', getErrorMessage(err));
       setIsAIResponding(false);
     } finally {
       setIsSending(false);
@@ -221,11 +228,11 @@ export default function ConversationPage() {
             if (!prev) return null;
             
             const messages = [...prev.messages];
-            const lastBlogIndex = messages.length - 1;
+            const lastIdx = messages.length - 1;
             
-            if (lastBlogIndex >= 0 && messages[lastBlogIndex].isBlog) {
-              messages[lastBlogIndex] = {
-                ...messages[lastBlogIndex],
+            if (lastIdx >= 0 && messages[lastIdx].isBlog) {
+              messages[lastIdx] = {
+                ...messages[lastIdx],
                 content: chunk
               };
             }
@@ -245,12 +252,12 @@ export default function ConversationPage() {
             if (!prev) return null;
             
             const messages = [...prev.messages];
-            const lastBlogIndex = messages.length - 1;
+            const lastIdx = messages.length - 1;
             
-            if (lastBlogIndex >= 0 && messages[lastBlogIndex].isBlog) {
-              messages[lastBlogIndex] = {
-                ...messages[lastBlogIndex],
-                messageId: messageId || messages[lastBlogIndex].messageId,
+            if (lastIdx >= 0 && messages[lastIdx].isBlog) {
+              messages[lastIdx] = {
+                ...messages[lastIdx],
+                messageId: messageId || messages[lastIdx].messageId,
                 content: fullResponse
               };
             }
@@ -262,20 +269,20 @@ export default function ConversationPage() {
           });
         },
         // onError: Handle blog generation errors
-        (error: string) => {
+        (errMsg: string) => {
           setIsGeneratingBlog(false);
-          console.error('Blog generation error:', error);
+          console.error('Blog generation error:', errMsg);
           
           // Update the blog message with error content
           setConversation(prev => {
             if (!prev) return null;
             
             const messages = [...prev.messages];
-            const lastBlogIndex = messages.length - 1;
+            const lastIdx = messages.length - 1;
             
-            if (lastBlogIndex >= 0 && messages[lastBlogIndex].isBlog) {
-              messages[lastBlogIndex] = {
-                ...messages[lastBlogIndex],
+            if (lastIdx >= 0 && messages[lastIdx].isBlog) {
+              messages[lastIdx] = {
+                ...messages[lastIdx],
                 content: 'Sorry, I encountered an error generating the blog. Please try again.'
               };
             }
@@ -288,8 +295,8 @@ export default function ConversationPage() {
         }
       );
       
-    } catch (err: any) {
-      console.error('Failed to generate blog:', err);
+    } catch (err) {
+      console.error('Failed to generate blog:', getErrorMessage(err));
       setIsGeneratingBlog(false);
     }
   };
@@ -322,8 +329,7 @@ export default function ConversationPage() {
       // Publish the blog as a post
       const publishedPost = await postService.publishBlogAsPost(
         markdown,
-        title,
-        conversationId
+        title
       );
       
       console.log('Blog published as post:', publishedPost.post_id);
@@ -335,8 +341,8 @@ export default function ConversationPage() {
       // Optional: Show success notification
       // TODO: Add toast notification here
       
-    } catch (error: any) {
-      console.error('Failed to publish blog:', error);
+    } catch (error) {
+      console.error('Failed to publish blog:', getErrorMessage(error));
       setIsPublishing(false);
       // TODO: Show error notification
     }
@@ -660,4 +666,4 @@ export default function ConversationPage() {
       </div>
     </div>
   );
-} 
+}

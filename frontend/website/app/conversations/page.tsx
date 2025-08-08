@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSession, signIn } from 'next-auth/react';
 import { 
@@ -18,52 +18,30 @@ export default function ConversationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [needsAuth, setNeedsAuth] = useState(false);
-  const [backendConnected, setBackendConnected] = useState(false);
 
-  // Load conversations when session is ready
-  useEffect(() => {
-    if (status !== 'loading') {
-      loadConversations();
-    }
-  }, [session, status]);
-
-  const loadConversations = async () => {
-    try {
-      setLoading(true);
+  const handleLoadError = useCallback((err: unknown) => {
+    if (err instanceof AuthenticationRequiredError) {
+      setNeedsAuth(true);
       setError(null);
-      setNeedsAuth(false);
-      
-      // Check if user is authenticated with NextAuth
-      if (status === 'unauthenticated') {
-        setNeedsAuth(true);
-        setLoading(false);
-        return;
-      }
-      
-      // Attempt automatic backend authentication and conversation loading
-      await connectToBackendAndLoadConversations();
-      
-    } catch (err: any) {
-      console.error('Failed to load conversations:', err);
-      handleLoadError(err);
-    } finally {
-      setLoading(false);
+    } else if (err instanceof ConversationServiceError) {
+      setError('Backend services are currently unavailable.');
+    } else {
+      setError('Unable to load conversations. Please try again.');
     }
-  };
+  }, []);
 
-  const connectToBackendAndLoadConversations = async () => {
+  const connectToBackendAndLoadConversations = useCallback(async () => {
     if (!session?.user) {
       setNeedsAuth(true);
       return;
     }
 
-    const googleIdToken = (session as any)?.idToken;
+    const googleIdToken = (session as unknown as { idToken?: string })?.idToken;
     if (!googleIdToken) {
       setError('Unable to connect to backend: Missing authentication token');
       return;
     }
 
-    // Attempt backend authentication
     try {
       const authResponse = await fetch('http://localhost:8000/api/v1/auth/google', {
         method: 'POST',
@@ -75,86 +53,70 @@ export default function ConversationsPage() {
         throw new Error('Backend authentication failed');
       }
 
-      const authData = await authResponse.json();
-      
-      // Cache JWT tokens for API use
+      const authData: { access_token?: string; expires_in?: number } = await authResponse.json();
       if (authData.access_token && authData.expires_in) {
-        const expiryTime = Date.now() + (authData.expires_in * 1000);
+        const expiryTime = Date.now() + authData.expires_in * 1000;
         localStorage.setItem('ai_social_backend_jwt', authData.access_token);
         localStorage.setItem('ai_social_backend_jwt_expiry', expiryTime.toString());
       }
 
-      setBackendConnected(true);
-
-      // Load conversations from backend
-      const conversations = await conversationService.getConversations();
-      setConversations(conversations);
-
-    } catch (error: any) {
-      setBackendConnected(false);
-      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+      const list = await conversationService.getConversations();
+      setConversations(list);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Unknown error';
+      if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
         setError('Backend server is currently down. Please try again later.');
       } else {
         setError('Unable to connect to backend services.');
       }
     }
-  };
+  }, [session]);
 
-  const handleLoadError = (err: any) => {
-    if (err instanceof AuthenticationRequiredError) {
-      setNeedsAuth(true);
+  const loadConversations = useCallback(async () => {
+    try {
+      setLoading(true);
       setError(null);
-    } else if (err instanceof ConversationServiceError) {
-      setError('Backend services are currently unavailable.');
-    } else {
-      setError('Unable to load conversations. Please try again.');
+      setNeedsAuth(false);
+      if (status === 'unauthenticated') {
+        setNeedsAuth(true);
+        setLoading(false);
+        return;
+      }
+      await connectToBackendAndLoadConversations();
+    } catch (err) {
+      handleLoadError(err);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [status, connectToBackendAndLoadConversations, handleLoadError]);
 
-  // Google OAuth login using NextAuth
+  useEffect(() => {
+    if (status !== 'loading') {
+      loadConversations();
+    }
+  }, [status, loadConversations]);
+
   const handleGoogleLogin = async () => {
     try {
-      await signIn('google', {
-        callbackUrl: '/conversations',
-      });
+      await signIn('google', { callbackUrl: '/conversations' });
     } catch (error) {
       console.error('Login failed:', error);
-    }
-  };
-
-  // Sign out and clear backend tokens
-  const handleSignOut = async () => {
-    try {
-      // Clear backend auth tokens
-      localStorage.removeItem('ai_social_backend_jwt');
-      localStorage.removeItem('ai_social_backend_jwt_expiry');
-      
-      const { signOut } = await import('next-auth/react');
-      await signOut({
-        callbackUrl: '/',
-      });
-    } catch (error) {
-      console.error('Sign out failed:', error);
     }
   };
 
   // Filter conversations based on search and filter
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = conv.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filter === 'all' || 
-                         (filter === 'posted' && false) || // No status field yet, treat as draft
-                         (filter === 'draft' && true);
+    const matchesFilter = filter === 'all' || (filter === 'posted' && false) || (filter === 'draft' && true);
     return matchesSearch && matchesFilter;
   });
 
-  // Format relative time
   const formatRelativeTime = (dateString: string) => {
     const now = new Date();
     const date = new Date(dateString);
     const diffInMs = now.getTime() - date.getTime();
     const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     const diffInDays = Math.floor(diffInHours / 24);
-    
     if (diffInHours < 1) return 'Just now';
     if (diffInHours < 24) return `${diffInHours} hours ago`;
     if (diffInDays === 1) return '1 day ago';
@@ -162,20 +124,15 @@ export default function ConversationsPage() {
     return '1 week ago';
   };
 
-  // Loading state
   if (status === 'loading' || loading) {
     return (
       <div className="min-h-screen">
         <div className="px-12 py-12">
           <div className="max-w-4xl mx-auto">
             <div className="glass-card text-center py-16">
-              <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
-              <div className="text-subheading text-caption mb-2">
-                Loading Conversations
-              </div>
-              <p className="text-body text-caption">
-                {status === 'loading' ? 'Checking authentication...' : 'Connecting to backend...'}
-              </p>
+              <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4" />
+              <div className="text-subheading text-caption mb-2">Loading Conversations</div>
+              <p className="text-body text-caption">{status === 'loading' ? 'Checking authentication...' : 'Connecting to backend...'}</p>
             </div>
           </div>
         </div>

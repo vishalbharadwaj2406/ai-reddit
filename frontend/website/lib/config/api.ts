@@ -129,10 +129,12 @@ export class ApiClient {
     this.defaultHeaders = apiConfig.headers;
     this.circuitBreaker = new CircuitBreaker({
       failureThreshold: 5,
-      recoveryTimeout: 30000, // 30 seconds
-      monitoringPeriod: 60000, // 1 minute
+      recoveryTimeout: 30000,
+      monitoringPeriod: 60000,
     });
   }
+
+  getBaseURL(): string { return this.baseURL; }
 
   /**
    * Get authentication token - now integrated with backend auth
@@ -247,139 +249,81 @@ export class ApiClient {
   ): Promise<ApiResponse<T>> {
     return this.circuitBreaker.execute(async () => {
       const makeRequest = async (isRetry = false): Promise<ApiResponse<T>> => {
-        // Simple URL construction
-        const baseUrl = endpoint.startsWith('/health') 
-          ? API_BASE_URL.replace('/api/v1', '')  
+        const baseUrl = endpoint.startsWith('/health')
+          ? API_BASE_URL.replace('/api/v1', '')
           : this.baseURL;
-          
         const url = `${baseUrl}${endpoint}`;
-        const headers = await this.getHeaders(options.headers as Record<string, string>);
-        
-        const config: RequestInit = {
-          ...options,
-          headers,
-        };
-
+        const headers = await this.getHeaders(options.headers as Record<string, string> | undefined);
+        const config: RequestInit = { ...options, headers };
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-        
         try {
-          const response = await fetch(url, {
-            ...config,
-            signal: controller.signal,
-          });
-          
+          const response = await fetch(url, { ...config, signal: controller.signal });
           clearTimeout(timeoutId);
-          
-          // Handle 401 authentication errors
           if (response.status === 401 && !isRetry) {
             const refreshed = await this.refreshBackendToken();
-            
-            if (refreshed) {
-              // Retry the request with new token
-              return makeRequest(true);
-            } else {
-              // Refresh failed, throw auth error with helpful message
-              throw new Error('Authentication expired. Please sign out and sign back in to refresh your session.');
-            }
+            if (refreshed) return makeRequest(true);
+            throw new Error('Authentication expired. Please sign out and sign back in to refresh your session.');
           }
-          
-          // Simple error handling for other errors
           if (!response.ok) {
             const errorData = await this.parseErrorResponse(response);
             throw new Error(errorData.message);
           }
-          
-          const result = await response.json();
-          
-          // Simple response wrapping
+          const result: unknown = await response.json();
           if (typeof result === 'object' && result !== null && 'success' in result) {
             return result as ApiResponse<T>;
           }
-          
-          return {
-            success: true,
-            data: result as T,
-            message: 'Request successful',
-          };
-          
+          return { success: true, data: result as T, message: 'Request successful' };
         } catch (error) {
           clearTimeout(timeoutId);
           throw error;
         }
       };
-
       return makeRequest();
     });
   }
 
-  /**
-   * Simple error response parsing
-   */
   private async parseErrorResponse(response: Response): Promise<{ message: string; code?: string }> {
     try {
       const errorData = await response.json();
-      
-      // Handle FastAPI format: {"detail": {"error": "CODE", "message": "text"}}
       if (errorData.detail) {
         if (typeof errorData.detail === 'object' && errorData.detail.message) {
-          return {
-            message: errorData.detail.message,
-            code: errorData.detail.error || 'API_ERROR'
-          };
+          return { message: errorData.detail.message, code: errorData.detail.error || 'API_ERROR' };
         }
         if (typeof errorData.detail === 'string') {
-          return {
-            message: errorData.detail,
-            code: 'API_ERROR'
-          };
+          return { message: errorData.detail, code: 'API_ERROR' };
         }
       }
-      
-      // Handle direct message format
       if (errorData.message) {
-        return {
-          message: errorData.message,
-          code: errorData.code || 'API_ERROR'
-        };
+        return { message: errorData.message, code: errorData.code || 'API_ERROR' };
       }
-      
-      // Fallback
-      return {
-        message: `HTTP ${response.status}: ${response.statusText}`,
-        code: 'HTTP_ERROR'
-      };
-      
-    } catch (parseError) {
-      return {
-        message: `HTTP ${response.status}: ${response.statusText}`,
-        code: 'PARSE_ERROR'
-      };
+      return { message: `HTTP ${response.status}: ${response.statusText}`, code: 'HTTP_ERROR' };
+    } catch {
+      return { message: `HTTP ${response.status}: ${response.statusText}`, code: 'PARSE_ERROR' };
     }
   }
 
-  // Convenience methods
   async get<T>(endpoint: string, params?: Record<string, string>): Promise<ApiResponse<T>> {
     const url = params ? `${endpoint}?${new URLSearchParams(params).toString()}` : endpoint;
     return this.request<T>(url, { method: 'GET' });
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
+  async post<TResponse, TBody = unknown>(endpoint: string, data?: TBody): Promise<ApiResponse<TResponse>> {
+    return this.request<TResponse>(endpoint, {
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data !== undefined ? JSON.stringify(data) : undefined,
     });
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
+  async put<TResponse, TBody = unknown>(endpoint: string, data?: TBody): Promise<ApiResponse<TResponse>> {
+    return this.request<TResponse>(endpoint, {
       method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data !== undefined ? JSON.stringify(data) : undefined,
     });
   }
 
-  async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: 'DELETE' });
+  async delete<TResponse>(endpoint: string): Promise<ApiResponse<TResponse>> {
+    return this.request<TResponse>(endpoint, { method: 'DELETE' });
   }
 
   /**

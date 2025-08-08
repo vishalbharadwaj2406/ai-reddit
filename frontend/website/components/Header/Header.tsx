@@ -13,24 +13,18 @@ interface HeaderProps {
 }
 
 export default function Header({ className = '' }: HeaderProps) {
-  // Use NextAuth session
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
-  
-  // Sidebar state for logo positioning
-  const { toggleExpanded, toggleMobile, isExpanded } = useSidebarStore()
+  const { toggleExpanded, toggleMobile } = useSidebarStore()
 
-  // Close dropdown on outside click or ESC
   useEffect(() => {
     if (!dropdownOpen) return;
     function handleClick(e: MouseEvent) {
       const target = e.target as Node;
       const isInsideDropdown = dropdownRef.current && dropdownRef.current.contains(target);
       const isInsideProfile = profileRef.current && profileRef.current.contains(target);
-      
-      // Only close if click is outside both dropdown AND profile picture
       if (!isInsideDropdown && !isInsideProfile) {
         setDropdownOpen(false);
       }
@@ -38,7 +32,6 @@ export default function Header({ className = '' }: HeaderProps) {
     function handleEsc(e: KeyboardEvent) {
       if (e.key === 'Escape') setDropdownOpen(false);
     }
-    // Use 'click' instead of 'mousedown' to avoid race condition
     document.addEventListener('click', handleClick);
     document.addEventListener('keydown', handleEsc);
     return () => {
@@ -47,16 +40,12 @@ export default function Header({ className = '' }: HeaderProps) {
     };
   }, [dropdownOpen]);
 
-  const handleSignOut = () => {
-    signOut({ callbackUrl: '/' });
-  };
+  const handleSignOut = () => { signOut({ callbackUrl: '/' }); };
 
   const handleHamburgerClick = () => {
-    // On mobile, toggle mobile sidebar
     if (window.innerWidth <= 767) {
       toggleMobile()
     } else {
-      // On desktop, toggle expanded state
       toggleExpanded()
     }
   }
@@ -64,14 +53,12 @@ export default function Header({ className = '' }: HeaderProps) {
   const handleProfileClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Toggle dropdown state - now safe from race conditions
     setDropdownOpen(prev => !prev);
   };
 
   return (
     <header className={`${styles.header} ${className}`}>
       <nav className={styles.nav}>
-        {/* Hamburger Menu */}
         <button
           className={styles.hamburgerButton}
           onClick={handleHamburgerClick}
@@ -79,8 +66,6 @@ export default function Header({ className = '' }: HeaderProps) {
         >
           <Menu className={styles.hamburgerIcon} />
         </button>
-
-        {/* Logo Section */}
         <div className={styles.logo}>
           <Image
             src="/images/blue_lotus_logo.png"
@@ -90,84 +75,67 @@ export default function Header({ className = '' }: HeaderProps) {
             height={40}
             priority
           />
-          <span className={styles.logoText}>
-            AI Social
-          </span>
+          <span className={styles.logoText}>AI Social</span>
         </div>
-
-        {/* Navigation Items - Context-aware based on authentication state */}
         {!session?.user ? (
-            // Non-authenticated: Show only Sign In button
-            <button
-              className={styles.signInButton}
-              aria-label="Sign in to AI Social"
-              onClick={() => window.dispatchEvent(new CustomEvent('open-login-modal'))}
+          <button
+            className={styles.signInButton}
+            aria-label="Sign in to AI Social"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-login-modal'))}
+          >
+            Sign In
+          </button>
+        ) : (
+          <div style={{ position: 'relative' }}>
+            <div
+              ref={profileRef}
+              className={styles.profilePicWrapper}
+              tabIndex={0}
+              aria-haspopup="true"
+              aria-expanded={dropdownOpen}
+              onClick={handleProfileClick}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setDropdownOpen(prev => !prev); } }}
+              style={{ cursor: 'pointer' }}
             >
-              Sign In
-            </button>
-          ) : (
-            // Authenticated: Show profile picture with dropdown
-            <div style={{ position: 'relative' }}>
-              <div
-                ref={profileRef}
-                className={styles.profilePicWrapper}
-                tabIndex={0}
-                aria-haspopup="true"
-                aria-expanded={dropdownOpen}
-                onClick={handleProfileClick}
-                onKeyDown={e => { 
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setDropdownOpen(prev => !prev);
-                  }
-                }}
-                style={{ cursor: 'pointer' }}
-              >
-                <Image
-                  src={session.user.image || '/images/blue_lotus_logo.png'}
-                  alt={session.user.name || 'Profile'}
-                  className={styles.profilePic}
-                  width={32}
-                  height={32}
-                />
-              </div>
-              {dropdownOpen && (
-                <div className={styles.profileDropdown} ref={dropdownRef} role="menu">
-                  <div className={styles.profileDropdownUserInfo}>
-                    <div className={styles.profileDropdownName}>{session.user.name}</div>
-                    <div className={styles.profileDropdownUsername}>{session.user.email}</div>
-                  </div>
-                  
-                  <div className={styles.profileDropdownActions}>
-                    <button className={styles.profileDropdownButton} role="menuitem">
-                      <svg className={styles.profileDropdownIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      Profile
-                    </button>
-                    <button className={styles.profileDropdownButton} role="menuitem">
-                      <svg className={styles.profileDropdownIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      Settings
-                    </button>
-                    <button 
-                      className={`${styles.profileDropdownButton} ${styles.signOut}`}
-                      onClick={handleSignOut}
-                      role="menuitem"
-                    >
-                      <svg className={styles.profileDropdownIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Sign Out
-                    </button>
-                  </div>
-                </div>
-              )}
+              <Image
+                src={session.user.image || '/images/blue_lotus_logo.png'}
+                alt={session.user.name || 'Profile'}
+                className={styles.profilePic}
+                width={32}
+                height={32}
+              />
             </div>
-          )}
+            {dropdownOpen && (
+              <div className={styles.profileDropdown} ref={dropdownRef} role="menu">
+                <div className={styles.profileDropdownUserInfo}>
+                  <div className={styles.profileDropdownName}>{session.user.name}</div>
+                  <div className={styles.profileDropdownUsername}>{session.user.email}</div>
+                </div>
+                <div className={styles.profileDropdownActions}>
+                  <button className={styles.profileDropdownButton} role="menuitem">
+                    <svg className={styles.profileDropdownIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Profile
+                  </button>
+                  <button className={styles.profileDropdownButton} role="menuitem">
+                    <svg className={styles.profileDropdownIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Settings
+                  </button>
+                  <button className={`${styles.profileDropdownButton} ${styles.signOut}`} onClick={handleSignOut} role="menuitem">
+                    <svg className={styles.profileDropdownIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </nav>
     </header>
   );

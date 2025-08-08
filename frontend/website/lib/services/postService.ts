@@ -29,7 +29,6 @@ export interface PostListResponse {
   has_more: boolean;
 }
 
-// Error types
 export class PostServiceError extends Error {
   constructor(message: string, public code?: string) {
     super(message);
@@ -37,38 +36,31 @@ export class PostServiceError extends Error {
   }
 }
 
-// Post Service
+const getErrorMessage = (err: unknown): string => {
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  try { return JSON.stringify(err); } catch { return 'Unknown error'; }
+};
+
 export class PostService {
-  
+  private wrapError(err: unknown, context: string): never {
+    if (err instanceof PostServiceError) throw err;
+    throw new PostServiceError(`${context}: ${getErrorMessage(err)}`);
+  }
+
   /**
    * Create a new post from blog content
    */
   async createPost(data: CreatePostRequest): Promise<Post> {
     try {
-      const response = await apiClient.post<Post>(
+      const response = await apiClient.post<Post, CreatePostRequest>(
         endpoints.posts.create,
-        {
-          ...data,
-          content_type: data.content_type || 'markdown'
-        }
+        { ...data, content_type: data.content_type || 'markdown' }
       );
-      
-      if (response.success) {
-        return response.data;
-      }
-      
-      throw new PostServiceError(
-        response.message || 'Failed to create post'
-      );
-      
-    } catch (error: any) {
-      if (error instanceof PostServiceError) {
-        throw error;
-      }
-      
-      throw new PostServiceError(
-        `Failed to create post: ${error.message}`
-      );
+      if (response.success) return response.data;
+      throw new PostServiceError(response.message || 'Failed to create post');
+    } catch (err) {
+      this.wrapError(err, 'Failed to create post');
     }
   }
 
@@ -79,28 +71,12 @@ export class PostService {
     try {
       const response = await apiClient.get<PostListResponse>(
         endpoints.posts.list,
-        { 
-          limit: limit.toString(), 
-          offset: offset.toString() 
-        }
+        { limit: limit.toString(), offset: offset.toString() }
       );
-      
-      if (response.success) {
-        return response.data;
-      }
-      
-      throw new PostServiceError(
-        response.message || 'Failed to fetch posts'
-      );
-      
-    } catch (error: any) {
-      if (error instanceof PostServiceError) {
-        throw error;
-      }
-      
-      throw new PostServiceError(
-        `Failed to load posts: ${error.message}`
-      );
+      if (response.success) return response.data;
+      throw new PostServiceError(response.message || 'Failed to fetch posts');
+    } catch (err) {
+      this.wrapError(err, 'Failed to load posts');
     }
   }
 
@@ -112,23 +88,10 @@ export class PostService {
       const response = await apiClient.get<Post>(
         endpoints.posts.getById(postId)
       );
-      
-      if (response.success) {
-        return response.data;
-      }
-      
-      throw new PostServiceError(
-        response.message || 'Failed to fetch post'
-      );
-      
-    } catch (error: any) {
-      if (error instanceof PostServiceError) {
-        throw error;
-      }
-      
-      throw new PostServiceError(
-        `Failed to load post: ${error.message}`
-      );
+      if (response.success) return response.data;
+      throw new PostServiceError(response.message || 'Failed to fetch post');
+    } catch (err) {
+      this.wrapError(err, 'Failed to load post');
     }
   }
 
@@ -137,31 +100,14 @@ export class PostService {
    */
   async forkPost(postId: string, content: string, title?: string): Promise<Post> {
     try {
-      const response = await apiClient.post<Post>(
+      const response = await apiClient.post<Post, { content: string; title: string; content_type: 'markdown' }>(
         endpoints.posts.fork(postId),
-        {
-          content,
-          title: title || 'Forked Conversation',
-          content_type: 'markdown'
-        }
+        { content, title: title || 'Forked Conversation', content_type: 'markdown' }
       );
-      
-      if (response.success) {
-        return response.data;
-      }
-      
-      throw new PostServiceError(
-        response.message || 'Failed to fork post'
-      );
-      
-    } catch (error: any) {
-      if (error instanceof PostServiceError) {
-        throw error;
-      }
-      
-      throw new PostServiceError(
-        `Failed to fork post: ${error.message}`
-      );
+      if (response.success) return response.data;
+      throw new PostServiceError(response.message || 'Failed to fork post');
+    } catch (err) {
+      this.wrapError(err, 'Failed to fork post');
     }
   }
 
@@ -169,34 +115,21 @@ export class PostService {
    * Convert blog content to a publishable post format
    */
   async publishBlogAsPost(
-    blogContent: string, 
-    title: string, 
-    conversationId?: string
+    blogContent: string,
+    title: string
   ): Promise<Post> {
     try {
-      // Clean up the blog content for publishing
       const cleanContent = this.cleanBlogContent(blogContent);
-      
-      // Generate a post title if not provided
       const postTitle = title || this.generateTitleFromContent(cleanContent);
-      
       const postData: CreatePostRequest = {
         title: postTitle,
         content: cleanContent,
         content_type: 'markdown',
         post_type: 'original'
       };
-      
       return await this.createPost(postData);
-      
-    } catch (error: any) {
-      if (error instanceof PostServiceError) {
-        throw error;
-      }
-      
-      throw new PostServiceError(
-        `Failed to publish blog as post: ${error.message}`
-      );
+    } catch (err) {
+      this.wrapError(err, 'Failed to publish blog as post');
     }
   }
 
@@ -221,18 +154,11 @@ export class PostService {
   private generateTitleFromContent(content: string): string {
     // Try to extract first heading
     const headingMatch = content.match(/^#+\s*(.+)$/m);
-    if (headingMatch) {
-      return headingMatch[1].trim();
-    }
+    if (headingMatch) return headingMatch[1].trim();
     
     // Fallback to first line/sentence
     const firstLine = content.split('\n')[0].trim();
-    if (firstLine.length > 0) {
-      // Truncate if too long
-      return firstLine.length > 60 
-        ? firstLine.substring(0, 57) + '...'
-        : firstLine;
-    }
+    if (firstLine.length > 0) return firstLine.length > 60 ? firstLine.substring(0, 57) + '...' : firstLine;
     
     return 'Untitled Post';
   }

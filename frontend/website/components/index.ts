@@ -1,6 +1,6 @@
 export { default as Header } from './Header'
 export { Sidebar, SidebarButton, SidebarNavItem } from './Sidebar'
-export { AppLayout } from './Layout'
+export { AppLayout } from './layout'
 export { WelcomePage } from './Welcome'
 export { default as LoginModal } from './LoginModal'
 export { BlogEditor } from './BlogEditor'
