@@ -143,7 +143,7 @@ export default function ConversationPage() {
         role: 'assistant',
         content: '', // Will be updated as streaming progresses
         isBlog: false,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
       
       addMessageToConversation(aiMessage);
@@ -491,9 +491,10 @@ export default function ConversationPage() {
                                             index === conversation.messages.filter(m => m.role !== 'system').length - 1;
                       const isTyping = (isAIResponding && isLastAIMessage && !message.isBlog) || 
                                      (isGeneratingBlog && isLastAIMessage && message.isBlog);
+                      const listKey = `${message.messageId || `${message.role}-${message.createdAt}-${index}`}-${index}`;
                       
                       return (
-                        <div key={message.messageId} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div key={listKey} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                           <div className={`${message.role === 'user' ? 'glass-message-user' : 
                                           message.isBlog ? 'glass-message-blog' : 'glass-message-ai'} max-w-[85%]`}>
                             {/* ✨ NEW: Blog message indicator */}
