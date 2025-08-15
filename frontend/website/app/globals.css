@@ -1,9 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* Import Design System Global Classes */
-@import '../styles/design-system.global.css';
+@import "tailwindcss";
 
 /* ============================================
    CSS CUSTOM PROPERTIES - DESIGN TOKENS
@@ -43,6 +38,13 @@
   --text-3xl: clamp(24px, 5vw, 32px);
   --text-4xl: clamp(32px, 6vw, 48px);
   
+  /* Z-Index Scale - Layering system */
+  --z-background: -1;
+  --z-content: 1;
+  --z-header: 50;
+  --z-dropdown: 100;
+  --z-modal: 200;
+  
   /* Shadow System */
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1);
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.2);
@@ -59,7 +61,7 @@
   --glass-border-heavy: rgba(59, 130, 246, 0.35);
 }
 
-/* Import Design System Components */
+/* Import Design System Global Classes */
 @import '../styles/design-system.global.css';
 
 /* ============================================
@@ -130,4 +132,35 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(59, 130, 246, 0.5);
+}
+
+/* Select Component Animations */
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(-8px);
+  }
+}
+
+.select-dropdown-enter {
+  animation: slide-down 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.select-dropdown-exit {
+  animation: slide-up 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

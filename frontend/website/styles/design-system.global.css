@@ -18,25 +18,97 @@
     0 0 40px rgba(30, 58, 138, 0.12);
 }
 
-/* Glass Card - For content containers (RESTORED) */
+/* ============================================
+   PRODUCTION-GRADE GLASS SYSTEM
+   Minimal interactions for millions of users
+   ============================================ */
+
+/* Main Glass Card - Subtle and professional */
 .glass-card {
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
-  -webkit-backdrop-filter: var(--glass-blur-medium) var(--glass-saturation);
-  border: 1px solid var(--glass-border-light);
-  box-shadow: 
-    var(--shadow-lg),
-    0 0 40px rgba(30, 58, 138, 0.12);
-  border-radius: var(--radius-2xl);
-  padding: var(--space-xl);
-  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  transition: border-color 0.2s ease;
+  padding: 24px;
 }
 
 .glass-card:hover {
+  /* MINIMAL change - only border highlight */
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+/* Glass Input - Clean form styling */
+.glass-input {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  transition: border-color 0.2s ease;
+  padding: 12px 16px;
+  color: white;
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Glass Button Primary - Minimal feedback */
+.glass-button-primary {
+  background: rgba(59, 130, 246, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  transition: background-color 0.2s ease;
+  padding: 12px 24px;
+  color: white;
+  font-weight: 500;
+}
+
+.glass-button-primary:hover {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+.glass-button-primary:active {
+  background: rgba(59, 130, 246, 0.3);
+}
+
+/* Glass Dropdown - Following Royal Ink Glass design system */
+.glass-dropdown {
+  background: rgba(25, 30, 38, 0.95);
+  backdrop-filter: blur(80px) saturate(200%) contrast(120%) brightness(0.8);
+  -webkit-backdrop-filter: blur(80px) saturate(200%) contrast(120%) brightness(0.8);
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-radius: var(--radius-lg); /* Now matches button corners */
   box-shadow: 
-    var(--shadow-xl),
-    0 0 50px rgba(30, 58, 138, 0.18);
-  border-color: rgba(59, 130, 246, 0.25);
+    0 16px 64px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  /* Use CSS variable for z-index from design token system */
+  z-index: var(--z-dropdown);
+  /* Create new stacking context to isolate dropdown */
+  isolation: isolate;
+}
+
+.glass-dropdown::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(120px);
+  -webkit-backdrop-filter: blur(120px);
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
 }
 
 /* Glass Elevated - For special emphasis (RESTORED) */
@@ -67,7 +139,7 @@
   top: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: var(--z-header);
 }
 
 /* Glass Sidebar - Fixed positioning (RESTORED) */
@@ -87,18 +159,98 @@
    SAMPLE WEBSITE GLASS EFFECTS (from website-sample.html)
    ============================================ */
 
-/* Glass Panel - From sample website styling */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(32px) saturate(180%) brightness(1.1);
-  -webkit-backdrop-filter: blur(32px) saturate(180%) brightness(1.1);
-  border: 2px solid rgba(59, 130, 246, 0.2);
+/* ============================================
+   UNIFIED GLASS SYSTEM - Based on website-sample.html
+   ============================================ */
+
+/* Main Glass Card - Production-grade subtle interactions */
+.glass-card {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
+  transition: border-color 0.2s ease;
+  padding: 24px;
+}
+
+.glass-card:hover {
+  /* MINIMAL change - only border highlight */
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+/* Glass Input - For search bars and form inputs */
+.glass-input {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+.glass-input:focus {
+  border-color: rgba(59, 130, 246, 0.6);
   box-shadow: 
-    0 12px 40px rgba(0, 0, 0, 0.8),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 0 60px rgba(30, 58, 138, 0.15);
-  border-radius: 24px;
-  transition: all 0.4s ease;
+    inset 0 2px 4px rgba(0, 0, 0, 0.1),
+    0 0 32px rgba(59, 130, 246, 0.2);
+}
+
+/* Glass Button Primary - For New Chat buttons */
+.glass-button-primary {
+  background: linear-gradient(135deg, #1E3A8A, #3B82F6);
+  border: none;
+  border-radius: 20px;
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(30, 58, 138, 0.3);
+}
+
+.glass-button-primary:hover {
+  /* NO transform - professional only */
+  box-shadow: 0 12px 32px rgba(30, 58, 138, 0.4);
+  background: linear-gradient(135deg, #1D4ED8, #2563EB);
+}
+
+/* Glass Button Secondary - For sign out, etc */
+.glass-button-secondary {
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid rgba(59, 130, 246, 0.3);
+  border-radius: 28px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+}
+
+.glass-button-secondary:hover {
+  background: rgba(30, 58, 138, 0.2);
+  color: #3B82F6;
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 6px 20px rgba(30, 58, 138, 0.2);
+}
+
+/* REMOVED DUPLICATE - Using clean version above */
+
+.glass-dropdown-item {
+  transition: background-color 0.2s ease;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.glass-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.glass-dropdown-item.danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
 }
 
 .glass-panel:hover {
@@ -298,21 +450,7 @@
   border: 1px solid rgba(59, 130, 246, 0.5);
 }
 
-/* Glass Dropdown - Enhanced visibility */
-.glass-dropdown {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 2px solid rgba(59, 130, 246, 0.6);
-  box-shadow: 
-    0 16px 40px rgba(0, 0, 0, 0.7),
-    0 0 100px rgba(59, 130, 246, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  position: absolute;
-  border-radius: 16px;
-  z-index: 200;
-  animation: glassDropdownAppear 0.2s ease-out;
-}
+/* REMOVED DUPLICATE - Using clean version above */
 
 @keyframes glassDropdownAppear {
   from {

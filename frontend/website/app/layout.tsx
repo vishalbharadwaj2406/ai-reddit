@@ -5,6 +5,7 @@ import { AppLayout } from "@/components";
 import LoginModal from "@/components/LoginModal";
 import "./globals.css";
 import { SessionProvider } from 'next-auth/react';
+import { ToastProvider } from "@/components/feedback/ToastProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,12 +33,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
-          <div className="bg-pattern"></div>
-          <Header />
-          <LoginModal />
-          <AppLayout>
-            {children}
-          </AppLayout>
+          <ToastProvider>
+            <Header />
+            <LoginModal />
+            <AppLayout>
+              {children}
+            </AppLayout>
+          </ToastProvider>
         </SessionProvider>
       </body>
     </html>

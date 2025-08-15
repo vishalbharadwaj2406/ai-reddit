@@ -191,6 +191,7 @@
 
 .profileDropdown {
   composes: glass-dropdown from '../../styles/design-system.global.css';
+  position: absolute;
   right: 0;
   top: calc(100% + 8px);
   min-width: 240px;
@@ -198,6 +199,7 @@
   display: flex;
   flex-direction: column;
   animation: dropdown-fade-in 0.3s cubic-bezier(0.4,0,0.2,1);
+  z-index: var(--z-dropdown);
 }
 
 @keyframes dropdown-fade-in {
@@ -215,7 +217,7 @@
 .profileDropdownUserInfo {
   margin-bottom: 0; /* Remove margin to eliminate gap */
   padding: var(--space-md) var(--space-lg) var(--space-md);
-  border-bottom: 1px solid rgba(59, 130, 246, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .profileDropdownName {
@@ -261,7 +263,7 @@
 /* .profileDropdownButton:first-child - REMOVED to fix hover inconsistency */
 
 .profileDropdownButton:hover {
-  background: rgba(59, 130, 246, 0.15);
+  background: rgba(255, 255, 255, 0.08);
   color: #FFFFFF;
 }
 

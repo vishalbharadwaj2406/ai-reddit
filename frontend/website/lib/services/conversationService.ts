@@ -122,7 +122,14 @@ export class ConversationService {
         endpoints.conversations.list,
         { limit: limit.toString(), offset: offset.toString() }
       );
-      if (response.success) return response.data;
+      if (response.success) {
+        // Backend list may omit status (defaults to active). Normalize here.
+        const normalized = (response.data as unknown as Array<Partial<Conversation>>).map((c) => ({
+          status: (c.status as Conversation['status']) ?? 'active',
+          ...c,
+        })) as Conversation[];
+        return normalized;
+      }
       throw new ConversationServiceError(response.message || 'Failed to fetch conversations');
     } catch (err) {
       this.handleError(err, 'Failed to load conversations');
