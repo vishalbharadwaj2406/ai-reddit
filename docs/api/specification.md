@@ -617,7 +617,7 @@ data: {"success": true, "data": {"content": "# Complete Blog\n\nFull blog conten
 **Request Body**:
 ```json
 {
-  "reaction": "upvote" | "downvote" | "heart" | "insightful" | "accurate" | null
+  "reactionType": "upvote" | "downvote" | "heart" | "insightful" | "accurate" | null
 }
 ```
 **Response**:
@@ -625,7 +625,7 @@ data: {"success": true, "data": {"content": "# Complete Blog\n\nFull blog conten
 {
   "success": true,
   "data": {
-    "reaction": "upvote",
+    "reactionType": "upvote",
     "reactionCounts": {
       "upvote": 15,
       "downvote": 2,
@@ -781,7 +781,7 @@ data: {"success": true, "data": {"content": "# Complete Blog\n\nFull blog conten
 **Request Body**:
 ```json
 {
-  "reaction": "upvote" | "downvote" | "heart" | "insightful" | "accurate" | null
+  "reactionType": "upvote" | "downvote" | "heart" | "insightful" | "accurate" | null
 }
 ```
 **Response**:
@@ -789,7 +789,7 @@ data: {"success": true, "data": {"content": "# Complete Blog\n\nFull blog conten
 {
   "success": true,
   "data": {
-    "reaction": "insightful",
+    "reactionType": "insightful",
     "reactionCounts": {
       "upvote": 8,
       "downvote": 1,

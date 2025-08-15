@@ -19,9 +19,10 @@ from typing import Optional
 from app.core.database import get_db
 from app.schemas.post import (
     PostCreate, PostCreateResponse, PostListResponse,
-    PostForkRequest, PostForkAPIResponse
+    PostForkRequest, PostForkAPIResponse, PostReactionCreate
 )
 from app.services.post_service import PostService, PostServiceError
+from app.services.post_reaction_service import PostReactionService
 from app.dependencies.auth import get_current_user, get_current_user_optional
 from app.models.user import User
 
@@ -374,4 +375,83 @@ async def fork_post(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fork post: {str(e)}"
+        )
+
+
+@router.post("/{post_id}/reaction", status_code=status.HTTP_201_CREATED)
+async def add_post_reaction(
+    post_id: UUID,
+    reaction_data: PostReactionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Add or update a user's reaction to a post.
+    
+    **Business Logic:**
+    - Users cannot react to their own posts
+    - If user has no existing reaction, create new one
+    - If user has same reaction, remove it (toggle off)
+    - If user has different reaction, update it
+    
+    **Supported Reactions:**
+    - upvote: Shows agreement or appreciation
+    - downvote: Shows disagreement (constructive)
+    - heart: Shows love or strong positive sentiment
+    - insightful: Marks content as providing valuable insights
+    - accurate: Marks content as factually correct or well-researched
+    
+    **Args:**
+    - **post_id**: UUID of the post to react to
+    - **reaction_data**: Reaction type and optional metadata
+    
+    **Returns:**
+    - **message**: Action taken (created/updated/removed)
+    - **reaction_counts**: Updated counts for all reaction types
+    - **user_reaction**: Current user's reaction (null if removed)
+    
+    **Raises:**
+    - **400**: Cannot react to own post or invalid reaction type
+    - **404**: Post not found
+    - **422**: Invalid reaction type
+    """
+    try:
+        reaction_service = PostReactionService(db)
+        
+        # Add or update the reaction
+        reaction, action = reaction_service.add_or_update_reaction(
+            post_id=post_id,
+            user_id=current_user.user_id,
+            reaction_type=reaction_data.reactionType
+        )
+        
+        # Get updated reaction counts
+        reaction_counts = reaction_service.get_post_reactions(post_id)
+        
+        # Get user's current reaction
+        user_reaction = reaction_service.get_user_reaction(post_id, current_user.user_id)
+        
+        return {
+            "success": True,
+            "data": {
+                "message": f"Reaction {action}",
+                "reaction_counts": reaction_counts,
+                "user_reaction": user_reaction
+            },
+            "message": f"Post reaction {action} successfully",
+            "errorCode": None
+        }
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions from service layer
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "success": False,
+                "data": None,
+                "message": f"Failed to process reaction: {str(e)}",
+                "errorCode": "REACTION_PROCESSING_ERROR"
+            }
         )
