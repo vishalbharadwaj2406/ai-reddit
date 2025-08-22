@@ -9,6 +9,7 @@ export const authConfig = {
       authorization: {
         params: {
           scope: "openid email profile",
+          prompt: "select_account",
         },
       },
     })
@@ -39,6 +40,13 @@ export const authConfig = {
       }
       return session
     },
+    async redirect({ url, baseUrl }) {
+      // Ensure redirects work properly in development
+      if (url.startsWith('/')) return `${baseUrl}${url}`
+      if (new URL(url).origin === baseUrl) return url
+      return baseUrl
+    },
   },
+  debug: process.env.NODE_ENV === 'development',
   secret: process.env.NEXTAUTH_SECRET,
 } satisfies NextAuthConfig

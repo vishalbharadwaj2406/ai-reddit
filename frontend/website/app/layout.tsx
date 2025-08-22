@@ -4,7 +4,7 @@ import Header from "@/components/Header/Header";
 import { AppLayout } from "@/components";
 import LoginModal from "@/components/LoginModal";
 import "./globals.css";
-import { SessionProvider } from 'next-auth/react';
+import SessionWrapper from "@/components/providers/SessionWrapper";
 import { ToastProvider } from "@/components/feedback/ToastProvider";
 
 const geistSans = Geist({
@@ -32,7 +32,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SessionProvider>
+        <SessionWrapper>
           <ToastProvider>
             <Header />
             <LoginModal />
@@ -40,7 +40,7 @@ export default function RootLayout({
               {children}
             </AppLayout>
           </ToastProvider>
-        </SessionProvider>
+        </SessionWrapper>
       </body>
     </html>
   );

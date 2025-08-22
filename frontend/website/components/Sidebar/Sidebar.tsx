@@ -4,7 +4,7 @@ import React, { useEffect } from 'react'
 import { Home, MessageCircle } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import styles from './Sidebar.module.css'
-import SidebarButton from './SidebarButton'
+import NewChatButton from '@/components/design-system/NewChatButton'
 import SidebarNavItem from './SidebarNavItem'
 import { useSidebarStore } from '@/lib/stores/sidebarStore'
 
@@ -72,7 +72,11 @@ export default function Sidebar() {
         <div className={styles.sidebarContent}>
           {/* New Chat Button */}
           <div className={styles.newChatContainer}>
-            <SidebarButton />
+            <NewChatButton 
+              variant="sidebar"
+              showText={isExpanded}
+              onClick={() => setMobileOpen(false)}
+            />
           </div>
 
           {/* Navigation Items */}

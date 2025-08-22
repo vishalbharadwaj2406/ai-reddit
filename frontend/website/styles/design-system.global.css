@@ -678,9 +678,19 @@
 @keyframes gradientShift {
   0% { background-position: 0% 50%; }
   25% { background-position: 100% 50%; }
-  50% { background-position: 100% 100%; }
-  75% { background-position: 0% 100%; }
+  50% { background-position: 0% 50%; }
+  75% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
+}
+
+/* Professional Shimmer Animation for Skeleton Loaders */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
 }
 
 /* Accent Text */

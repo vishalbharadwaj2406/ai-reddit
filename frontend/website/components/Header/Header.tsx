@@ -1,12 +1,16 @@
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import styles from './Header.module.css'
 import Image from 'next/image'
 import { useSession, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
-import { Menu } from 'lucide-react'
+import { Menu, Search } from 'lucide-react'
 import { useSidebarStore } from '@/lib/stores/sidebarStore'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { Input } from '@/components/design-system/Input'
+import NewChatButton from '@/components/design-system/NewChatButton'
 
 interface HeaderProps {
   className?: string
@@ -14,10 +18,16 @@ interface HeaderProps {
 
 export default function Header({ className = '' }: HeaderProps) {
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { toggleExpanded, toggleMobile } = useSidebarStore()
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
-  const { toggleExpanded, toggleMobile } = useSidebarStore()
+
+  // Check if we're on conversations page
+  const isConversationsPage = pathname.startsWith('/conversations');
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -66,18 +76,56 @@ export default function Header({ className = '' }: HeaderProps) {
         >
           <Menu className={styles.hamburgerIcon} />
         </button>
-        <div className={styles.logo}>
-          <Image
-            src="/images/blue_lotus_logo.png"
-            alt="AI Social Logo"
-            className={styles.logoImage}
-            width={40}
-            height={40}
-            priority
-          />
-          <span className={styles.logoText}>AI Social</span>
-        </div>
-        {!session?.user ? (
+        
+        {/* Clickable Logo + Title directing to feed page */}
+        <Link href="/feed" className={styles.logoLink} aria-label="Go to AI Social feed">
+          <div className={styles.logo}>
+            <Image
+              src="/images/blue_lotus_logo.png"
+              alt="AI Social Logo"
+              className={styles.logoImage}
+              width={40}
+              height={40}
+              priority
+            />
+            <span className={styles.logoText}>AI Social</span>
+          </div>
+        </Link>
+
+        {/* Context-aware center content - Search for conversations page */}
+        {isConversationsPage && (
+          <div className={styles.centerContent}>
+            <Input
+              type="text"
+              placeholder="Search conversations..."
+              defaultValue={searchParams.get('search') || ''}
+              onChange={(e) => {
+                const searchValue = e.target.value;
+                const params = new URLSearchParams(searchParams.toString());
+                if (searchValue) {
+                  params.set('search', searchValue);
+                } else {
+                  params.delete('search');
+                }
+                router.replace(`/conversations?${params.toString()}`, { scroll: false });
+              }}
+              leftIcon={<Search size={18} />}
+              className={styles.headerSearch}
+              data-conversations-search
+              aria-label="Search conversations"
+            />
+          </div>
+        )}
+
+        {/* Right side content */}
+        <div className={styles.rightContent}>
+          {/* New Chat button - only on conversations page */}
+          {isConversationsPage && session?.user && (
+            <NewChatButton variant="header" />
+          )}
+
+          {/* Profile section */}
+          {!session?.user ? (
           <button
             className={styles.signInButton}
             aria-label="Sign in to AI Social"
@@ -136,6 +184,7 @@ export default function Header({ className = '' }: HeaderProps) {
             )}
           </div>
         )}
+        </div>
       </nav>
     </header>
   );

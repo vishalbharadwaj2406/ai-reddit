@@ -10,7 +10,7 @@
   height: 64px;
 }
 
-/* Navigation Container - YouTube-style layout */
+/* Navigation Container - YouTube-style layout with anti-compression */
 .nav {
   display: flex;
   align-items: center;
@@ -18,9 +18,12 @@
   width: 100%;
   padding-right: var(--space-lg); /* Only right padding for profile section */
   position: relative;
+  gap: var(--space-md);
+  /* PREVENT ANY COMPRESSION that could squash profile picture */
+  min-width: 0; /* Allow flex items to shrink, but protect specific elements */
 }
 
-/* Hamburger Menu Button - Centered in collapsed sidebar */
+/* Hamburger Menu Button - Positioned for immediate logo follow */
 .hamburgerButton {
   display: flex;
   align-items: center;
@@ -37,8 +40,9 @@
   flex-shrink: 0;
   z-index: 101;
   position: relative;
-  /* Center within 72px collapsed sidebar width */
-  margin-left: 8px; /* (72px - 56px) / 2 = 8px */
+  /* Positioned very close to sidebar edge */
+  margin-left: 8px; /* (72px - 56px) / 2 = 8px from sidebar edge */
+  margin-right: 0; /* NO GAP - immediate follow by logo */
 }
 
 .hamburgerButton:hover {
@@ -57,20 +61,34 @@
   transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Logo Section - Fixed position right after hamburger */
+/* ============================================
+   CLICKABLE LOGO LINK - PRODUCTION GRADE
+   ============================================ */
+
+/* Logo Link Container - Clickable wrapper */
+.logoLink {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-lg);
+  transition: none; /* NO HOVER EFFECTS - as requested */
+  flex-shrink: 0;
+  /* VERY CLOSE to hamburger - almost touching */
+  margin-left: -4px; /* Negative margin to bring even closer */
+}
+
+/* Logo Section - Now inside clickable link */
 .logo {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-sm); /* SMALLER gap between logo and text */
   font-size: var(--text-2xl);
   font-weight: 800;
   position: relative;
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-sm); /* Reduced padding for tighter spacing */
   border-radius: var(--radius-lg);
-  flex-shrink: 0;
-  margin-right: auto;
-  /* Fixed minimal gap after hamburger - never moves */
-  margin-left: var(--space-xs); /* 4px minimal gap */
+  /* Hamburger → Logo → Text immediate flow */
+  margin-right: auto; /* Push everything else to the right */
 }
 
 /* Logo Glow Effect */
@@ -100,6 +118,39 @@
 /* Logo Text */
 .logoText {
   composes: text-gradient-logo from '../../styles/design-system.global.css';
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  margin-left: 0; /* NO margin - uses gap from parent */
+  white-space: nowrap;
+}
+
+/* Center Content - Context-aware content */
+.centerContent {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Header Search Input - Enhanced for better icon separation */
+.headerSearch {
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Right Content Container - PREVENT PROFILE SQUASHING */
+.rightContent {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-left: auto;
+  /* CRITICAL: Fixed properties to prevent squashing */
+  flex-shrink: 0; /* Never allow compression */
+  min-width: fit-content; /* Maintain minimum required width */
 }
 
 /* Navigation Items Container */
@@ -163,6 +214,11 @@
    PROFILE PICTURE RING & DROPDOWN
    ============================================ */
 
+/* ============================================
+   PROFILE PICTURE - FIXED ASPECT RATIO
+   Production-grade implementation preventing squashing
+   ============================================ */
+
 .profilePicWrapper {
   position: relative;
   display: inline-block;
@@ -171,7 +227,12 @@
   background: conic-gradient(from 0deg, #fff, #60A5FA, #3B82F6, #fff 100%);
   animation: gradient-rotate 4s linear infinite;
   box-shadow: 0 2px 12px rgba(59,130,246,0.15);
-  flex-shrink: 0;
+  flex-shrink: 0; /* CRITICAL: Prevent shrinking that causes squashing */
+  /* FIXED DIMENSIONS - Never compress */
+  width: 36px; /* 32px + 2px padding on each side */
+  height: 36px; /* 32px + 2px padding on each side */
+  min-width: 36px; /* Prevent compression */
+  min-height: 36px; /* Prevent compression */
 }
 
 @keyframes gradient-rotate {
@@ -182,11 +243,23 @@
 .profilePic {
   display: block;
   border-radius: 50%;
+  /* FIXED ASPECT RATIO - Production standard */
   width: 32px; /* YouTube/Discord standard size */
-  height: 32px;
-  object-fit: cover;
-  background: #111;
+  height: 32px; /* Must match width for perfect circle */
+  min-width: 32px; /* Prevent compression */
+  min-height: 32px; /* Prevent compression */
+  max-width: 32px; /* Prevent expansion */
+  max-height: 32px; /* Prevent expansion */
+  
+  /* CRITICAL: Proper image handling to prevent squashing */
+  object-fit: cover; /* Maintain aspect ratio */
+  object-position: center; /* Center the image */
+  
+  background: #111; /* Fallback for loading */
   border: 2px solid rgba(255,255,255,0.7);
+  
+  /* Prevent any flex shrinking */
+  flex-shrink: 0;
 }
 
 .profileDropdown {

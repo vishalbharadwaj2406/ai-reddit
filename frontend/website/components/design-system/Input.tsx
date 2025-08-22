@@ -13,8 +13,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className={clsx("relative flex items-center group", className)}>
         {leftIcon && (
-          <div className="pointer-events-none absolute left-4 z-10 flex items-center justify-center">
-            <span className="text-gray-400 group-focus-within:text-white transition-colors duration-200">
+          <div className="pointer-events-none absolute left-0 z-10 flex items-center justify-center w-12 h-full">
+            <span className="text-gray-400 group-focus-within:text-blue-400 transition-colors duration-200">
               {leftIcon}
             </span>
           </div>
@@ -23,11 +23,12 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           {...props}
           className={clsx(
-            // Clean glass input styling
-            "glass-input w-full px-4 py-3.5 text-sm font-medium text-white placeholder:text-gray-400",
-            "transition-all duration-200 ease-out",
-            "focus:outline-none",
-            // Icon spacing
+            // Professional glass input styling with proper icon spacing
+            "w-full px-4 py-3.5 text-sm font-medium text-white placeholder:text-gray-400",
+            "bg-white/[0.08] border border-white/[0.12] rounded-lg",
+            "backdrop-blur-xl transition-all duration-200 ease-out",
+            "focus:outline-none focus:border-blue-400/50 focus:bg-white/[0.12]",
+            // Proper icon spacing - no overlap
             leftIcon && "pl-12",
             rightIcon && "pr-12",
           )}

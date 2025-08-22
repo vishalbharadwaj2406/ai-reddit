@@ -39,9 +39,18 @@ export default function LoginModal() {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     try {
-      await signIn('google', {
-        callbackUrl: '/feed', // Redirect to feed after login
+      // Use redirect: false to prevent VS Code sign-in issues
+      const result = await signIn('google', {
+        redirect: false,
+        callbackUrl: '/feed',
       });
+      
+      if (result?.ok) {
+        // Sign-in successful, redirect manually
+        window.location.href = '/feed';
+      } else if (result?.error) {
+        console.error('Sign-in error:', result.error);
+      }
     } catch (error) {
       console.error('Login error:', error);
     } finally {

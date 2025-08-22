@@ -1,0 +1,257 @@
+/* ============================================
+   UNIFIED NEW CHAT BUTTON - PRODUCTION GRADE
+   Identical styling for sidebar and header usage
+   ============================================ */
+
+/* ============================================
+   NEW CHAT BUTTON - MATCHING SIDEBAR SHAPE
+   Beautiful gradient with rectangular sidebar styling
+   Following AI Reddit Design System Standards
+   ============================================ */
+
+.newChatButton {
+  display: flex;
+  align-items: center;
+  gap: 8px; /* xs spacing from design system */
+  width: 100%; /* Full width like sidebar nav items */
+  min-height: 44px; /* Same as nav items */
+  padding: var(--space-sm) var(--space-md); /* Same as nav items */
+  
+  /* RECTANGULAR SHAPE - Same as sidebar nav items */
+  border-radius: var(--radius-md); /* 12px - matches sidebar exactly */
+  
+  /* BEAUTIFUL GRADIENT - White to Blue like in image */
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(230, 243, 255, 0.9) 25%,
+    rgba(96, 165, 250, 0.85) 70%,
+    rgba(59, 130, 246, 0.9) 100%
+  );
+  
+  /* Glass morphism effect matching design system */
+  backdrop-filter: blur(32px) saturate(180%);
+  
+  /* Subtle border for definition */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  
+  /* Typography - Body + Semibold */
+  color: #1E3A8A; /* Royal Ink Blue for contrast on light gradient */
+  font-size: 14px; /* Same as nav items */
+  font-weight: 600; /* Semibold for emphasis */
+  line-height: 20px;
+  
+  text-decoration: none;
+  transition: all 300ms ease-out; /* Standard timing */
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  text-align: left; /* Same as nav items */
+  
+  /* Beautiful shadow with blue glow */
+  box-shadow: 
+    0 4px 16px rgba(59, 130, 246, 0.25),
+    0 0 16px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* Industry Standard Hover - Enhanced gradient */
+.newChatButton:hover {
+  /* Enhanced gradient on hover */
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.98) 0%,
+    rgba(230, 243, 255, 0.95) 25%,
+    rgba(96, 165, 250, 0.9) 70%,
+    rgba(59, 130, 246, 0.95) 100%
+  );
+  
+  /* Enhanced glow */
+  box-shadow: 
+    0 6px 20px rgba(59, 130, 246, 0.35),
+    0 0 24px rgba(255, 255, 255, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  
+  /* Enhanced border */
+  border-color: rgba(255, 255, 255, 0.4);
+  
+  /* Maintain text contrast */
+  color: #1E3A8A;
+  
+  /* NO MOVEMENT - Professional standard */
+}
+
+.newChatButton:active {
+  /* Subtle press feedback */
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(230, 243, 255, 0.85) 25%,
+    rgba(96, 165, 250, 0.8) 70%,
+    rgba(59, 130, 246, 0.85) 100%
+  );
+  
+  /* Compressed shadow for press effect */
+  box-shadow: 
+    0 2px 8px rgba(59, 130, 246, 0.3),
+    0 0 12px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================
+   ICON STYLING - MATCHING SIDEBAR NAV ICONS
+   ============================================ */
+
+.buttonIcon {
+  width: 20px; /* Same as nav icons */
+  height: 20px; /* Same as nav icons */
+  flex-shrink: 0; /* Same as nav icons */
+  color: currentColor; /* Inherit Royal Ink Blue */
+  transition: none; /* No transitions to prevent movement */
+}
+
+/* ============================================
+   TEXT STYLING - MATCHING SIDEBAR NAV TEXT
+   ============================================ */
+
+.buttonText {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  line-height: inherit;
+  white-space: nowrap;
+  opacity: 1;
+  transition: opacity 250ms cubic-bezier(0.4, 0, 0.2, 1); /* Same as nav text */
+}
+
+/* ============================================
+   DISABLED STATE - PROFESSIONAL STANDARD
+   ============================================ */
+
+.newChatButton:disabled {
+  /* Muted gradient */
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.5) 0%,
+    rgba(230, 243, 255, 0.4) 25%,
+    rgba(96, 165, 250, 0.3) 70%,
+    rgba(59, 130, 246, 0.4) 100%
+  );
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(30, 58, 138, 0.5); /* Muted Royal Ink */
+  cursor: not-allowed;
+  
+  /* Reduced shadow for disabled state */
+  box-shadow: 
+    0 2px 8px rgba(59, 130, 246, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.newChatButton:disabled .buttonIcon {
+  color: inherit; /* Inherits muted color */
+}
+
+/* ============================================
+   FOCUS STATE - ACCESSIBILITY
+   ============================================ */
+
+.newChatButton:focus-visible {
+  outline: 2px solid var(--color-brilliant-blue);
+  outline-offset: 2px;
+}
+
+/* ============================================
+   ICON STYLING - ROYAL INK THEME
+   ============================================ */
+
+.buttonIcon {
+  width: 20px;
+  height: 20px;
+  /* Inherit color from parent for proper theming */
+  color: currentColor;
+  transition: all 300ms ease-out;
+  flex-shrink: 0;
+}
+
+/* Icon color transitions with parent button */
+.newChatButton:hover .buttonIcon {
+  color: inherit; /* Inherits Light Blue from parent hover */
+}
+
+/* ============================================
+   TEXT STYLING - ROYAL INK THEME
+   ============================================ */
+
+.buttonText {
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
+  line-height: inherit;
+  transition: all 300ms ease-out;
+}
+
+/* ============================================
+   DISABLED STATE - ROYAL INK THEME
+   ============================================ */
+
+.newChatButton:disabled {
+  /* Muted glass with reduced opacity */
+  background: linear-gradient(135deg, 
+    rgba(30, 58, 138, 0.08) 0%, 
+    rgba(59, 130, 246, 0.04) 100%
+  );
+  border-color: rgba(59, 130, 246, 0.1);
+  color: rgba(230, 243, 255, 0.5); /* Muted Ice White */
+  cursor: not-allowed;
+  
+  /* Reduced shadow for disabled state */
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.newChatButton:disabled .buttonIcon {
+  color: inherit; /* Inherits muted color */
+}
+
+/* ============================================
+   VARIANT STYLES - MAINTAINING CONSISTENCY
+   ============================================ */
+
+/* Variants use the same Royal Ink styling from base class */
+/* No variant-specific overrides needed - clean design system approach */
+
+.newChatButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.newChatButton:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
+.buttonIcon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  transition: inherit;
+}
+
+.buttonText {
+  font-size: 14px;
+  font-weight: 600;
+  transition: inherit;
+}
+
+/* Variant Specific Styles */
+.sidebar {
+  /* Sidebar specific adjustments if needed */
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.header {
+  /* Header specific adjustments if needed */
+  justify-content: center;
+  min-width: 120px;
+}
