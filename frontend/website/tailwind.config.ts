@@ -8,6 +8,19 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // Layout dimensions - consistent with CSS custom properties
+      height: {
+        'available': 'calc(100vh - 64px)',
+        'safe': 'calc(100vh - 64px - env(safe-area-inset-bottom))',
+        'header': '64px',
+      },
+      minHeight: {
+        'available': 'calc(100vh - 64px)',
+        'safe': 'calc(100vh - 64px - env(safe-area-inset-bottom))',
+      },
+      spacing: {
+        'header': '64px',
+      },
       colors: {
         // Primary Palette
         'pure-black': '#000000',

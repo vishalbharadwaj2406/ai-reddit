@@ -6,6 +6,11 @@
    ============================================ */
 
 :root {
+  /* Layout Constants - Critical for consistent height calculations */
+  --header-height: 64px;
+  --available-height: calc(100vh - var(--header-height));
+  --safe-area-height: calc(100vh - var(--header-height) - env(safe-area-inset-bottom));
+  
   /* Colors */
   --color-pure-black: #000000;
   --color-royal-blue: #1E3A8A;
@@ -159,6 +164,42 @@ body {
 
 .select-dropdown-enter {
   animation: slide-down 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ============================================
+   LAYOUT UTILITY CLASSES
+   Consistent height management across pages
+   ============================================ */
+
+/* Full available height utility - accounts for header */
+.h-available {
+  height: var(--available-height);
+}
+
+/* Minimum available height utility */
+.min-h-available {
+  min-height: var(--available-height);
+}
+
+/* Safe area height utility - accounts for header and mobile safe areas */
+.h-safe {
+  height: var(--safe-area-height);
+}
+
+/* Page container utility - common pattern for full-height pages */
+.page-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Scrollable content utility - common pattern for content areas */
+.scrollable-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0; /* Allow flex shrinking */
 }
 
 .select-dropdown-exit {

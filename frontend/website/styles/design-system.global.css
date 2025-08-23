@@ -723,17 +723,37 @@
   animation: messageSlideIn 0.3s ease-out;
 }
 
-/* Message Bubble - AI */
+/* Message Bubble - AI - Gray Glass for Perfect Balance */
 .glass-message-ai {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  border: 2px solid rgba(59, 130, 246, 0.25);
+  /* Gray-tinted glass background for softer appearance */
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px) saturate(140%);
+  -webkit-backdrop-filter: blur(24px) saturate(140%);
+  
+  /* Subtle gray-tinted border */
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  
+  /* Message-specific border radius */
   border-radius: 20px 20px 20px 4px;
   padding: 16px 24px;
-  color: rgba(255, 255, 255, 0.9);
+  
+  /* High contrast text for excellent readability */
+  color: rgba(255, 255, 255, 0.93);
   max-width: 85%;
+  
+  /* Enhanced glass shadow with gray undertones */
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(255, 255, 255, 0.05);
   animation: messageSlideIn 0.3s ease-out;
+  
+  /* Subtle hover effect */
+  transition: border-color 0.2s ease;
+}
+
+/* Hover effect for AI messages (subtle royal accent) */
+.glass-message-ai:hover {
+  border-color: rgba(59, 130, 246, 0.25);
 }
 
 /* Message Bubble - Blog */

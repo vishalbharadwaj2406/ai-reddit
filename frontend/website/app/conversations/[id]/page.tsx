@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { conversationService, ConversationDetail, Message, AuthenticationRequiredError, ConversationServiceError } from '../../../lib/services/conversationService';
 import { postService } from '../../../lib/services/postService';
 import { BlogEditor } from '../../../components/BlogEditor';
+import { usePageLayout } from '../../../hooks/useViewportLayout';
+import { useHeaderStore } from '../../../lib/stores/headerStore';
 
 const getErrorMessage = (err: unknown): string => {
   if (err instanceof Error) return err.message;
@@ -16,6 +18,12 @@ const getErrorMessage = (err: unknown): string => {
 export default function ConversationPage() {
   const params = useParams();
   const conversationId = params.id as string;
+  
+  // Layout management hook for proper height calculations
+  const layout = usePageLayout();
+  
+  // Header title management
+  const { setConversationTitle } = useHeaderStore();
   
   // Panel visibility state
   const [showOriginalBlog, setShowOriginalBlog] = useState(false);
@@ -38,8 +46,13 @@ export default function ConversationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Auto-scroll ref
+  // Auto-scroll ref for messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Panel scroll refs for independent scrolling
+  const leftPanelRef = useRef<HTMLDivElement>(null);
+  const chatPanelRef = useRef<HTMLDivElement>(null);
+  const rightPanelRef = useRef<HTMLDivElement>(null);
 
   // Declare the loader first so effects can reference it safely
   const loadConversation = useCallback(async () => {
@@ -63,10 +76,26 @@ export default function ConversationPage() {
     }
   }, [conversationId]);
 
-  // Auto-scroll to bottom when messages change or AI is typing
+  // Auto-scroll to bottom when messages change or AI is typing - only for chat panel
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [conversation?.messages, isAIResponding]);
+    if (chatPanelRef.current && messagesEndRef.current) {
+      // Use a small delay to ensure DOM updates are complete
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 100);
+    }
+  }, [conversation?.messages, isAIResponding, isGeneratingBlog]);
+
+  // Update header title when conversation loads
+  useEffect(() => {
+    if (conversation?.title) {
+      setConversationTitle(conversation.title);
+    }
+    return () => {
+      // Clear title when leaving conversation
+      setConversationTitle(null);
+    };
+  }, [conversation?.title, setConversationTitle]);
 
   // Load conversation data
   useEffect(() => {
@@ -301,7 +330,25 @@ export default function ConversationPage() {
     }
   };
 
-  // ✨ NEW: Blog editor handlers
+  // ✨ Delete/Archive handler (maps to backend archive like list page)
+  const handleDeleteConversation = async () => {
+    if (!conversation) return;
+    
+    // Confirm deletion
+    const confirmed = window.confirm(`Delete "${conversation.title}"? This action cannot be undone.`);
+    if (!confirmed) return;
+    
+    try {
+      await conversationService.archiveConversation(conversationId);
+      // Navigate back to conversations list
+      window.location.href = '/conversations';
+    } catch (err) {
+      console.error('Failed to delete conversation:', getErrorMessage(err));
+      alert('Failed to delete conversation. Please try again.');
+    }
+  };
+
+  // ✨ Blog editor handlers
   const handleEditBlog = () => {
     setIsEditingBlog(true);
     setShowGeneratedBlog(true);
@@ -351,10 +398,12 @@ export default function ConversationPage() {
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-caption">Loading conversation...</p>
+      <div {...layout.containerProps}>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-caption">Loading conversation...</p>
+          </div>
         </div>
       </div>
     );
@@ -363,14 +412,16 @@ export default function ConversationPage() {
   // Show error state
   if (error || !conversation) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-500 mb-4">{error || 'Conversation not found'}</p>
-          <Link href="/conversations">
-            <button className="glass-button-secondary px-4 py-2">
-              ← Back to Conversations
-            </button>
-          </Link>
+      <div {...layout.containerProps}>
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <p className="text-red-500 mb-4">{error || 'Conversation not found'}</p>
+            <Link href="/conversations">
+              <button className="glass-button-secondary px-4 py-2">
+                ← Back to Conversations
+              </button>
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -387,80 +438,82 @@ export default function ConversationPage() {
   const hasBlogMessages = blogMessages.length > 0;
   const mostRecentBlogMessage = hasBlogMessages ? blogMessages[blogMessages.length - 1] : null;
   
-  // Calculate panel layout classes - conditional based on forked status
+  // Calculate panel layout classes - equal width when visible + dynamic expansion
   const getPanelLayoutClasses = () => {
-    if (isForked) {
-      // Forked conversation can show all 3 panels
-      const panelsVisible = [showOriginalBlog, true, showGeneratedBlog && hasBlogMessages].filter(Boolean).length;
-      if (panelsVisible === 1) return 'grid-cols-1';
-      if (panelsVisible === 2) return 'grid-cols-2';
-      return 'grid-cols-3';
-    } else {
-      // New conversation only shows conversation + generated blog (if it exists)
-      return (showGeneratedBlog && hasBlogMessages) ? 'grid-cols-2' : 'grid-cols-1';
-    }
+    const panels = [];
+    
+    // Left panel: Original Blog (only if forked and toggled on)
+    if (isForked && showOriginalBlog) panels.push('original');
+    
+    // Center panel: Always visible (chat)
+    panels.push('chat');
+    
+    // Right panel: Generated Blog (only if exists and toggled on)
+    if (hasBlogMessages && showGeneratedBlog) panels.push('blog');
+    
+    // Return flex classes for equal width when multiple panels, expanded when single
+    if (panels.length === 1) return 'w-full';
+    if (panels.length === 2) return 'w-1/2';
+    return 'w-1/3';
   };
 
+  // Get actual visible panels for rendering
+  const getVisiblePanels = () => {
+    const panels = [];
+    
+    if (isForked && showOriginalBlog) panels.push('original');
+    panels.push('chat'); // Always visible
+    if (hasBlogMessages && showGeneratedBlog) panels.push('blog');
+    
+    return panels;
+  };
+
+  const visiblePanels = getVisiblePanels();
+
   return (
-    <div className="h-screen flex flex-col">
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-6 py-6 flex-shrink-0">
-          {/* Conversation Header */}
-          <div className="glass-card mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Link href="/conversations">
-                  <button className="glass-button-secondary px-4 py-2 text-sm">
-                    ← Back
-                  </button>
-                </Link>
-                <div>
-                  <h1 className="text-heading text-white">{conversation.title}</h1>
-                  <p className="text-caption">
-                    {conversation.forkedFrom ? 'Forked conversation' : 'Original conversation'} • {conversation.messages.length} messages
-                  </p>
-                </div>
-              </div>
+    <div className="h-screen flex flex-col bg-black overflow-hidden">
+      {/* Floating Panel Controls - Positioned to not interfere with header */}
+      <div className="absolute top-20 right-4 z-10 flex flex-col gap-2">
+        {/* Only show Original Blog toggle if forked */}
+        {isForked && (
+          <button 
+            className={`glass-button-toggle px-3 py-2 text-xs ${showOriginalBlog ? 'active' : ''}`}
+            onClick={() => setShowOriginalBlog(!showOriginalBlog)}
+          >
+            👁 Original
+          </button>
+        )}
+        {/* Only show Generated Blog toggle if blog messages exist */}
+        {hasBlogMessages && (
+          <button 
+            className={`glass-button-toggle px-3 py-2 text-xs ${showGeneratedBlog ? 'active' : ''}`}
+            onClick={() => setShowGeneratedBlog(!showGeneratedBlog)}
+          >
+            📝 Blog
+          </button>
+        )}
+      </div>
 
-              <div className="flex items-center gap-3">
-                {/* Conditional panel toggles - only show Original Blog toggle if forked */}
-                {isForked && (
-                  <button 
-                    className={`glass-button-toggle px-4 py-2 text-sm ${showOriginalBlog ? 'active' : ''}`}
-                    onClick={() => setShowOriginalBlog(!showOriginalBlog)}
-                  >
-                    👁 Original Blog
-                  </button>
-                )}
-                {/* ✨ NEW: Only show Generated Blog toggle if blog messages exist */}
-                {hasBlogMessages && (
-                  <button 
-                    className={`glass-button-toggle px-4 py-2 text-sm ${showGeneratedBlog ? 'active' : ''}`}
-                    onClick={() => setShowGeneratedBlog(!showGeneratedBlog)}
-                  >
-                    📝 Generated Blog
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Three-Panel Workspace - Scrollable Content Area */}
-        <div className="flex-1 px-6 overflow-hidden">
-          <div className={`grid ${getPanelLayoutClasses()} gap-6 h-full`}>
-            
-            {/* Left Panel - Original Blog (only if forked) */}
-            {isForked && showOriginalBlog && (
-              <div className="glass-panel-subdued p-6 flex flex-col overflow-hidden">
-                <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                  <h3 className="text-subheading text-gray-300">Original Blog Post</h3>
-                  <button className="glass-button-toggle px-3 py-1 text-sm">
-                    💬 View Conversation
+      {/* Main Content Area - Content scrolls behind header with proper z-layering */}
+      <div className="absolute inset-0 flex overflow-hidden"> {/* Full screen, content starts at top */}
+        {/* Dynamic 3-Panel Layout with Independent Scrolling */}
+        <div className={`flex w-full h-full ${getPanelLayoutClasses()}`}>
+          
+          {/* Left Panel - Original Blog (only if forked and visible) */}
+          {isForked && showOriginalBlog && (
+            <div className={`${getPanelLayoutClasses()} border-r border-gray-700/30`}>
+              <div className="glass-panel-subdued h-full flex flex-col">
+                <div className="flex items-center justify-between p-4 border-b border-gray-700/30 flex-shrink-0">
+                  <h3 className="text-sm font-medium text-gray-300">Original Blog Post</h3>
+                  <button className="glass-button-toggle px-2 py-1 text-xs">
+                    💬 View
                   </button>
                 </div>
-                <div className="flex-1 overflow-y-auto text-body text-gray-400 space-y-4">
-                  <h4 className="text-lg font-semibold text-gray-200">
+                <div 
+                  ref={leftPanelRef}
+                  className="flex-1 overflow-y-auto p-4 text-sm text-gray-400 space-y-3"
+                >
+                  <h4 className="text-base font-semibold text-gray-200">
                     The Future of AI in Workplace Ethics
                   </h4>
                   <p>
@@ -471,21 +524,30 @@ export default function ConversationPage() {
                     This blog post explores key considerations for implementing AI systems responsibly, 
                     with particular focus on fairness, transparency, and accountability.
                   </p>
-                  <div className="text-caption text-gray-500 pt-4 border-t border-gray-700">
+                  <div className="text-xs text-gray-500 pt-3 border-t border-gray-700">
                     Originally posted by @ethics_researcher • 2 days ago
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Center Panel - Active Conversation (Always Visible) */}
-            <div className="glass-elevated p-6 flex flex-col overflow-hidden">
-              <h3 className="text-subheading mb-6 flex-shrink-0">Conversation</h3>
-              
-              {/* Messages Container - Scrollable */}
-              <div className="flex-1 overflow-y-auto">
+          {/* Main Chat Panel - Always Visible, Clean Design */}
+          <div className={`${getPanelLayoutClasses()} ${visiblePanels.length > 1 ? 'border-r border-gray-700/30' : ''}`}>
+            <div className="h-full flex flex-col">
+              {/* Messages Container - Bottom-anchored modern chat layout */}
+              <div 
+                ref={chatPanelRef}
+                className="flex-1 overflow-y-auto px-4 py-6 pt-20 pb-24"
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  justifyContent: hasUserMessages ? 'flex-start' : 'center', // Start from top when has messages, centered when empty
+                  minHeight: '100%'
+                }}
+              >
                 {hasUserMessages ? (
-                  <div className="space-y-6">
+                  <div className="space-y-4 max-w-4xl mx-auto w-full">
                     {conversation.messages.filter(m => m.role !== 'system').map((message, index) => {
                       const isLastAIMessage = message.role === 'assistant' && 
                                             index === conversation.messages.filter(m => m.role !== 'system').length - 1;
@@ -497,7 +559,7 @@ export default function ConversationPage() {
                         <div key={listKey} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                           <div className={`${message.role === 'user' ? 'glass-message-user' : 
                                           message.isBlog ? 'glass-message-blog' : 'glass-message-ai'} max-w-[85%]`}>
-                            {/* ✨ NEW: Blog message indicator */}
+                            {/* Blog message indicator */}
                             {message.isBlog && (
                               <div className="flex items-center gap-2 mb-2 text-xs text-blue-300">
                                 <span className="px-2 py-1 bg-blue-900/30 rounded-full">📝 Blog</span>
@@ -522,17 +584,24 @@ export default function ConversationPage() {
                               )}
                             </div>
                             <div className="text-xs opacity-70 mt-2">
-                              {isTyping ? (message.isBlog ? 'Generating blog...' : 'Typing...') : 
-                               new Date(message.createdAt).toLocaleTimeString()}
+                              {isTyping ? (message.isBlog ? 'Generating blog...' : 'Assistant is typing...') : 
+                               (function() {
+                                 try {
+                                   const date = new Date(message.createdAt);
+                                   return isNaN(date.getTime()) ? 'Just now' : date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                 } catch {
+                                   return 'Just now';
+                                 }
+                               })()}
                             </div>
                           </div>
                         </div>
                       );
                     })}
 
-                    {/* ✨ NEW: Floating Generate Blog Button (when conversation has messages) */}
+                    {/* Generate Blog Button (when conversation has messages) */}
                     {hasUserMessages && (
-                      <div className="flex justify-center pt-6">
+                      <div className="flex justify-center pt-4">
                         <button 
                           className="glass-button-generate px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                           onClick={handleGenerateBlog}
@@ -543,15 +612,13 @@ export default function ConversationPage() {
                       </div>
                     )}
                     
-
-                    
                     {/* Auto-scroll target */}
                     <div ref={messagesEndRef} />
                   </div>
                 ) : (
-                  /* Empty State - ChatGPT Style */
-                  <div className="h-full flex flex-col items-center justify-center space-y-8">
-                    {/* ✨ NEW: Generate Blog Button */}
+                  /* Empty State - Improved Visual Design */
+                  <div className="h-full flex flex-col items-center justify-center space-y-6 max-w-2xl mx-auto">
+                    {/* Generate Blog Button - Prominent in empty state */}
                     <button 
                       className="glass-button-generate px-8 py-4 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       onClick={handleGenerateBlog}
@@ -560,30 +627,30 @@ export default function ConversationPage() {
                       {isGeneratingBlog ? '✨ Generating Blog...' : '✍️ Write Custom Blog'}
                     </button>
                     
-                    {/* Autofill Suggestions */}
-                    <div className="w-full max-w-2xl space-y-3">
-                      <p className="text-caption text-gray-400 text-center">Start with a suggestion:</p>
+                    {/* Improved Suggestion Cards */}
+                    <div className="w-full space-y-3">
+                      <p className="text-sm text-gray-400 text-center">Start with a suggestion:</p>
                       <div className="grid gap-3">
                         <button 
-                          className="glass-button-toggle px-6 py-4 text-left text-body"
+                          className="glass-button-toggle px-6 py-4 text-left text-sm hover:bg-blue-500/10 transition-colors"
                           onClick={() => fillSuggestion("Help me brainstorm ideas about the future of technology and its impact on society")}
                         >
                           💡 Help me brainstorm ideas about the future of technology...
                         </button>
                         <button 
-                          className="glass-button-toggle px-6 py-4 text-left text-body"
+                          className="glass-button-toggle px-6 py-4 text-left text-sm hover:bg-blue-500/10 transition-colors"
                           onClick={() => fillSuggestion("I want to explore the key principles of sustainable innovation in modern business")}
                         >
                           🚀 I want to explore the key principles of sustainable innovation...
                         </button>
                         <button 
-                          className="glass-button-toggle px-6 py-4 text-left text-body"
+                          className="glass-button-toggle px-6 py-4 text-left text-sm hover:bg-blue-500/10 transition-colors"
                           onClick={() => fillSuggestion("What are the most important skills needed for creative problem-solving in the digital age?")}
                         >
                           🔍 What are the most important skills for creative problem-solving...
                         </button>
                         <button 
-                          className="glass-button-toggle px-6 py-4 text-left text-body"
+                          className="glass-button-toggle px-6 py-4 text-left text-sm hover:bg-blue-500/10 transition-colors"
                           onClick={() => fillSuggestion("How can I improve my understanding of emerging trends in artificial intelligence and machine learning?")}
                         >
                           ✨ How can I improve my understanding of emerging AI trends...
@@ -594,10 +661,12 @@ export default function ConversationPage() {
                 )}
               </div>
             </div>
+          </div>
 
-            {/* Right Panel - Generated Blog */}
-            {showGeneratedBlog && hasBlogMessages && mostRecentBlogMessage && (
-              isEditingBlog ? (
+          {/* Right Panel - Generated Blog (only if exists and visible) */}
+          {hasBlogMessages && showGeneratedBlog && mostRecentBlogMessage && (
+            <div className={`${getPanelLayoutClasses()}`}>
+              {isEditingBlog ? (
                 <BlogEditor
                   initialContent={mostRecentBlogMessage.content}
                   onSave={handleSaveDraft}
@@ -606,19 +675,21 @@ export default function ConversationPage() {
                   isPublishing={isPublishing}
                 />
               ) : (
-                <div className="glass-panel-active p-6 flex flex-col overflow-hidden">
-                  <div className="flex items-center justify-between mb-6 flex-shrink-0">
-                    <h3 className="text-subheading text-blue-300">Generated Blog Draft</h3>
+                <div className="glass-panel-active h-full flex flex-col">
+                  <div className="flex items-center justify-between p-4 border-b border-blue-500/20 flex-shrink-0">
+                    <h3 className="text-sm font-medium text-blue-300">Generated Blog Draft</h3>
                     <button 
-                      className="glass-button-generate px-4 py-2 text-sm"
+                      className="glass-button-generate px-3 py-1.5 text-xs"
                       onClick={handleEditBlog}
                     >
                       ✍️ Edit and Post
                     </button>
                   </div>
-                  <div className="flex-1 overflow-y-auto text-body text-blue-100 space-y-4">
-                    {/* ✨ NEW: Display actual blog message content */}
-                    <div className="prose prose-invert max-w-none">
+                  <div 
+                    ref={rightPanelRef}
+                    className="flex-1 overflow-y-auto p-4 text-sm text-blue-100 space-y-3"
+                  >
+                    <div className="prose prose-invert max-w-none prose-sm">
                       <div 
                         className="whitespace-pre-wrap text-blue-100"
                         style={{ lineHeight: '1.6' }}
@@ -626,26 +697,27 @@ export default function ConversationPage() {
                         {mostRecentBlogMessage.content}
                       </div>
                     </div>
-                    <div className="text-caption text-blue-400 pt-4 border-t border-blue-800">
+                    <div className="text-xs text-blue-400 pt-3 border-t border-blue-800">
                       Generated {new Date(mostRecentBlogMessage.createdAt).toLocaleString()} • 
                       {mostRecentBlogMessage.content.split(' ').length} words • Ready to edit
                     </div>
                   </div>
                 </div>
-              )
-            )}
-          </div>
+              )}
+            </div>
+          )}
+          
         </div>
       </div>
 
-      {/* Fixed Message Input - Completely Fixed at Bottom */}
-      <div className="flex-shrink-0 border-t border-gray-700 bg-black/50 backdrop-blur-md">
-        <div className="px-6 py-4">
+      {/* Fixed Message Input - Positioned at bottom with proper z-index */}
+      <div className="fixed bottom-0 left-0 right-0 border-t border-gray-700/30 bg-black/60 backdrop-blur-md z-50">
+        <div className="px-4 py-3">
           <div className="max-w-4xl mx-auto">
             <div className="flex items-end gap-3">
               <div className="flex-1">
                 <textarea
-                  className="glass-input w-full p-4 resize-none text-body min-h-[56px] max-h-[200px]"
+                  className="glass-input w-full p-3 resize-none text-sm min-h-[48px] max-h-[160px]"
                   placeholder="Message..."
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
@@ -657,7 +729,7 @@ export default function ConversationPage() {
               <button
                 onClick={handleSendMessage}
                 disabled={!messageText.trim() || isSending}
-                className="glass-button-primary px-6 py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="glass-button-primary px-4 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSending ? '...' : '→'}
               </button>

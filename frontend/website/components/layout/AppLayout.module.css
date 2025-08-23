@@ -15,7 +15,9 @@
   min-width: 0; /* Prevent overflow */
   transition: margin-left 250ms cubic-bezier(0.4, 0, 0.2, 1);
   padding-top: 64px; /* Account for fixed header */
-  min-height: calc(100vh - 64px); /* Ensure content takes full height below header */
+  height: 100vh; /* Full viewport height */
+  box-sizing: border-box; /* Include padding in height calculation */
+  overflow: hidden; /* Prevent double scrollbars - each page manages its own scrolling */
 }
 
 /* Content margins based on sidebar state */

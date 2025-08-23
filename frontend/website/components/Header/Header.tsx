@@ -8,6 +8,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useState, useRef, useEffect } from 'react';
 import { Menu, Search } from 'lucide-react'
 import { useSidebarStore } from '@/lib/stores/sidebarStore'
+import { useHeaderStore } from '@/lib/stores/headerStore'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Input } from '@/components/design-system/Input'
 import NewChatButton from '@/components/design-system/NewChatButton'
@@ -22,12 +23,14 @@ export default function Header({ className = '' }: HeaderProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toggleExpanded, toggleMobile } = useSidebarStore()
+  const { conversationTitle } = useHeaderStore()
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
 
-  // Check if we're on conversations page
-  const isConversationsPage = pathname.startsWith('/conversations');
+  // Check if we're on conversations page vs individual conversation
+  const isConversationsPage = pathname === '/conversations';
+  const isIndividualConversation = pathname.startsWith('/conversations/') && pathname !== '/conversations';
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -92,7 +95,7 @@ export default function Header({ className = '' }: HeaderProps) {
           </div>
         </Link>
 
-        {/* Context-aware center content - Search for conversations page */}
+        {/* Context-aware center content */}
         {isConversationsPage && (
           <div className={styles.centerContent}>
             <Input
@@ -117,9 +120,19 @@ export default function Header({ className = '' }: HeaderProps) {
           </div>
         )}
 
+        {isIndividualConversation && (
+          <div className={styles.centerContent}>
+            <div className={styles.conversationTitle}>
+              <span className={styles.titleText}>
+                {conversationTitle || 'Loading conversation...'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Right side content */}
         <div className={styles.rightContent}>
-          {/* New Chat button - only on conversations page */}
+          {/* New Chat button - only on conversations list page */}
           {isConversationsPage && session?.user && (
             <NewChatButton variant="header" />
           )}
