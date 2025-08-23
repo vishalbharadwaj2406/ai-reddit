@@ -16,24 +16,47 @@ import asyncio
 import json
 from fastapi.testclient import TestClient
 from unittest.mock import patch, Mock
+from uuid import UUID
 
 from app.main import app
+from app.core.database import get_db
 from app.dependencies.auth import get_current_user
-from tests.fixtures.auth_fixtures import sample_user
+from app.models.user import User
 
 
 class TestAIConversationFlowE2E:
     """End-to-end tests for AI conversation workflows"""
 
     @pytest.fixture
-    def client(self):
-        """FastAPI test client"""
-        return TestClient(app)
+    def client(self, db_session):
+        """FastAPI test client with database override"""
+        def override_get_db():
+            yield db_session
+        
+        app.dependency_overrides[get_db] = override_get_db
+        
+        with TestClient(app) as test_client:
+            yield test_client
+        
+        app.dependency_overrides.clear()
 
     @pytest.fixture
-    def auth_override(self, sample_user):
+    def test_user(self, db_session):
+        """Create a real test user in the database"""
+        user = User(
+            user_id=UUID("550e8400-e29b-41d4-a716-446655440000"),
+            user_name="e2e_test_user",
+            email="e2e@example.com"
+        )
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+        return user
+
+    @pytest.fixture
+    def auth_override(self, test_user):
         """Override authentication for testing"""
-        app.dependency_overrides[get_current_user] = lambda: sample_user
+        app.dependency_overrides[get_current_user] = lambda: test_user
         yield
         app.dependency_overrides.clear()
 
@@ -129,7 +152,7 @@ class TestAIConversationFlowE2E:
         
         assert response.status_code == 401
 
-    def test_conversation_ownership_enforcement(self, client, auth_override):
+    def test_conversation_ownership_enforcement(self, client, db_session, test_user, auth_override):
         """Test that users can only access their own conversations"""
         # Create conversation with one user
         conversation_response = client.post(
@@ -138,9 +161,16 @@ class TestAIConversationFlowE2E:
         )
         conversation_id = conversation_response.json()["data"]["conversation"]["conversation_id"]
 
+        # Create a different user
+        different_user = User(
+            user_name="different_user",
+            email="different@example.com"
+        )
+        db_session.add(different_user)
+        db_session.commit()
+        db_session.refresh(different_user)
+
         # Override with different user
-        different_user = Mock()
-        different_user.user_id = "different-user-id"
         app.dependency_overrides[get_current_user] = lambda: different_user
 
         # Try to access conversation with different user

@@ -177,8 +177,14 @@ class TestConversationModel:
         
         # Test updated_at changes on update
         original_updated_at = conversation.updated_at
+        
+        # Add a small delay to ensure timestamp difference
+        import time
+        time.sleep(0.01)  # 10ms delay
+        
         conversation.title = "Updated Title"
         db_session.commit()
+        db_session.refresh(conversation)  # Refresh to get updated timestamp from DB
         
         # updated_at should have changed
         assert conversation.updated_at > original_updated_at

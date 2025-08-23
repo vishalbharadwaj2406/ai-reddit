@@ -191,15 +191,27 @@ class TestAIServiceIntegration:
     @pytest.mark.asyncio
     async def test_api_key_rotation_handling(self, ai_service):
         """Test behavior when API key changes"""
-        # Test with current configuration
-        health1 = await ai_service.health_check()
-        
-        # Test that service maintains state properly
-        health2 = await ai_service.health_check()
-        
-        # Status should be consistent
-        assert health1["status"] == health2["status"]
-        assert health1["mode"] == health2["mode"]
+        with patch.object(ai_service, 'llm') as mock_llm:
+            # Create mock response object
+            mock_response = Mock()
+            mock_response.content = "OK - Service is working"
+            
+            # Mock the async ainvoke method to return the mock response
+            async def mock_ainvoke(messages):
+                return mock_response
+            
+            mock_llm.ainvoke = mock_ainvoke
+            
+            health1 = await ai_service.health_check()
+            
+            # Second health check with same mock behavior
+            health2 = await ai_service.health_check()
+            
+            # Status should be consistent
+            assert health1["status"] == health2["status"]
+            assert health1["mode"] == health2["mode"]
+            assert health1["status"] == "healthy"
+            assert health1["mode"] == "production"
 
     @pytest.mark.asyncio
     async def test_conversation_context_limits(self, ai_service):

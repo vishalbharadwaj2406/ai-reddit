@@ -200,9 +200,14 @@ class TestFollowModel:
 
         original_updated_at = follow.updated_at
 
+        # Add a small delay to ensure timestamp difference
+        import time
+        time.sleep(0.01)
+
         # Accept the follow
         follow.accept()
         db_session.commit()
+        db_session.refresh(follow)
 
         assert follow.status == "accepted"
         assert follow.is_accepted is True
@@ -257,9 +262,14 @@ class TestFollowModel:
 
         original_updated_at = follow.updated_at
 
+        # Add a small delay to ensure timestamp difference
+        import time
+        time.sleep(0.01)
+
         # Archive the follow
         follow.archive()
         db_session.commit()
+        db_session.refresh(follow)
 
         assert follow.status == "archived"
         assert follow.is_archived is True

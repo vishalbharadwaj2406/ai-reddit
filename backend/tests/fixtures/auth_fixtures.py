@@ -9,6 +9,7 @@ import pytest
 from unittest.mock import Mock
 from datetime import datetime, timezone
 from jose import jwt
+from uuid import UUID
 
 from app.models.user import User
 from app.core.jwt import JWTManager
@@ -19,7 +20,7 @@ from app.core.config import settings
 def sample_user():
     """Create a sample user for testing."""
     user = Mock(spec=User)
-    user.user_id = "550e8400-e29b-41d4-a716-446655440000"
+    user.user_id = UUID("550e8400-e29b-41d4-a716-446655440000")
     user.user_name = "testuser"
     user.email = "test@example.com"
     user.profile_picture = "https://example.com/photo.jpg"
@@ -33,7 +34,7 @@ def sample_user():
 def sample_private_user():
     """Create a sample private user for testing."""
     user = Mock(spec=User)
-    user.user_id = "550e8400-e29b-41d4-a716-446655440001"
+    user.user_id = UUID("550e8400-e29b-41d4-a716-446655440001")
     user.user_name = "privateuser"
     user.email = "private@example.com"
     user.profile_picture = "https://example.com/private.jpg"

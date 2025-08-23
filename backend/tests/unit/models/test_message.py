@@ -344,8 +344,14 @@ class TestMessageModel:
         
         # Test updated_at changes on update
         original_updated_at = message.updated_at
+        
+        # Add a small delay to ensure timestamp difference
+        import time
+        time.sleep(0.01)
+        
         message.content = "Updated message content"
         db_session.commit()
+        db_session.refresh(message)
         
         # updated_at should have changed
         assert message.updated_at > original_updated_at

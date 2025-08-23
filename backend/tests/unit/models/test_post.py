@@ -348,8 +348,14 @@ class TestPostModel:
         
         # Test updated_at changes on modification
         original_updated_at = post.updated_at
+        
+        # Add a small delay to ensure timestamp difference
+        import time
+        time.sleep(0.01)
+        
         post.title = "Updated Title"
         db_session.commit()
+        db_session.refresh(post)
         
         assert post.updated_at > original_updated_at
     

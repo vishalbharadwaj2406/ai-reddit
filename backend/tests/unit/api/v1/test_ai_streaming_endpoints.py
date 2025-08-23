@@ -277,32 +277,38 @@ class TestStreamAIResponse:
         message_id = str(mock_message.message_id)
         mock_conversation.user_id = mock_user.user_id
         
-        # Mock ORM queries for streaming endpoint
-        mock_conversation_query = Mock()
-        mock_conversation_query.filter.return_value = mock_conversation_query
-        mock_conversation_query.first.return_value = mock_conversation
+        # Override authentication 
+        app.dependency_overrides[get_current_user] = lambda: mock_user
         
-        mock_message_query = Mock()
-        mock_message_query.filter.return_value = mock_message_query
-        mock_message_query.first.return_value = mock_message
-        
-        # Set up query returns in order they're called
-        mock_db.query.side_effect = [mock_conversation_query, mock_message_query]
-        
-        # Mock AI service
-        with patch('app.services.ai_service.generate_ai_response') as mock_ai_service:
-            # Mock streaming response - simplified to match actual behavior
-            async def mock_stream():
-                yield {"content": "Hello! I'm here and ready to help.\n\nWhat's on your mind today, or how can I assist you in exploring ideas, developing content, or fostering discussion?", "is_complete": False}
-                yield {"content": "Hello! I'm here and ready to help.\n\nWhat's on your mind today, or how can I assist you in exploring ideas, developing content, or fostering discussion?", "is_complete": True}
-                
-            mock_ai_service.return_value = mock_stream()
+        try:
+            # Mock ORM queries for streaming endpoint
+            mock_conversation_query = Mock()
+            mock_conversation_query.filter.return_value = mock_conversation_query
+            mock_conversation_query.first.return_value = mock_conversation
             
-            response = client.get(
-                f"/api/v1/conversations/{conversation_id}/stream",
-                params={"message_id": message_id},
-                headers={"Accept": "text/event-stream"}
-            )
+            mock_message_query = Mock()
+            mock_message_query.filter.return_value = mock_message_query
+            mock_message_query.first.return_value = mock_message
+            
+            # Set up query returns in order they're called
+            mock_db.query.side_effect = [mock_conversation_query, mock_message_query]
+            
+            # Mock AI service
+            with patch('app.services.ai_service.generate_ai_response') as mock_ai_service:
+                # Mock streaming response - simplified to match actual behavior
+                async def mock_stream():
+                    yield {"content": "Hello! I'm here and ready to help.\n\nWhat's on your mind today, or how can I assist you in exploring ideas, developing content, or fostering discussion?", "is_complete": False}
+                    yield {"content": "Hello! I'm here and ready to help.\n\nWhat's on your mind today, or how can I assist you in exploring ideas, developing content, or fostering discussion?", "is_complete": True}
+                    
+                mock_ai_service.return_value = mock_stream()
+                
+                response = client.get(
+                    f"/api/v1/conversations/{conversation_id}/stream",
+                    params={"message_id": message_id},
+                    headers={"Accept": "text/event-stream"}
+                )
+        finally:
+            app.dependency_overrides.clear()
             
         assert response.status_code == status.HTTP_200_OK
         assert "text/event-stream" in response.headers["content-type"]
