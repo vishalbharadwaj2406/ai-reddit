@@ -744,6 +744,79 @@ class PostService:
             logger.warning(f"Failed to retrieve conversation context for {conversation_id}: {str(e)}")
             return ""
 
+    def get_post_conversation(self, post_id: UUID) -> Optional[Dict[str, Any]]:
+        """
+        Get the conversation for a specific post if it's publicly viewable.
+        
+        Args:
+            post_id: UUID of the post to get conversation for
+            
+        Returns:
+            Dict containing conversation data or None if not viewable/found
+            
+        Raises:
+            PostServiceError: If post not found or conversation not viewable
+        """
+        try:
+            # Get the post with conversation relationship
+            post = (
+                self.db.query(Post)
+                .options(joinedload(Post.conversation))
+                .filter(Post.post_id == post_id, Post.status == "active")
+                .first()
+            )
+            
+            if not post:
+                raise PostServiceError("Post not found")
+            
+            # Check if conversation is visible
+            if not post.is_conversation_visible:
+                raise PostServiceError("Conversation not viewable")
+            
+            # Get the conversation with messages
+            conversation = post.conversation
+            if not conversation:
+                raise PostServiceError("No conversation linked to this post")
+            
+            # Get all messages in the conversation
+            messages = (
+                self.db.query(Message)
+                .filter(
+                    Message.conversation_id == conversation.conversation_id,
+                    Message.status == "active"
+                )
+                .order_by(Message.created_at)
+                .all()
+            )
+            
+            # Build conversation response
+            message_data = []
+            for message in messages:
+                message_data.append({
+                    "messageId": str(message.message_id),
+                    "role": message.role,
+                    "content": message.content,
+                    "isBlog": message.is_blog,
+                    "createdAt": message.created_at.isoformat()
+                })
+            
+            conversation_data = {
+                "conversationId": str(conversation.conversation_id),
+                "title": conversation.title,
+                "createdAt": conversation.created_at.isoformat(),
+                "forkedFrom": str(conversation.forked_from) if conversation.forked_from else None,
+                "messages": message_data
+            }
+            
+            return conversation_data
+            
+        except PostServiceError:
+            # Re-raise business logic errors
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error getting conversation for post {post_id}: {str(e)}")
+            raise PostServiceError(f"Failed to retrieve conversation: {str(e)}")
+
 
 def get_post_service(db: Session = None) -> PostService:
     """

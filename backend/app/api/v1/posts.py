@@ -455,3 +455,117 @@ async def add_post_reaction(
                 "errorCode": "REACTION_PROCESSING_ERROR"
             }
         )
+
+
+@router.get("/{post_id}/conversation")
+async def get_post_conversation(
+    post_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Get the conversation for a post (if viewable).
+    
+    Returns the source conversation that was used to create this post.
+    Only returns conversations that are marked as publicly viewable.
+    
+    **Business Rules:**
+    - No authentication required (public endpoint)
+    - Only returns conversations where is_conversation_visible=True
+    - Returns 404 if post not found, conversation not found, or not viewable
+    - Includes complete conversation with all messages
+    
+    **Args:**
+    - **post_id**: UUID of the post to get conversation for
+    
+    **Returns:**
+    - **conversation**: Complete conversation data with messages
+    
+    **Raises:**
+    - **404**: Post not found, conversation not viewable, or no conversation linked
+    - **422**: Invalid post ID format
+    """
+    from uuid import UUID
+    
+    # Validate UUID format
+    try:
+        post_uuid = UUID(post_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "success": False,
+                "data": None,
+                "message": "Invalid post ID format. Must be a valid UUID.",
+                "errorCode": "INVALID_POST_ID"
+            }
+        )
+    
+    try:
+        post_service = PostService(db)
+        
+        # Get conversation data
+        conversation_data = post_service.get_post_conversation(post_uuid)
+        
+        return {
+            "success": True,
+            "data": {
+                "conversation": conversation_data
+            },
+            "message": "Conversation retrieved successfully",
+            "errorCode": None
+        }
+        
+    except PostServiceError as e:
+        error_message = str(e)
+        
+        if "not found" in error_message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": "Post not found",
+                    "errorCode": "POST_NOT_FOUND"
+                }
+            )
+        elif "not viewable" in error_message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": "Conversation not viewable",
+                    "errorCode": "CONVERSATION_NOT_VIEWABLE"
+                }
+            )
+        elif "no conversation" in error_message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": "No conversation linked to this post",
+                    "errorCode": "NO_CONVERSATION_LINKED"
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": f"Failed to retrieve conversation: {error_message}",
+                    "errorCode": "CONVERSATION_RETRIEVAL_ERROR"
+                }
+            )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "success": False,
+                "data": None,
+                "message": f"Failed to get conversation: {str(e)}",
+                "errorCode": "INTERNAL_SERVER_ERROR"
+            }
+        )
