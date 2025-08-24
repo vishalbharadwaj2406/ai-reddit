@@ -553,12 +553,12 @@ data: {"success": true, "data": {"content": "# Complete Blog\n\nFull blog conten
 {
   "messageId": "uuid (optional)",
   "title": "string",
-  "content": "string", 
+  "content": "string",
   "tags": ["string"],
   "isConversationVisible": boolean
 }
 ```
-**Notes**: 
+**Notes**:
 - If `messageId` is provided, creates post from conversation message (user must own the message)
 - If `messageId` is omitted, creates standalone post
 - `isConversationVisible` is ignored for standalone posts
@@ -687,7 +687,7 @@ data: {"success": true, "data": {"content": "# Complete Blog\n\nFull blog conten
 ```
 **Business Logic**:
 - User explicit choice takes precedence over defaults
-- Default behavior: include context only if conversation exists and is public  
+- Default behavior: include context only if conversation exists and is public
 - Privacy enforcement: context only retrieved if conversation is public
 - AI receives specialized fork prompts with optional conversation context
 }

@@ -111,6 +111,7 @@ class PostResponse(BaseModel):
     userReaction: Optional[str] = Field(None, description="Current user's reaction to this post")
     commentCount: int = Field(default=0, description="Number of comments")
     viewCount: int = Field(default=0, description="Total view count")
+    shareCount: int = Field(default=0, description="Total share count")
     userViewCount: int = Field(default=0, description="Current user's view count")
     conversationId: Optional[UUID] = Field(None, description="Source conversation ID if viewable")
     
@@ -138,6 +139,7 @@ class PostResponse(BaseModel):
                 "userReaction": "upvote",
                 "commentCount": 3,
                 "viewCount": 147,
+                "shareCount": 23,
                 "userViewCount": 2,
                 "conversationId": "123e4567-e89b-12d3-a456-426614174003"
             }
@@ -195,6 +197,7 @@ class PostListResponse(BaseModel):
                         "userReaction": "upvote",
                         "commentCount": 3,
                         "viewCount": 147,
+                        "shareCount": 23,
                         "userViewCount": 2,
                         "conversationId": "123e4567-e89b-12d3-a456-426614174003"
                     }
@@ -320,6 +323,11 @@ class PostDetailResponse(BaseModel):
     reactions: PostReactions = Field(default_factory=PostReactions, description="Reaction counts")
     vote_count: int = Field(default=0, description="Net vote count (upvotes - downvotes)")
     
+    # Analytics
+    viewCount: int = Field(default=0, description="Total view count")
+    shareCount: int = Field(default=0, description="Total share count")
+    userViewCount: int = Field(default=0, description="Current user's view count")
+    
     # Comments
     comments: List[CommentResponse] = Field(default=[], description="Post comments with nested replies")
     
@@ -355,6 +363,9 @@ class PostDetailResponse(BaseModel):
                     "accurate": 5
                 },
                 "vote_count": 13,
+                "viewCount": 147,
+                "shareCount": 23,
+                "userViewCount": 2,
                 "comments": [
                     {
                         "comment_id": "123e4567-e89b-12d3-a456-426614174020",

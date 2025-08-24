@@ -381,6 +381,9 @@ class PostService:
             'tags': tags,
             'reactions': reactions,
             'vote_count': vote_count,
+            'viewCount': self._get_post_view_count(post_id),
+            'shareCount': self._get_post_share_count(post_id),
+            'userViewCount': self._get_user_view_count(post_id, current_user.user_id if current_user else None),
             'comments': root_comments,
             'conversation_id': post.conversation_id,
             'conversation': conversation_data
@@ -524,12 +527,11 @@ class PostService:
             Comment.post_id == post.post_id
         ).scalar() or 0
         
-        # Get view count (total views)
-        view_count = db.query(func.count(PostView.user_id)).filter(
-            PostView.post_id == post.post_id
-        ).scalar() or 0
+        # Get analytics counts
+        view_count = self._get_post_view_count(post.post_id)
+        share_count = self._get_post_share_count(post.post_id)
         
-        # For now, we don't have user-specific reaction or view count
+        # For now, we don't have user-specific reaction or view count in list view
         # These would require a current_user parameter
         user_reaction = None
         user_view_count = 0
@@ -552,6 +554,7 @@ class PostService:
             userReaction=user_reaction,
             commentCount=comment_count,
             viewCount=view_count,
+            shareCount=share_count,
             userViewCount=user_view_count,
             conversationId=conversation_id
         )
@@ -743,6 +746,28 @@ class PostService:
         except Exception as e:
             logger.warning(f"Failed to retrieve conversation context for {conversation_id}: {str(e)}")
             return ""
+
+    def _get_post_view_count(self, post_id: UUID) -> int:
+        """Get total view count for a post."""
+        return self.db.query(func.count(PostView.view_id)).filter(
+            PostView.post_id == post_id
+        ).scalar() or 0
+
+    def _get_post_share_count(self, post_id: UUID) -> int:
+        """Get total share count for a post."""
+        from app.models.post_share import PostShare
+        return self.db.query(func.count(PostShare.share_id)).filter(
+            PostShare.post_id == post_id
+        ).scalar() or 0
+
+    def _get_user_view_count(self, post_id: UUID, user_id: Optional[UUID]) -> int:
+        """Get view count for a specific user and post."""
+        if not user_id:
+            return 0
+        return self.db.query(func.count(PostView.view_id)).filter(
+            PostView.post_id == post_id,
+            PostView.user_id == user_id
+        ).scalar() or 0
 
     def get_post_conversation(self, post_id: UUID) -> Optional[Dict[str, Any]]:
         """

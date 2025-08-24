@@ -21,8 +21,10 @@ from app.schemas.post import (
     PostCreate, PostCreateResponse, PostListResponse,
     PostForkRequest, PostForkAPIResponse, PostReactionCreate
 )
+from app.schemas.analytics import PostViewCreate, PostShareCreate, AnalyticsResponse
 from app.services.post_service import PostService, PostServiceError
 from app.services.post_reaction_service import PostReactionService
+from app.services.analytics_service import AnalyticsService, AnalyticsServiceError
 from app.dependencies.auth import get_current_user, get_current_user_optional
 from app.models.user import User
 
@@ -566,6 +568,172 @@ async def get_post_conversation(
                 "success": False,
                 "data": None,
                 "message": f"Failed to get conversation: {str(e)}",
+                "errorCode": "INTERNAL_SERVER_ERROR"
+            }
+        )
+
+
+@router.post("/{post_id}/view", status_code=status.HTTP_201_CREATED)
+async def track_post_view(
+    post_id: UUID,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
+    """
+    Track a view for a post.
+    
+    This endpoint tracks when a post is viewed. It supports both authenticated
+    and anonymous users. Multiple views by the same user are allowed and tracked.
+    
+    **Args:**
+    - **post_id**: UUID of the post being viewed
+    
+    **Returns:**
+    - **view_id**: Unique identifier for this view record
+    - **viewed_at**: Timestamp when view was recorded
+    - **user_id**: ID of viewing user (null for anonymous)
+    
+    **Raises:**
+    - **404**: Post not found
+    - **422**: Invalid post ID format
+    """
+    try:
+        analytics_service = AnalyticsService(db)
+        
+        # Track the view
+        user_id = current_user.user_id if current_user else None
+        view_response = analytics_service.track_post_view(
+            post_id=post_id,
+            user_id=user_id
+        )
+        
+        return {
+            "success": True,
+            "data": {
+                "view_id": view_response.view_id,
+                "viewed_at": view_response.viewed_at.isoformat(),
+                "user_id": view_response.user_id
+            },
+            "message": "Post view tracked successfully",
+            "errorCode": None
+        }
+        
+    except AnalyticsServiceError as e:
+        error_message = str(e)
+        
+        if "not found" in error_message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": "Post not found",
+                    "errorCode": "POST_NOT_FOUND"
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": f"Failed to track view: {error_message}",
+                    "errorCode": "VIEW_TRACKING_ERROR"
+                }
+            )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "success": False,
+                "data": None,
+                "message": f"Failed to track view: {str(e)}",
+                "errorCode": "INTERNAL_SERVER_ERROR"
+            }
+        )
+
+
+@router.post("/{post_id}/share", status_code=status.HTTP_201_CREATED)
+async def share_post(
+    post_id: UUID,
+    share_data: PostShareCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Share a post to track sharing activity.
+    
+    This endpoint records when a post is shared to external platforms.
+    Requires authentication to track which user shared the post.
+    
+    **Args:**
+    - **post_id**: UUID of the post being shared
+    - **share_data**: Platform and optional metadata
+    
+    **Returns:**
+    - **shareId**: Unique identifier for this share record
+    - **sharedAt**: Timestamp when share was recorded
+    - **platform**: Platform where post was shared
+    
+    **Raises:**
+    - **401**: Authentication required
+    - **404**: Post not found
+    - **422**: Invalid post ID format
+    """
+    try:
+        analytics_service = AnalyticsService(db)
+        
+        # Track the share
+        share_response = analytics_service.track_post_share(
+            post_id=post_id,
+            user_id=current_user.user_id,
+            platform=share_data.platform
+        )
+        
+        return {
+            "success": True,
+            "data": {
+                "shareId": share_response.shareId,
+                "sharedAt": share_response.sharedAt.isoformat(),
+                "platform": share_response.platform,
+                "sharedBy": share_response.sharedBy
+            },
+            "message": "Post shared successfully",
+            "errorCode": None
+        }
+        
+    except AnalyticsServiceError as e:
+        error_message = str(e)
+        
+        if "not found" in error_message.lower():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": "Post not found",
+                    "errorCode": "POST_NOT_FOUND"
+                }
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={
+                    "success": False,
+                    "data": None,
+                    "message": f"Failed to track share: {error_message}",
+                    "errorCode": "SHARE_TRACKING_ERROR"
+                }
+            )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "success": False,
+                "data": None,
+                "message": f"Failed to track share: {str(e)}",
                 "errorCode": "INTERNAL_SERVER_ERROR"
             }
         )

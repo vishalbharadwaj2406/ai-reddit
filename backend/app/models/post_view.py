@@ -9,12 +9,14 @@ This model handles:
 - View analytics and metrics
 - Reading behavior analysis
 - Multiple views by same user tracking
+- Anonymous views support
 """
 
 from sqlalchemy import Column, String, DateTime, func, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
+import uuid
 
 from app.core.database import Base
 
@@ -24,30 +26,39 @@ class PostView(Base):
     PostView model representing the post_views table.
     
     This tracks when users view posts, enabling analytics on content engagement,
-    popular posts, and reading patterns. Allows multiple views by the same user.
+    popular posts, and reading patterns. Allows multiple views by the same user
+    and supports anonymous views.
     """
     
     __tablename__ = "post_views"
     
-    # Composite primary key (user_id, post_id, viewed_at)
+    # Primary key - single UUID for each view
+    view_id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        comment="Unique identifier for this view record"
+    )
+    
+    # Foreign keys
     user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.user_id", ondelete="CASCADE"),
-        primary_key=True,
-        comment="User who viewed the post"
+        nullable=True,  # Allow null for anonymous views
+        comment="User who viewed the post (null for anonymous views)"
     )
     
     post_id = Column(
         UUID(as_uuid=True),
         ForeignKey("posts.post_id", ondelete="CASCADE"),
-        primary_key=True,
+        nullable=False,
         comment="Post that was viewed"
     )
     
     viewed_at = Column(
         DateTime(timezone=True),
-        primary_key=True,
         default=func.now(),
+        nullable=False,
         comment="When the post was viewed"
     )
     

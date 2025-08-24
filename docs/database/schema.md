@@ -209,3 +209,36 @@ This schema is designed for a minimal, production-ready MVP of the [APP_NAME] pl
   - The schema is minimal for MVP but designed for easy extension (e.g., adding AI feedback, multi-user conversations, advanced analytics) without breaking existing data or requiring major migrations.
 
 This schema is designed for extensibility and efficient querying for all major MVP features. All content is public, and only text is supported for posts/comments. No ON DELETE CASCADE is used. All timestamps are in UTC.
+
+---
+
+## Post_Views ✅ IMPLEMENTED
+Analytics table for tracking post views (authenticated and anonymous).
+
+| Field      | Type           | Constraints / Notes                     |
+|------------|----------------|-----------------------------------------|
+| view_id    | UUID (PK)      | Primary key                             |
+| post_id    | UUID (FK)      | References posts(post_id)               |
+| user_id    | UUID (FK)      | Nullable, references users(user_id)     |
+| viewed_at  | TIMESTAMP      | When the view occurred                  |
+| ip_address | VARCHAR        | For anonymous view tracking             |
+| user_agent | VARCHAR        | Browser/client information              |
+| status     | VARCHAR        | 'active', 'archived'                    |
+| created_at | TIMESTAMP      |                                         |
+| updated_at | TIMESTAMP      |                                         |
+
+---
+
+## Post_Shares ✅ IMPLEMENTED
+Analytics table for tracking post shares to external platforms.
+
+| Field             | Type      | Constraints / Notes                     |
+|-------------------|-----------|----------------------------------------|
+| share_id          | UUID (PK) | Primary key                            |
+| post_id           | UUID (FK) | References posts(post_id)              |
+| shared_by_user_id | UUID (FK) | References users(user_id)              |
+| platform          | VARCHAR   | 'twitter', 'facebook', 'direct_link'  |
+| shared_at         | TIMESTAMP | When the share occurred                |
+| status            | VARCHAR   | 'active', 'archived'                   |
+| created_at        | TIMESTAMP |                                        |
+| updated_at        | TIMESTAMP |                                        |
