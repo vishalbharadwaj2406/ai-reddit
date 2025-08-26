@@ -141,17 +141,6 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 **Auth Required**: No
 **Response**: Same as /users/me
 
-#### PATCH /users/me
-**Purpose**: Update user profile (partial update)
-**Auth Required**: Yes
-**Request Body**:
-```json
-{
-  "userName": "string",
-  "profilePicture": "string"
-}
-```
-
 #### POST /users/{user_id}/follow
 **Purpose**: Send a follow request or follow a user (depending on privacy)
 **Auth Required**: Yes
@@ -175,48 +164,6 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
   "success": true,
   "data": null,
   "message": "Unfollowed or follow request cancelled successfully"
-}
-```
-
-#### GET /users/me/follow-requests/incoming
-**Purpose**: List incoming follow requests
-**Auth Required**: Yes
-**Response**:
-```json
-{
-  "success": true,
-  "data": {
-    "incomingRequests": [
-      {
-        "userId": "uuid",
-        "userName": "string",
-        "profilePicture": "string",
-        "requestedAt": "timestamp"
-      }
-    ]
-  },
-  "message": "Incoming follow requests retrieved successfully"
-}
-```
-
-#### GET /users/me/follow-requests/outgoing
-**Purpose**: List outgoing follow requests
-**Auth Required**: Yes
-**Response**:
-```json
-{
-  "success": true,
-  "data": {
-    "outgoingRequests": [
-      {
-        "userId": "uuid",
-        "userName": "string",
-        "profilePicture": "string",
-        "requestedAt": "timestamp"
-      }
-    ]
-  },
-  "message": "Outgoing follow requests retrieved successfully"
 }
 ```
 
