@@ -100,6 +100,35 @@ export function usePageLayout() {
  */
 export const LAYOUT_CSS_VARS = {
   '--header-height': '64px',
+  '--input-height': '100px', // Fixed input area height
   '--available-height': 'calc(100vh - var(--header-height))',
+  '--content-height': 'calc(100vh - var(--header-height) - var(--input-height))',
   '--safe-area-height': 'calc(100vh - var(--header-height) - env(safe-area-inset-bottom))'
 } as const;
+
+/**
+ * Layout constants for consistent spacing
+ */
+export const LAYOUT_CONSTANTS = {
+  HEADER_HEIGHT: 64,
+  INPUT_HEIGHT: 100,
+  SIDEBAR_COLLAPSED: 64,
+  SIDEBAR_EXPANDED: 256,
+  // Glass scroll padding - ensures content doesn't hide behind glass elements
+  GLASS_SAFE_ZONE: 20, // Extra padding for comfortable reading
+  SCROLL_COMFORT_ZONE: 16 // Additional space for better UX
+} as const;
+
+/**
+ * Calculate padding for glass scroll effect
+ * Ensures content can scroll behind glass elements but remains readable
+ */
+export const getGlassScrollPadding = () => ({
+  // Top padding: Header + safe zone for comfortable reading
+  top: LAYOUT_CONSTANTS.HEADER_HEIGHT + LAYOUT_CONSTANTS.GLASS_SAFE_ZONE,
+  // Bottom padding: Input + safe zone for comfortable reading  
+  bottom: LAYOUT_CONSTANTS.INPUT_HEIGHT + LAYOUT_CONSTANTS.GLASS_SAFE_ZONE,
+  // Content comfort zones for first/last items
+  contentTop: LAYOUT_CONSTANTS.SCROLL_COMFORT_ZONE,
+  contentBottom: LAYOUT_CONSTANTS.SCROLL_COMFORT_ZONE
+});

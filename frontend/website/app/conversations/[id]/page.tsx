@@ -1,13 +1,19 @@
 'use client';
 
+import AuthGuard from '../../../components/auth/AuthGuard';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import TextareaAutosize from 'react-textarea-autosize';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { conversationService, ConversationDetail, Message, AuthenticationRequiredError, ConversationServiceError } from '../../../lib/services/conversationService';
+import { conversationService, ConversationDetail, Message, AuthenticationRequiredError, ConversationServiceError } from '../../../lib/services/conversationService.production';
 import { postService } from '../../../lib/services/postService';
 import { BlogEditor } from '../../../components/BlogEditor';
-import { usePageLayout } from '../../../hooks/useViewportLayout';
+import MarkdownRenderer from '../../../components/Markdown/MarkdownRenderer';
+import { usePageLayout, LAYOUT_CONSTANTS, getGlassScrollPadding } from '../../../hooks/useViewportLayout';
 import { useHeaderStore } from '../../../lib/stores/headerStore';
+import { useSidebarStore } from '../../../lib/stores/sidebarStore';
+import { copyText } from '../../../lib/utils/copy';
+import { markdownToPlain } from '../../../lib/utils/markdown';
 
 const getErrorMessage = (err: unknown): string => {
   if (err instanceof Error) return err.message;
@@ -15,15 +21,24 @@ const getErrorMessage = (err: unknown): string => {
   return 'Unknown error';
 };
 
-export default function ConversationPage() {
+function ConversationPageContent() {
   const params = useParams();
   const conversationId = params.id as string;
+  
+  // Debug logging
+  console.log('🆔 ConversationPage mounted - params:', params, 'conversationId:', conversationId);
   
   // Layout management hook for proper height calculations
   const layout = usePageLayout();
   
   // Header title management
   const { setConversationTitle } = useHeaderStore();
+  
+  // Sidebar state for responsive layout
+  const { isExpanded: sidebarExpanded } = useSidebarStore();
+  
+  // Glass scroll padding calculation - no hardcoding
+  const glassPadding = getGlassScrollPadding();
   
   // Panel visibility state
   const [showOriginalBlog, setShowOriginalBlog] = useState(false);
@@ -37,9 +52,13 @@ export default function ConversationPage() {
   const [messageText, setMessageText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isAIResponding, setIsAIResponding] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
   
-  // ✨ NEW: Blog generation state
+  // Blog generation state
   const [isGeneratingBlog, setIsGeneratingBlog] = useState(false);
+  
+  // Jump to latest functionality
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   
   // Real conversation data state
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
@@ -56,14 +75,18 @@ export default function ConversationPage() {
 
   // Declare the loader first so effects can reference it safely
   const loadConversation = useCallback(async () => {
+    console.log('🔄 Loading conversation:', conversationId);
     try {
       setLoading(true);
       setError(null);
       
+      console.log('📡 Calling conversationService.getConversation...');
       const conversationData = await conversationService.getConversation(conversationId);
+      console.log('✅ Conversation loaded:', conversationData);
       setConversation(conversationData);
       
     } catch (err) {
+      console.error('❌ Conversation loading error:', err);
       if (err instanceof AuthenticationRequiredError) {
         setError('Please sign in to view this conversation');
       } else if (err instanceof ConversationServiceError) {
@@ -86,6 +109,49 @@ export default function ConversationPage() {
     }
   }, [conversation?.messages, isAIResponding, isGeneratingBlog]);
 
+  // Set layout CSS custom properties for global use
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--header-height', `${LAYOUT_CONSTANTS.HEADER_HEIGHT}px`);
+    root.style.setProperty('--input-height', `${LAYOUT_CONSTANTS.INPUT_HEIGHT}px`);
+    root.style.setProperty('--sidebar-collapsed', `${LAYOUT_CONSTANTS.SIDEBAR_COLLAPSED}px`);
+    root.style.setProperty('--sidebar-expanded', `${LAYOUT_CONSTANTS.SIDEBAR_EXPANDED}px`);
+    root.style.setProperty('--sidebar-current', sidebarExpanded ? `${LAYOUT_CONSTANTS.SIDEBAR_EXPANDED}px` : `${LAYOUT_CONSTANTS.SIDEBAR_COLLAPSED}px`);
+    // Glass scroll padding properties for other components
+    root.style.setProperty('--glass-safe-zone', `${LAYOUT_CONSTANTS.GLASS_SAFE_ZONE}px`);
+    root.style.setProperty('--glass-padding-top', `${glassPadding.top}px`);
+    root.style.setProperty('--glass-padding-bottom', `${glassPadding.bottom}px`);
+  }, [sidebarExpanded, glassPadding]);
+
+  // Scroll detection for Jump to Latest chip
+  useEffect(() => {
+    const chatPanel = chatPanelRef.current;
+    if (!chatPanel) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = chatPanel;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      
+      // Show chip when more than 200px from bottom and there are user messages
+      const currentHasUserMessages = conversation?.messages.some(m => m.role === 'user') ?? false;
+      const shouldShow = distanceFromBottom > 200 && currentHasUserMessages;
+      setShowJumpToLatest(shouldShow);
+    };
+
+    chatPanel.addEventListener('scroll', handleScroll);
+    // Initial check
+    handleScroll();
+    
+    return () => chatPanel.removeEventListener('scroll', handleScroll);
+  }, [conversation?.messages]); // Depend on messages instead of hasUserMessages
+
+  // Jump to latest function
+  const handleJumpToLatest = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  };
+
   // Update header title when conversation loads
   useEffect(() => {
     if (conversation?.title) {
@@ -99,8 +165,12 @@ export default function ConversationPage() {
 
   // Load conversation data
   useEffect(() => {
+    console.log('🎯 useEffect triggered - conversationId:', conversationId);
     if (conversationId) {
+      console.log('📞 Calling loadConversation...');
       loadConversation();
+    } else {
+      console.log('⚠️ No conversationId provided');
     }
   }, [conversationId, loadConversation]);
 
@@ -208,8 +278,9 @@ export default function ConversationPage() {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleInputKeyDown = (e: React.KeyboardEvent) => {
+    // IME-safe send: ignore Enter while composing; allow Shift+Enter for newline
+    if (!isComposing && e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -433,28 +504,22 @@ export default function ConversationPage() {
   // Check if conversation has messages (excluding system messages)
   const hasUserMessages = conversation.messages.some(m => m.role === 'user');
   
-  // ✨ NEW: Blog detection logic
+  // Blog detection logic
   const blogMessages = conversation.messages.filter(m => m.isBlog === true);
   const hasBlogMessages = blogMessages.length > 0;
   const mostRecentBlogMessage = hasBlogMessages ? blogMessages[blogMessages.length - 1] : null;
   
-  // Calculate panel layout classes - equal width when visible + dynamic expansion
-  const getPanelLayoutClasses = () => {
-    const panels = [];
+  // Calculate visible panels count for layout decisions
+  const getVisiblePanelCount = () => {
+    let count = 1; // Chat panel always visible
     
     // Left panel: Original Blog (only if forked and toggled on)
-    if (isForked && showOriginalBlog) panels.push('original');
-    
-    // Center panel: Always visible (chat)
-    panels.push('chat');
+    if (isForked && showOriginalBlog) count++;
     
     // Right panel: Generated Blog (only if exists and toggled on)
-    if (hasBlogMessages && showGeneratedBlog) panels.push('blog');
+    if (hasBlogMessages && showGeneratedBlog) count++;
     
-    // Return flex classes for equal width when multiple panels, expanded when single
-    if (panels.length === 1) return 'w-full';
-    if (panels.length === 2) return 'w-1/2';
-    return 'w-1/3';
+    return count;
   };
 
   // Get actual visible panels for rendering
@@ -468,7 +533,7 @@ export default function ConversationPage() {
     return panels;
   };
 
-  const visiblePanels = getVisiblePanels();
+  const visiblePanelCount = getVisiblePanelCount();
 
   return (
     <div className="h-screen flex flex-col bg-black overflow-hidden">
@@ -494,14 +559,23 @@ export default function ConversationPage() {
         )}
       </div>
 
-      {/* Main Content Area - Content scrolls behind header with proper z-layering */}
-      <div className="absolute inset-0 flex overflow-hidden"> {/* Full screen, content starts at top */}
-        {/* Dynamic 3-Panel Layout with Independent Scrolling */}
-        <div className={`flex w-full h-full ${getPanelLayoutClasses()}`}>
+      {/* Main Content Area - Glass scroll: content can scroll behind header/input */}
+      <div 
+        className="absolute flex overflow-hidden" 
+        style={{ 
+          left: sidebarExpanded ? `${LAYOUT_CONSTANTS.SIDEBAR_EXPANDED}px` : `${LAYOUT_CONSTANTS.SIDEBAR_COLLAPSED}px`,
+          top: `${layout.headerHeight}px`, // Start below header for scrollbar containment
+          right: '0px',
+          bottom: `${LAYOUT_CONSTANTS.INPUT_HEIGHT}px`, // End above input for scrollbar containment
+          transition: 'left 0.3s ease'
+        }}
+      >
+        {/* Dynamic 3-Panel Layout - Flex distributes space automatically */}
+        <div className="flex w-full h-full" data-panel-count={visiblePanelCount}>
           
           {/* Left Panel - Original Blog (only if forked and visible) */}
           {isForked && showOriginalBlog && (
-            <div className={`${getPanelLayoutClasses()} border-r border-gray-700/30`}>
+            <div className="flex-1 border-r border-gray-700/30 min-w-0">
               <div className="glass-panel-subdued h-full flex flex-col">
                 <div className="flex items-center justify-between p-4 border-b border-gray-700/30 flex-shrink-0">
                   <h3 className="text-sm font-medium text-gray-300">Original Blog Post</h3>
@@ -532,22 +606,39 @@ export default function ConversationPage() {
             </div>
           )}
 
-          {/* Main Chat Panel - Always Visible, Clean Design */}
-          <div className={`${getPanelLayoutClasses()} ${visiblePanels.length > 1 ? 'border-r border-gray-700/30' : ''}`}>
-            <div className="h-full flex flex-col">
-              {/* Messages Container - Bottom-anchored modern chat layout */}
+          {/* Main Chat Panel - Always Visible, Flex grows to fill available space */}
+          <div className={`flex-1 min-w-0 ${visiblePanelCount > 1 ? 'border-r border-gray-700/30' : ''}`}>
+            <div className="h-full flex flex-col relative">
+
+              {/* Messages Container - Glass scroll: scrollbar contained, content extends behind glass */}
               <div 
                 ref={chatPanelRef}
-                className="flex-1 overflow-y-auto px-4 py-6 pt-20 pb-24"
+                role="log"
+                aria-live="polite"
+                aria-label="Conversation messages"
+                className="flex-1 overflow-y-auto"
                 style={{ 
                   display: 'flex', 
                   flexDirection: 'column', 
-                  justifyContent: hasUserMessages ? 'flex-start' : 'center', // Start from top when has messages, centered when empty
-                  minHeight: '100%'
+                  justifyContent: hasUserMessages ? 'flex-start' : 'center',
+                  minHeight: '100%',
+                  // Remove padding from container - let content handle spacing
+                  padding: '0'
                 }}
               >
                 {hasUserMessages ? (
-                  <div className="space-y-4 max-w-4xl mx-auto w-full">
+                  <div 
+                    className="space-y-4 max-w-4xl mx-auto w-full px-4"
+                    style={{
+                      // Glass scroll effect: Content can scroll behind header/input but remains readable
+                      paddingTop: `${glassPadding.top}px`, // Header height + safe zone
+                      paddingBottom: `${glassPadding.bottom}px`, // Input height + safe zone
+                      // Content starts above normal area (allows scroll behind header)
+                      marginTop: `-${layout.headerHeight}px`,
+                      // Content extends below normal area (allows scroll behind input)  
+                      marginBottom: `-${LAYOUT_CONSTANTS.INPUT_HEIGHT}px`
+                    }}
+                  >
                     {conversation.messages.filter(m => m.role !== 'system').map((message, index) => {
                       const isLastAIMessage = message.role === 'assistant' && 
                                             index === conversation.messages.filter(m => m.role !== 'system').length - 1;
@@ -556,43 +647,82 @@ export default function ConversationPage() {
                       const listKey = `${message.messageId || `${message.role}-${message.createdAt}-${index}`}-${index}`;
                       
                       return (
-                        <div key={listKey} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                        <div 
+                          key={listKey} 
+                          className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                          role="article"
+                          aria-label={`${message.role === 'user' ? 'User' : 'Assistant'} message`}
+                        >
                           <div className={`${message.role === 'user' ? 'glass-message-user' : 
-                                          message.isBlog ? 'glass-message-blog' : 'glass-message-ai'} max-w-[85%]`}>
+                                          message.isBlog ? 'glass-message-blog' : 'glass-message-ai'} max-w-[85%] relative group`}>
                             {/* Blog message indicator */}
                             {message.isBlog && (
                               <div className="flex items-center gap-2 mb-2 text-xs text-blue-300">
-                                <span className="px-2 py-1 bg-blue-900/30 rounded-full">📝 Blog</span>
+                                <span className="px-2 py-1 bg-blue-900/30 rounded-full">Blog</span>
                                 <button 
-                                  className="glass-button-generate px-2 py-1 text-xs"
+                                  className="glass-button-secondary px-2 py-1 text-xs"
                                   onClick={handleEditBlog}
                                 >
-                                  ✍️ Edit and Post
+                                  Edit and Post
                                 </button>
                               </div>
                             )}
                             <div className="text-message">
-                              {message.content || (isTyping ? (
-                                <div className="flex items-center space-x-1">
-                                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
-                                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse delay-75"></div>
-                                  <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse delay-150"></div>
-                                </div>
-                              ) : '')}
+                              {message.content ? (
+                                <MarkdownRenderer content={message.content} />
+                              ) : (
+                                isTyping ? (
+                                  <div className="flex items-center space-x-1">
+                                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse delay-75"></div>
+                                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse delay-150"></div>
+                                  </div>
+                                ) : null
+                              )}
                               {isTyping && message.content && (
                                 <span className="inline-block w-0.5 h-4 bg-blue-400 animate-pulse ml-1 align-middle"></span>
                               )}
                             </div>
-                            <div className="text-xs opacity-70 mt-2">
-                              {isTyping ? (message.isBlog ? 'Generating blog...' : 'Assistant is typing...') : 
-                               (function() {
-                                 try {
-                                   const date = new Date(message.createdAt);
-                                   return isNaN(date.getTime()) ? 'Just now' : date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                                 } catch {
-                                   return 'Just now';
-                                 }
-                               })()}
+                            <div className="mt-2 flex items-center justify-between">
+                              <div className="text-xs opacity-70">
+                                {isTyping ? (message.isBlog ? 'Generating blog...' : 'Assistant is typing...') : 
+                                 (function() {
+                                   try {
+                                     const date = new Date(message.createdAt);
+                                     return isNaN(date.getTime()) ? 'Just now' : date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                   } catch {
+                                     return 'Just now';
+                                   }
+                                 })()}
+                              </div>
+                              {message.content && (
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                                  <button
+                                    className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 backdrop-blur-md px-2 py-1 text-[10px] text-white/80 hover:bg-white/10"
+                                    onClick={async () => { await copyText(markdownToPlain(message.content)); }}
+                                    aria-label="Copy Plain Text"
+                                    title="Copy Plain Text"
+                                  >
+                                    <svg aria-hidden="true" viewBox="0 0 24 24" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                    TXT
+                                  </button>
+                                  <button
+                                    className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 backdrop-blur-md px-2 py-1 text-[10px] text-white/80 hover:bg-white/10"
+                                    onClick={async () => { await copyText(message.content); }}
+                                    aria-label="Copy Markdown"
+                                    title="Copy Markdown"
+                                  >
+                                    <svg aria-hidden="true" viewBox="0 0 24 24" className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                    MD
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -603,11 +733,11 @@ export default function ConversationPage() {
                     {hasUserMessages && (
                       <div className="flex justify-center pt-4">
                         <button 
-                          className="glass-button-generate px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="glass-button-secondary px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                           onClick={handleGenerateBlog}
                           disabled={isGeneratingBlog}
                         >
-                          {isGeneratingBlog ? '✨ Generating Blog...' : '✍️ Generate Blog'}
+                          {isGeneratingBlog ? 'Generating blog...' : 'Generate Blog'}
                         </button>
                       </div>
                     )}
@@ -616,46 +746,20 @@ export default function ConversationPage() {
                     <div ref={messagesEndRef} />
                   </div>
                 ) : (
-                  /* Empty State - Improved Visual Design */
-                  <div className="h-full flex flex-col items-center justify-center space-y-6 max-w-2xl mx-auto">
-                    {/* Generate Blog Button - Prominent in empty state */}
-                    <button 
-                      className="glass-button-generate px-8 py-4 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      onClick={handleGenerateBlog}
-                      disabled={isGeneratingBlog}
-                    >
-                      {isGeneratingBlog ? '✨ Generating Blog...' : '✍️ Write Custom Blog'}
-                    </button>
-                    
-                    {/* Improved Suggestion Cards */}
-                    <div className="w-full space-y-3">
-                      <p className="text-sm text-gray-400 text-center">Start with a suggestion:</p>
-                      <div className="grid gap-3">
-                        <button 
-                          className="glass-button-toggle px-6 py-4 text-left text-sm hover:bg-blue-500/10 transition-colors"
-                          onClick={() => fillSuggestion("Help me brainstorm ideas about the future of technology and its impact on society")}
-                        >
-                          💡 Help me brainstorm ideas about the future of technology...
-                        </button>
-                        <button 
-                          className="glass-button-toggle px-6 py-4 text-left text-sm hover:bg-blue-500/10 transition-colors"
-                          onClick={() => fillSuggestion("I want to explore the key principles of sustainable innovation in modern business")}
-                        >
-                          🚀 I want to explore the key principles of sustainable innovation...
-                        </button>
-                        <button 
-                          className="glass-button-toggle px-6 py-4 text-left text-sm hover:bg-blue-500/10 transition-colors"
-                          onClick={() => fillSuggestion("What are the most important skills needed for creative problem-solving in the digital age?")}
-                        >
-                          🔍 What are the most important skills for creative problem-solving...
-                        </button>
-                        <button 
-                          className="glass-button-toggle px-6 py-4 text-left text-sm hover:bg-blue-500/10 transition-colors"
-                          onClick={() => fillSuggestion("How can I improve my understanding of emerging trends in artificial intelligence and machine learning?")}
-                        >
-                          ✨ How can I improve my understanding of emerging AI trends...
-                        </button>
-                      </div>
+                  /* Empty State - Positioned with glass scroll awareness */
+                  <div 
+                    className="h-full flex flex-col items-center justify-center space-y-8 max-w-2xl mx-auto px-4"
+                    style={{
+                      // Match the glass scroll padding for consistent layout
+                      paddingTop: `${glassPadding.top}px`,
+                      paddingBottom: `${glassPadding.bottom}px`,
+                      marginTop: `-${layout.headerHeight}px`,
+                      marginBottom: `-${LAYOUT_CONSTANTS.INPUT_HEIGHT}px`
+                    }}
+                  >
+                    <div className="text-center space-y-4">
+                      <h2 className="text-xl font-semibold text-gray-300">Start a conversation</h2>
+                      <p className="text-gray-400 text-sm">Ask questions, explore ideas, or generate content</p>
                     </div>
                   </div>
                 )}
@@ -665,7 +769,7 @@ export default function ConversationPage() {
 
           {/* Right Panel - Generated Blog (only if exists and visible) */}
           {hasBlogMessages && showGeneratedBlog && mostRecentBlogMessage && (
-            <div className={`${getPanelLayoutClasses()}`}>
+            <div className="flex-1 min-w-0">
               {isEditingBlog ? (
                 <BlogEditor
                   initialContent={mostRecentBlogMessage.content}
@@ -690,12 +794,7 @@ export default function ConversationPage() {
                     className="flex-1 overflow-y-auto p-4 text-sm text-blue-100 space-y-3"
                   >
                     <div className="prose prose-invert max-w-none prose-sm">
-                      <div 
-                        className="whitespace-pre-wrap text-blue-100"
-                        style={{ lineHeight: '1.6' }}
-                      >
-                        {mostRecentBlogMessage.content}
-                      </div>
+                      <MarkdownRenderer content={mostRecentBlogMessage.content} />
                     </div>
                     <div className="text-xs text-blue-400 pt-3 border-t border-blue-800">
                       Generated {new Date(mostRecentBlogMessage.createdAt).toLocaleString()} • 
@@ -710,19 +809,90 @@ export default function ConversationPage() {
         </div>
       </div>
 
-      {/* Fixed Message Input - Positioned at bottom with proper z-index */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-gray-700/30 bg-black/60 backdrop-blur-md z-50">
+      {/* Fixed Message Input - Using layout constants for maintainability */}
+      <div 
+        className="fixed bottom-0 right-0 border-t border-gray-700/30 bg-black/60 backdrop-blur-md z-50"
+        style={{ 
+          left: sidebarExpanded ? `${LAYOUT_CONSTANTS.SIDEBAR_EXPANDED}px` : `${LAYOUT_CONSTANTS.SIDEBAR_COLLAPSED}px`,
+          height: `${LAYOUT_CONSTANTS.INPUT_HEIGHT}px`,
+          transition: 'left 0.3s ease'
+        }}
+      >
         <div className="px-4 py-3">
           <div className="max-w-4xl mx-auto">
-            <div className="flex items-end gap-3">
+            
+            {/* Suggestions - Above Input (Best Practice) */}
+            {!hasUserMessages && (
+              <div className="mb-4 space-y-3">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm text-gray-400">Quick start</p>
+                  <button 
+                    className="glass-button-secondary px-3 py-1.5 text-xs"
+                    onClick={handleGenerateBlog}
+                    disabled={isGeneratingBlog}
+                  >
+                    {isGeneratingBlog ? 'Generating...' : 'Write Blog'}
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <button 
+                    className="glass-button-toggle px-4 py-3 text-left text-sm hover:bg-blue-500/10 transition-colors"
+                    onClick={() => fillSuggestion("Help me brainstorm ideas about the future of technology and its impact on society")}
+                  >
+                    Technology and society impact
+                  </button>
+                  <button 
+                    className="glass-button-toggle px-4 py-3 text-left text-sm hover:bg-blue-500/10 transition-colors"
+                    onClick={() => fillSuggestion("I want to explore the key principles of sustainable innovation in modern business")}
+                  >
+                    Sustainable business innovation
+                  </button>
+                  <button 
+                    className="glass-button-toggle px-4 py-3 text-left text-sm hover:bg-blue-500/10 transition-colors"
+                    onClick={() => fillSuggestion("What are the most important skills needed for creative problem-solving in the digital age?")}
+                  >
+                    Creative problem-solving skills
+                  </button>
+                  <button 
+                    className="glass-button-toggle px-4 py-3 text-left text-sm hover:bg-blue-500/10 transition-colors"
+                    onClick={() => fillSuggestion("How can I improve my understanding of emerging trends in artificial intelligence and machine learning?")}
+                  >
+                    AI and machine learning trends
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-end gap-3 relative">
+              {/* Subtle glass morphism scroll to bottom arrow - positioned near input */}
+              {showJumpToLatest && hasUserMessages && (
+                <button
+                  onClick={handleJumpToLatest}
+                  className="absolute -top-10 right-0 w-7 h-7 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center hover:bg-white/10 hover:border-white/20 transition-all duration-300 shadow-2xl hover:shadow-blue-500/20 hover:scale-110"
+                  aria-label="Scroll to latest message"
+                  style={{ 
+                    backdropFilter: 'blur(20px)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.1)'
+                  }}
+                >
+                  <svg className="w-3 h-3 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7" />
+                  </svg>
+                </button>
+              )}
+              
               <div className="flex-1">
-                <textarea
+                <TextareaAutosize
                   className="glass-input w-full p-3 resize-none text-sm min-h-[48px] max-h-[160px]"
                   placeholder="Message..."
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  rows={1}
+                  onKeyDown={handleInputKeyDown}
+                  onCompositionStart={() => setIsComposing(true)}
+                  onCompositionEnd={() => setIsComposing(false)}
+                  minRows={1}
+                  maxRows={6}
                   disabled={isSending}
                 />
               </div>
@@ -738,5 +908,13 @@ export default function ConversationPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ConversationPage() {
+  return (
+    <AuthGuard>
+      <ConversationPageContent />
+    </AuthGuard>
   );
 }

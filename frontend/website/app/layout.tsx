@@ -6,6 +6,7 @@ import LoginModal from "@/components/LoginModal";
 import "./globals.css";
 import SessionWrapper from "@/components/providers/SessionWrapper";
 import { ToastProvider } from "@/components/feedback/ToastProvider";
+import AuthErrorBoundary from "@/components/auth/AuthErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,8 +19,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Social - Connect through Conversations",
-  description: "Join intelligent conversations powered by AI. Connect, share, and explore ideas with our community.",
+  title: "AI Social - Production Authentication System",
+  description: "Professional-grade conversation platform with enterprise NextAuth integration",
 };
 
 export default function RootLayout({
@@ -33,13 +34,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionWrapper>
-          <ToastProvider>
-            <Header />
-            <LoginModal />
-            <AppLayout>
-              {children}
-            </AppLayout>
-          </ToastProvider>
+          <AuthErrorBoundary>
+            <ToastProvider>
+              <Header />
+              <LoginModal />
+              <AppLayout>
+                {children}
+              </AppLayout>
+            </ToastProvider>
+          </AuthErrorBoundary>
         </SessionWrapper>
       </body>
     </html>

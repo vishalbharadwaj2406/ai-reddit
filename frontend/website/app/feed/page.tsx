@@ -1,37 +1,10 @@
 'use client'
 
+import AuthGuard from '../../components/auth/AuthGuard';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
-export default function FeedPage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    // If user is not signed in, redirect to home
-    if (status === 'unauthenticated') {
-      router.push('/');
-    }
-  }, [status, router]);
-
-  if (status === 'loading') {
-    return (
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        height: '60vh',
-        color: '#FFFFFF'
-      }}>
-        Loading...
-      </div>
-    );
-  }
-
-  if (status === 'unauthenticated') {
-    return null; // Will redirect
-  }
+function FeedPageContent() {
+  const { data: session } = useSession();
 
   return (
     <div style={{ 
@@ -59,5 +32,13 @@ export default function FeedPage() {
         Your intelligent conversation feed is coming soon. Start by creating a new chat or exploring conversations.
       </p>
     </div>
+  );
+}
+
+export default function FeedPage() {
+  return (
+    <AuthGuard>
+      <FeedPageContent />
+    </AuthGuard>
   );
 } 

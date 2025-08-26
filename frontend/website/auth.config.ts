@@ -18,6 +18,25 @@ export const authConfig = {
     signIn: '/',
     error: '/',
   },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === 'production' 
+        ? `__Secure-next-auth.session-token` 
+        : `next-auth.session-token`,
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
+    },
+  },
+  session: {
+    strategy: 'jwt',
+    maxAge: process.env.NODE_ENV === 'development' 
+      ? 24 * 60 * 60 // 24 hours in development
+      : 7 * 24 * 60 * 60, // 7 days in production
+  },
   callbacks: {
     async jwt({ token, account, user }) {
       if (account && user) {

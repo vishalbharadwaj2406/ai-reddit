@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from 'zustand';
-import type { Conversation } from '@/lib/services/conversationService';
+import type { Conversation } from '@/lib/services/conversationService.production';
 
 interface ConversationsStoreState {
   conversations: Conversation[];

@@ -1,4 +1,4 @@
-import { apiClient, endpoints } from '../config/api';
+import { apiClient, endpoints } from '../config/api.production';
 
 // Type definitions for posts
 export interface Post {
@@ -53,7 +53,7 @@ export class PostService {
    */
   async createPost(data: CreatePostRequest): Promise<Post> {
     try {
-      const response = await apiClient.post<Post, CreatePostRequest>(
+      const response = await apiClient.post<Post>(
         endpoints.posts.create,
         { ...data, content_type: data.content_type || 'markdown' }
       );
@@ -100,7 +100,7 @@ export class PostService {
    */
   async forkPost(postId: string, content: string, title?: string): Promise<Post> {
     try {
-      const response = await apiClient.post<Post, { content: string; title: string; content_type: 'markdown' }>(
+      const response = await apiClient.post<Post>(
         endpoints.posts.fork(postId),
         { content, title: title || 'Forked Conversation', content_type: 'markdown' }
       );

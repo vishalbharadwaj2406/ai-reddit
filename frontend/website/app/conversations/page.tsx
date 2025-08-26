@@ -2,19 +2,29 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   conversationService, 
   type Conversation,
   AuthenticationRequiredError,
   ConversationServiceError 
-} from '@/lib/services/conversationService';
-import { ConversationListSkeleton } from '@/components/design-system/Skeleton';
-import { useConversationsStore } from '@/lib/stores/conversationsStore';
-import ConfirmDeleteModal from '@/components/design-system/ConfirmDeleteModal';
+} from '../../lib/services/conversationService.production';
+import { signInWithGoogle, signOutUser } from '../../lib/auth/auth.utils';
+import AuthGuard from '../../components/auth/AuthGuard';
+import { ConversationListSkeleton } from '../../components/design-system/Skeleton';
+import { useConversationsStore } from '../../lib/stores/conversationsStore';
+import ConfirmDeleteModal from '../../components/design-system/ConfirmDeleteModal';
 
 export default function ConversationsPage() {
+  return (
+    <AuthGuard>
+      <ConversationsPageContent />
+    </AuthGuard>
+  );
+}
+
+function ConversationsPageContent() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,9 +44,9 @@ export default function ConversationsPage() {
   
   // Local loading states only for initial load or refresh actions
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsAuth, setNeedsAuth] = useState(false);
-  const [backendConnected, setBackendConnected] = useState(false);
   
   // Delete modal state
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -80,6 +90,8 @@ export default function ConversationsPage() {
   }, [session, status, lastFetched, conversations.length]);
 
   const loadConversations = async () => {
+    let isMounted = true;
+    
     try {
       setLoading(true);
       setError(null);
@@ -87,90 +99,50 @@ export default function ConversationsPage() {
       
       // Check authentication status first
       if (status === 'unauthenticated') {
-        setNeedsAuth(true);
-        setLoading(false);
+        if (isMounted) {
+          setNeedsAuth(true);
+          setLoading(false);
+        }
         return;
       }
       
-      // If we have a session but loading conversations fails, show error instead of infinite loading
+      // If we have a session, load conversations using the production service
       if (status === 'authenticated') {
-        await connectToBackendAndLoadConversations();
+        const fetchedConversations = await conversationService.getConversations();
+        if (isMounted) {
+          setFromServer(fetchedConversations); // Cache in Zustand store
+        }
       }
       
     } catch (err: any) {
       console.error('Failed to load conversations:', err);
-      handleLoadError(err);
+      if (isMounted) {
+        handleLoadError(err);
+      }
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const connectToBackendAndLoadConversations = async () => {
-    if (!session?.user) {
-      setNeedsAuth(true);
-      return;
-    }
-
-    const googleIdToken = (session as any)?.idToken;
-    if (!googleIdToken) {
-      setError('Unable to connect to backend: Missing authentication token');
-      return;
-    }
-
-    // Attempt backend authentication with timeout and better error handling
-    try {
-      const authResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ google_token: googleIdToken }),
-        signal: AbortSignal.timeout(15000), // 15 second timeout
-      });
-
-      if (!authResponse.ok) {
-        const errorText = await authResponse.text();
-        throw new Error(`Backend authentication failed: ${authResponse.status}`);
-      }
-
-      const authData = await authResponse.json();
-      
-      // Cache JWT tokens for API use
-      if (authData.access_token && authData.expires_in) {
-        const expiryTime = Date.now() + (authData.expires_in * 1000);
-        localStorage.setItem('ai_social_backend_jwt', authData.access_token);
-        localStorage.setItem('ai_social_backend_jwt_expiry', expiryTime.toString());
-      }
-
-      setBackendConnected(true);
-
-      // Load conversations from backend and cache in store
-      const fetchedConversations = await conversationService.getConversations();
-      setFromServer(fetchedConversations); // Cache in Zustand store
-
-    } catch (error: any) {
-      setBackendConnected(false);
-      
-      if (error.name === 'TimeoutError' || error.message?.includes('timeout')) {
-        setError('Backend server is taking too long to respond. Please check if the server is running.');
-      } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-        setError('Backend server is currently down. Please start the backend server and try again.');
-      } else if (error.message?.includes('401') || error.message?.includes('authentication')) {
-        setError('Authentication failed. Please sign out and sign back in.');
-      } else {
-        setError(`Unable to connect to backend: ${error.message}`);
+      if (isMounted) {
+        setLoading(false);
       }
     }
+    
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
   };
 
   // Manual refresh function - forces fresh data fetch
   const handleRefresh = async () => {
-    setLoading(true);
+    setRefreshing(true);
     setError(null);
     try {
-      await loadConversations();
-    } catch (err) {
+      const fetchedConversations = await conversationService.getConversations();
+      setFromServer(fetchedConversations);
+    } catch (err: any) {
       console.error('Refresh failed:', err);
+      handleLoadError(err);
     } finally {
-      setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -179,45 +151,41 @@ export default function ConversationsPage() {
       setNeedsAuth(true);
       setError(null);
     } else if (err instanceof ConversationServiceError) {
-      setError('Backend services are currently unavailable.');
+      setError('Backend services are currently unavailable. Please try again later.');
+    } else if (err.message?.includes('NetworkError') || err.message?.includes('Failed to fetch')) {
+      setError('Network connection error. Please check your internet connection.');
+    } else if (err.message?.includes('timeout')) {
+      setError('Request timed out. The server may be experiencing high load.');
     } else {
       setError('Unable to load conversations. Please try again.');
     }
   };
 
-  // Google OAuth login using NextAuth
+  // Production-grade Google OAuth login
   const handleGoogleLogin = async () => {
     try {
-      // Use redirect: false to prevent VS Code sign-in issues
-      const result = await signIn('google', {
-        redirect: false,
-        callbackUrl: '/conversations',
-      });
+      const result = await signInWithGoogle('/conversations');
       
       if (result?.ok) {
         // Sign-in successful, reload to update session
         window.location.reload();
       } else if (result?.error) {
         console.error('Sign-in error:', result.error);
+        setError('Failed to sign in with Google. Please try again.');
       }
     } catch (error) {
       console.error('Login failed:', error);
+      setError('Failed to sign in with Google. Please try again.');
     }
   };
 
-  // Sign out and clear backend tokens
+  // Production-grade sign out
   const handleSignOut = async () => {
     try {
-      // Clear backend auth tokens
-      localStorage.removeItem('ai_social_backend_jwt');
-      localStorage.removeItem('ai_social_backend_jwt_expiry');
-      
-      const { signOut } = await import('next-auth/react');
-      await signOut({
-        callbackUrl: '/',
-      });
+      await signOutUser('/');
     } catch (error) {
       console.error('Sign out failed:', error);
+      setError('Failed to sign out. Please try again.');
     }
   };
 
@@ -261,9 +229,10 @@ export default function ConversationsPage() {
   // Filter conversations based on search and filter
   const filteredConversations = conversations.filter(conv => {
     const matchesSearch = conv.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesFilter = filter === 'all' || 
-                         (filter === 'posted' && false) || // No status field yet, treat as draft
-                         (filter === 'draft' && true);
+    
+    // TODO: Implement proper status filtering when backend supports it
+    const matchesFilter = filter === 'all'; // For now, only show all conversations
+    
     return matchesSearch && matchesFilter;
   });
 
@@ -351,10 +320,11 @@ export default function ConversationsPage() {
                   </div>
                   <div className="flex gap-2">
                     <button 
-                      onClick={loadConversations}
-                      className="px-3 py-1 text-xs bg-red-700/30 hover:bg-red-700/50 text-red-300 rounded transition-colors"
+                      onClick={handleRefresh}
+                      disabled={refreshing}
+                      className="px-3 py-1 text-xs bg-red-700/30 hover:bg-red-700/50 text-red-300 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Retry
+                      {refreshing ? 'Retrying...' : 'Retry'}
                     </button>
                   </div>
                 </div>

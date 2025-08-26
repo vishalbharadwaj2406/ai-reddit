@@ -1,0 +1,173 @@
+.markdownRoot {
+  /* Constrain width to match chat bubble content */
+  max-width: 100%;
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+  font-size: 0.95rem;
+  /* Prevent layout shift from long words/urls */
+  white-space: normal;
+}
+
+.markdownRoot :global(h1),
+.markdownRoot :global(h2),
+.markdownRoot :global(h3) {
+  color: #E6F3FF;
+  margin: 0.75rem 0 0.5rem;
+  font-weight: 700;
+}
+
+.markdownRoot :global(h4),
+.markdownRoot :global(h5),
+.markdownRoot :global(h6) {
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0.75rem 0 0.5rem;
+  font-weight: 600;
+}
+
+.markdownRoot :global(p) {
+  margin: 0.5rem 0;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.markdownRoot :global(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.markdownRoot :global(ul),
+.markdownRoot :global(ol) {
+  margin: 0.5rem 0 0.75rem 1.25rem;
+}
+
+.markdownRoot :global(li) {
+  margin: 0.25rem 0;
+}
+
+.markdownRoot :global(a) {
+  color: #60A5FA;
+  text-decoration: underline;
+}
+
+.blockquote {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid rgba(59, 130, 246, 0.4);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px) saturate(150%);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.inlineCode {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  padding: 0.125rem 0.375rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.875em;
+}
+
+.codeBlock {
+  position: relative;
+  margin: 0.75rem 0;
+  border-radius: 12px; /* spec: radius 12px */
+  border: 1px solid rgba(255, 255, 255, 0.10); /* hairline */
+  background: rgba(0, 0, 0, 0.60); /* spec: dark translucent */
+  backdrop-filter: blur(12px) saturate(160%); /* spec: 12px blur */
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  box-shadow: none; /* minimal, no glow */
+  overflow: hidden;
+}
+
+.codeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0.5rem; /* compact */
+  min-height: 28px; /* spec: slim 28px */
+  background: transparent; /* no header tint */
+  border-bottom: none; /* avoid extra lines */
+}
+
+.codeHeaderNoBorder {
+  border-bottom: none;
+}
+
+.codeLang {
+  font-size: 0.675rem; /* small label */
+  color: rgba(255, 255, 255, 0.75);
+  text-transform: lowercase;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid rgba(255, 255, 255, 0.10); /* hairline pill */
+  border-radius: 9999px;
+  background: transparent;
+}
+
+.copyBtn {
+  appearance: none;
+  border: none;
+  border-radius: 6px;
+  padding: 0; /* icon-only */
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.675rem;
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.copyBtn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.pre {
+  margin: 0;
+  padding: 0.5rem 0.75rem; /* spec: 8px x 12px */
+  overflow-x: hidden; /* avoid horizontal scrollbar */
+}
+
+/* Ensure soft wrapping while preserving indentation */
+.pre :global(pre) {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  margin: 0; /* SyntaxHighlighter may add defaults */
+  background: transparent !important; /* keep bubble color visible */
+  color: rgba(255, 255, 255, 0.92); /* slight contrast bump */
+}
+
+/* Ensure inner code has no background */
+.pre :global(code) {
+  background: transparent !important;
+  font-size: 0.9rem; /* compact */
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  overflow-x: auto;
+  display: block;
+}
+
+.table :global(th),
+.table :global(td) {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+}
+
+.hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  margin: 1rem 0;
+}

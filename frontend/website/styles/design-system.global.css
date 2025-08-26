@@ -283,6 +283,104 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+/* ============================================
+   PRODUCTION GLASS SCROLL SYSTEM - MAINTAINABLE
+   Beautiful iOS-style scrolling with contained scrollbars
+   ============================================ */
+
+/* Glass Scroll Architecture:
+   1. Container: Bounded between header and input (scrollbar contained)
+   2. Content: Negative margins + padding = scrolls behind glass elements
+   3. Variables: All dimensions calculated from layout constants
+   
+   CSS Properties set by JavaScript:
+   --header-height: Header height from LAYOUT_CONSTANTS
+   --input-height: Input height from LAYOUT_CONSTANTS  
+   --glass-safe-zone: Safe reading zone from LAYOUT_CONSTANTS
+   --glass-padding-top: Calculated padding for header + safe zone
+   --glass-padding-bottom: Calculated padding for input + safe zone
+   --sidebar-current: Dynamic sidebar width based on state
+*/
+
+/* Glass scroll content helper (for reference) */
+.glass-scroll-content {
+  /* Content extends beyond container bounds for glass effect */
+  margin-top: calc(-1 * var(--header-height));
+  margin-bottom: calc(-1 * var(--input-height));
+  /* Padding ensures content readability in safe zones */
+  padding-top: var(--glass-padding-top);
+  padding-bottom: var(--glass-padding-bottom);
+}
+
+/* Scrollbar contained within main content bounds */
+.glass-scroll-container {
+  position: absolute;
+  top: var(--header-height);
+  bottom: var(--input-height);
+  left: var(--sidebar-current);
+  right: 0;
+  overflow-y: auto;
+  transition: left 0.3s ease;
+}
+
+/* Production-grade: No hardcoded values, fully maintainable */
+
+/* Individual panels use flex-1 for equal distribution */
+.panel-layout-item {
+  flex: 1;
+  min-width: 0; /* Prevent flex overflow */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Responsive panel behavior based on count */
+[data-panel-count="1"] .panel-layout-item {
+  max-width: 100%;
+}
+
+[data-panel-count="2"] .panel-layout-item {
+  max-width: 50%;
+  min-width: 300px; /* Minimum usable width */
+}
+
+[data-panel-count="3"] .panel-layout-item {
+  max-width: 33.333%;
+  min-width: 250px; /* Minimum usable width */
+}
+
+/* Mobile responsiveness - stack panels on small screens */
+@media (max-width: 768px) {
+  .panel-layout-container {
+    flex-direction: column;
+    margin-left: 0; /* Reset sidebar offset on mobile */
+  }
+  
+  /* Reset input positioning on mobile */
+  .conversation-input-mobile {
+    left: 0 !important;
+  }
+  
+  .panel-layout-item {
+    max-width: 100%;
+    min-width: unset;
+    flex: 0 0 auto;
+    height: 33.333vh;
+  }
+  
+  [data-panel-count="1"] .panel-layout-item {
+    height: 100vh;
+  }
+  
+  [data-panel-count="2"] .panel-layout-item {
+    height: 50vh;
+  }
+}
+
+/* Panel borders with proper spacing */
+.panel-border-right {
+  border-right: 1px solid rgba(107, 114, 128, 0.3);
+}
+
 /* Glass Panel Active - For working content (Generated Blog) */
 .glass-panel-active {
   background: rgba(15, 30, 60, 0.4);

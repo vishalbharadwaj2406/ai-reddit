@@ -1,4 +1,4 @@
-import { apiClient, endpoints } from '../config/api';
+import { apiClient, endpoints } from '../config/api.production';
 
 export interface HealthStatus {
   backend: 'healthy' | 'unhealthy' | 'unknown';
