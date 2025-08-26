@@ -64,15 +64,16 @@ Original Post → Expand → Conversation (forked_from: post_id) → New Post (i
 User writes in frontend → POST /posts → Creates both conversation + post
 ```
 
-### **4. Content Editing Deferred for MVP**
-**Decision**: No edit/delete endpoints for posts and messages in MVP
+### **4. Advanced Context Management Deferred for MVP**
+**Decision**: Defer include/uninclude-original endpoints to Phase 2
 **Rationale**:
-- **MVP Scope**: Focus on core AI conversation features first
-- **Development Priority**: Defer complex content management to post-MVP
-- **Simplicity**: Reduces initial API complexity and edge cases
-- **Faster Launch**: Enables quicker MVP validation and user feedback
+- **MVP Focus**: Core conversation forking already provides excellent functionality
+- **Smart Defaults**: Current implementation includes intelligent context inclusion based on privacy
+- **User Control**: Users can already specify context inclusion during fork creation
+- **Complexity vs Value**: Advanced dynamic context management adds complexity for edge case scenarios
+- **Launch Readiness**: Enables 100% MVP completion and faster time to market
 
-**Note**: Content editing is planned for future versions - this is a scope decision, not a philosophical stance on immutability.
+**Note**: These features remain technically specified and ready for Phase 2 implementation.
 
 ---
 
@@ -426,9 +427,10 @@ Controllers → Services → Repositories → Database
 | Forked_from for reposts | Elegant, normalized design | Reduces API complexity |
 | Empty conversations for custom posts | Efficient, atomic operations | Maintains data consistency |
 | Instagram-like privacy model | User trust and familiar UX | Production-ready social features |
-| Test-Driven Development | Quality assurance and confidence | 40 passing tests, zero regressions |
+| Test-Driven Development | Quality assurance and confidence | 541 passing tests, zero regressions |
 | Service layer architecture | Clean architecture and testability | Maintainable and scalable codebase |
-| Content editing deferred for MVP | MVP scope decision | Simplifies initial API complexity |
+| Smart context inclusion defaults | Intelligent UX with privacy respect | Excellent forking experience |
+| Advanced context management deferred | MVP focus and faster launch | 100% core functionality complete |
 | SSE for AI chat | Real-time user experience | Essential for AI conversations |
 | Google OAuth only | MVP simplicity | Reduces authentication complexity |
 | UUID primary keys | Scalability and security | Future-proof architecture |

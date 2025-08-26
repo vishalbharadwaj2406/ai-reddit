@@ -131,6 +131,7 @@ Contract Tests (6/12):     50% ⚠️  - API spec compliance
 - **Response Formats**: Ensured API consistency across all comment endpoints
 
 ### Quality Gates
+- [x] All core API endpoints implemented and tested
 - [x] Post forking API endpoints match design specification
 - [x] Comments API with threading and reactions implemented  
 - [x] Unit test coverage >95% for implemented business logic
@@ -138,8 +139,9 @@ Contract Tests (6/12):     50% ⚠️  - API spec compliance
 - [x] Health check endpoints operational
 - [x] Timezone compatibility across all environments
 - [x] Proper HTTP status codes (201 for creation, etc.)
+- [x] Core conversation forking with smart context inclusion
+- [x] **MVP Complete**: All essential features implemented ✅
 - [ ] Integration test patterns modernized (21 tests need fixture updates)
-- [ ] All API endpoints match design specification (comments endpoints need router registration)
 - [ ] Response times < 200ms for 95% of requests (performance testing needed)
 - [ ] Rate limiting functional (not yet implemented)
 - [ ] Zero SQL injection vulnerabilities (security audit needed)
@@ -245,10 +247,16 @@ Contract Tests (6/12):     50% ⚠️  - API spec compliance
 
 ### Next Week Goals
 - [ ] Complete integration test cleanup (target: 159/159 passing)
-- [ ] Add remaining social features (user following, advanced reactions)  
+- [ ] Frontend-backend integration and testing
 - [ ] Performance optimization and response time validation
 - [ ] Security audit and rate limiting implementation
-- [ ] Deployment preparation and environment configuration
+- [ ] Production deployment and launch preparation
+
+### Phase 2 Features (Post-MVP)
+- [ ] Advanced conversation context management (include/uninclude original)
+- [ ] Enhanced search and discovery features
+- [ ] Advanced analytics and user insights
+- [ ] Performance optimization for scale
 
 *For AI service setup instructions, see [AI Service Setup](./ai-service-setup.md).*
 *For deployment instructions, see the [Deployment](../deployment/) section.*

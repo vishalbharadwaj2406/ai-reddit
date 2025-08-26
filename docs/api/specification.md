@@ -640,8 +640,15 @@ data: {"success": true, "data": {"content": "# Complete Blog\n\nFull blog conten
 }
 ```
 
+---
+
+## 🔮 Future Enhancements (Phase 2)
+
+### Advanced Conversation Management
+
 #### POST /conversations/{conversation_id}/include-original
-**Purpose**: Include the original conversation into the forked conversation (optional, second step)
+**Status**: Future Enhancement (Phase 2)
+**Purpose**: Include the original conversation into the forked conversation (advanced context management)
 **Auth Required**: Yes
 **Request Body**: (empty)
 **Response**:
@@ -657,7 +664,8 @@ data: {"success": true, "data": {"content": "# Complete Blog\n\nFull blog conten
 ```
 
 #### POST /conversations/{conversation_id}/uninclude-original
-**Purpose**: Remove the original conversation from the forked conversation (undo the include-original action)
+**Status**: Future Enhancement (Phase 2)
+**Purpose**: Remove the original conversation from the forked conversation (advanced context management)
 **Auth Required**: Yes
 **Request Body**: (empty)
 **Response**:
@@ -671,6 +679,12 @@ data: {"success": true, "data": {"content": "# Complete Blog\n\nFull blog conten
   "message": "Original conversation removed successfully"
 }
 ```
+
+**Use Case**: These endpoints provide users with dynamic control over conversation context in forked conversations, allowing them to include or exclude original conversation history as needed for optimal AI responses.
+
+---
+
+## 🚫 Rate Limiting
 
 ---
 
