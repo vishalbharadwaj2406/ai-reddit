@@ -29,6 +29,7 @@ export const endpoints = {
     session: '/api/v1/auth/session',
     googleLogin: '/api/v1/auth/google/login',
     logout: '/api/v1/auth/logout',
+    refresh: '/api/v1/auth/refresh',
     health: '/api/v1/auth/health',
   },
 
@@ -179,6 +180,8 @@ export class ApiClient {
   private circuitBreaker: CircuitBreaker;
   private requestInterceptors: RequestInterceptor[] = [];
   private responseInterceptors: ResponseInterceptor[] = [];
+  private isRefreshing = false;
+  private refreshPromise: Promise<void> | null = null;
   private retryConfig = {
     maxRetries: 3,
     baseDelay: 1000, // 1 second
@@ -244,11 +247,69 @@ export class ApiClient {
     }
 
     return this.circuitBreaker.execute(async () => {
-      return this.requestWithRetry<T>(endpoint, requestConfig);
+      let response = await this.makeRequest<T>(endpoint, requestConfig);
+      
+      // If 401 and we haven't tried refreshing, attempt refresh
+      if (response instanceof ApiError && response.type === ApiErrorType.UNAUTHORIZED && !this.isRefreshing) {
+        await this.handleTokenRefresh();
+        // Retry the original request
+        response = await this.makeRequest<T>(endpoint, requestConfig);
+      }
+      
+      if (response instanceof ApiError) {
+        throw response;
+      }
+      
+      return response;
     });
   }
 
-  private async requestWithRetry<T>(endpoint: string, options: RequestInit, attempt = 0): Promise<T> {
+  private async makeRequest<T>(endpoint: string, options: RequestInit): Promise<T | ApiError> {
+    return this.requestWithRetry<T>(endpoint, options);
+  }
+
+  private async handleTokenRefresh(): Promise<void> {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = this.performRefresh();
+
+    try {
+      await this.refreshPromise;
+    } finally {
+      this.isRefreshing = false;
+      this.refreshPromise = null;
+    }
+  }
+
+  private async performRefresh(): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/v1/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        // Refresh failed, redirect to login
+        if (typeof window !== 'undefined') {
+          const { clearSessionCache } = await import('../auth/session');
+          clearSessionCache();
+          window.location.href = '/login';
+        }
+        throw new Error('Token refresh failed');
+      }
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      throw error;
+    }
+  }
+
+  private async requestWithRetry<T>(endpoint: string, options: RequestInit, attempt = 0): Promise<T | ApiError> {
     const url = `${this.baseURL}${endpoint}`;
     
     try {
@@ -280,6 +341,11 @@ export class ApiClient {
       if (!response.ok) {
         const apiError = await this.createApiError(response);
         
+        // Don't retry on 401s - let the main request method handle token refresh
+        if (apiError.type === ApiErrorType.UNAUTHORIZED) {
+          return apiError;
+        }
+        
         // Check if we should retry
         if (attempt < this.retryConfig.maxRetries && this.retryConfig.retryCondition(apiError)) {
           const delay = this.calculateRetryDelay(attempt);
@@ -288,7 +354,7 @@ export class ApiClient {
           return this.requestWithRetry<T>(endpoint, options, attempt + 1);
         }
 
-        throw apiError;
+        return apiError;
       }
 
       // Handle empty responses (like from DELETE requests)
@@ -312,7 +378,7 @@ export class ApiClient {
 
     } catch (error) {
       if (error instanceof ApiError) {
-        throw error; // Re-throw API errors
+        return error; // Return API errors instead of throwing
       }
 
       // Handle network errors and timeouts
@@ -330,7 +396,7 @@ export class ApiClient {
           return this.requestWithRetry<T>(endpoint, options, attempt + 1);
         }
         
-        throw timeoutError;
+        return timeoutError;
       }
 
       // Handle other network errors
@@ -346,7 +412,7 @@ export class ApiClient {
         return this.requestWithRetry<T>(endpoint, options, attempt + 1);
       }
 
-      throw networkError;
+      return networkError;
     }
   }
 
@@ -370,15 +436,14 @@ export class ApiClient {
     switch (response.status) {
       case 401:
         errorType = ApiErrorType.UNAUTHORIZED;
-        // Handle authentication errors by potentially redirecting
+        // Don't immediately redirect - let the request method handle token refresh
         if (typeof window !== 'undefined') {
           // Import session utilities dynamically to avoid circular dependency
           const { clearSessionCache } = await import('../auth/session');
-          clearSessionCache();
           
-          // Only redirect if this isn't a session check request
-          if (!response.url.includes('/auth/session')) {
-            window.location.href = `${this.baseURL}/api/v1/auth/google/login`;
+          // Only clear cache if this isn't a refresh request
+          if (!response.url.includes('/auth/refresh')) {
+            clearSessionCache();
           }
         }
         break;

@@ -1,5 +1,5 @@
 /**
- * Production-Grade Session Guard Component
+ * Production-grade Session Guard Component
  * 
  * Provides secure route protection with proper loading states, error handling,
  * and seamless user experience for both public and protected routes.
@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { useSessionContext } from '../providers/SessionWrapper';
+import { isPostAuthentication } from '@/lib/auth/session';
 
 interface SessionGuardProps {
   children: React.ReactNode;
@@ -46,6 +47,7 @@ function LoadingSpinner({ size = 'md', message = 'Loading...' }: {
  * Production SessionGuard Component
  * 
  * Handles all authentication states with proper error boundaries and loading states.
+ * Now works with simplified middleware for reliable route protection.
  * 
  * @param children - Components to render when authenticated
  * @param fallback - Custom fallback for unauthenticated users
@@ -60,11 +62,16 @@ export default function SessionGuard({
 }: SessionGuardProps) {
   const { isAuthenticated, loading, error, isInitialized } = useSessionContext();
 
-  // Show loading state while session is being initialized
+  // Show enhanced loading state for initialization and post-authentication
   if (!isInitialized || loading) {
+    const isPostAuth = isPostAuthentication();
+    const loadingMessage = isPostAuth 
+      ? 'Completing authentication...' 
+      : isInitialized ? 'Validating session...' : 'Initializing...';
+    
     return loadingComponent || (
       <div className="min-h-screen flex items-center justify-center">
-        <LoadingSpinner size="lg" message="Initializing session..." />
+        <LoadingSpinner size="lg" message={loadingMessage} />
       </div>
     );
   }
@@ -93,22 +100,20 @@ export default function SessionGuard({
 
   // Handle unauthenticated users on protected routes
   if (requireAuth && !isAuthenticated) {
+    // Redirect to home page with callback URL
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname + window.location.search;
+      const redirectUrl = currentPath !== '/' 
+        ? `/?callbackUrl=${encodeURIComponent(currentPath)}` 
+        : '/';
+      
+      console.log('🔐 SessionGuard: Redirecting unauthenticated user to home');
+      window.location.href = redirectUrl;
+    }
+    
     return fallback || (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center max-w-md mx-auto p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">
-            Authentication Required
-          </h2>
-          <p className="text-gray-600 mb-4">
-            Please sign in to access this page.
-          </p>
-          <button 
-            onClick={() => window.location.href = '/api/v1/auth/google'} 
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-          >
-            Sign In
-          </button>
-        </div>
+        <LoadingSpinner size="md" message="Redirecting to sign in..." />
       </div>
     );
   }

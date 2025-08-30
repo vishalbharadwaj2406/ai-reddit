@@ -217,18 +217,7 @@
   opacity: 1;
 }
 
-/* Header Sign In Button - Compact version of primary button */
-.signInButton {
-  composes: glass-button-primary from '../../styles/design-system.global.css';
-  padding: 10px var(--space-lg);
-  font-size: var(--text-sm);
-  min-width: 80px;
-  border-radius: var(--radius-md);
-}
-
-.signInButton:hover {
-  transform: translateY(-1px);
-}
+/* REMOVED: Sign In Button styles - now handled by Button component */
 
 /* ============================================
    PROFILE PICTURE RING & DROPDOWN

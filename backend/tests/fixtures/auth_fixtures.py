@@ -57,6 +57,33 @@ def valid_refresh_token(sample_user):
 
 
 @pytest.fixture
+def expired_refresh_token(sample_user):
+    """Generate an expired refresh token for testing."""
+    from datetime import timedelta
+    # Create token that expired 1 day ago
+    expire = datetime.now(timezone.utc) - timedelta(days=1)
+    claims = {
+        "sub": str(sample_user.user_id),
+        "type": "refresh",
+        "exp": expire,
+        "iat": datetime.now(timezone.utc) - timedelta(days=31),
+        "jti": "test-jti-expired",
+        "fingerprint": "test-fingerprint"
+    }
+    return jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+@pytest.fixture
+def cors_headers():
+    """Headers for cross-origin requests"""
+    return {
+        "Origin": "http://localhost:3000",
+        "Access-Control-Request-Method": "POST",
+        "Access-Control-Request-Headers": "Content-Type"
+    }
+
+
+@pytest.fixture
 def expired_token(sample_user):
     """Generate an expired JWT token for testing."""
     from datetime import timedelta
@@ -67,6 +94,22 @@ def expired_token(sample_user):
         "exp": expire,
         "iat": datetime.now(timezone.utc) - timedelta(hours=2),
         "type": "access"
+    }
+    return jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+
+
+@pytest.fixture
+def expired_refresh_token(sample_user):
+    """Generate an expired refresh token for testing."""
+    from datetime import timedelta
+    # Create refresh token that expired 1 day ago
+    expire = datetime.now(timezone.utc) - timedelta(days=1)
+    claims = {
+        "sub": str(sample_user.user_id),
+        "exp": expire,
+        "iat": datetime.now(timezone.utc) - timedelta(days=2),
+        "type": "refresh",
+        "device_fingerprint": "test_device_fingerprint"
     }
     return jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 

@@ -26,34 +26,121 @@ export enum AuthErrorType {
   SESSION_EXPIRED = 'SESSION_EXPIRED',
   SERVER_ERROR = 'SERVER_ERROR',
   INVALID_RESPONSE = 'INVALID_RESPONSE',
-  TIMEOUT = 'TIMEOUT'
+  TIMEOUT = 'TIMEOUT',
+  POST_AUTH_SYNC_FAILED = 'POST_AUTH_SYNC_FAILED'
 }
 
 export class AuthError extends Error {
   constructor(
     public type: AuthErrorType,
     message: string,
-    public statusCode?: number
+    public statusCode?: number,
+    public retryable: boolean = false
   ) {
     super(message);
     this.name = 'AuthError';
   }
 }
 
-// Get API base URL from environment with validation - BFF PATTERN
-const API_BASE_URL = (() => {
-  // BFF Pattern: API and frontend served from same origin
-  const url = process.env.NEXT_PUBLIC_API_URL || '';
-  try {
-    if (url) {
-      new URL(url); // Validate URL format
-      return url.replace(/\/$/, ''); // Remove trailing slash
+// Production-grade authentication metrics tracking
+interface AuthMetrics {
+  sessionValidationTime: number;
+  cacheHitRate: number;
+  authLoopDetection: number;
+  postAuthLatency: number;
+}
+
+/**
+ * Track authentication metrics for production monitoring
+ * Integrates with monitoring services (DataDog, New Relic, etc.)
+ */
+function trackAuthMetric(metric: keyof AuthMetrics, value: number, tags?: Record<string, string>): void {
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`📊 Auth Metric [${metric}]: ${value}ms`, tags || '');
+  }
+  
+  // TODO: Integrate with your monitoring service
+  // Example: datadog.increment(`auth.${metric}`, value, tags);
+}
+
+/**
+ * Production-grade circuit breaker for authentication reliability
+ * Prevents cascading failures and auth loops
+ */
+class AuthCircuitBreaker {
+  private failures = 0;
+  private lastFailure = 0;
+  private readonly maxFailures = 3;
+  private readonly resetTimeout = 60000; // 1 minute
+  
+  isOpen(): boolean {
+    if (this.failures >= this.maxFailures) {
+      if (Date.now() - this.lastFailure > this.resetTimeout) {
+        this.reset();
+        return false;
+      }
+      return true;
     }
-    // BFF: Use relative URLs for same-origin setup
-    return '';
+    return false;
+  }
+  
+  async execute<T>(operation: () => Promise<T>): Promise<T> {
+    if (this.isOpen()) {
+      throw new AuthError(
+        AuthErrorType.SERVER_ERROR,
+        'Authentication circuit breaker is open - too many failures',
+        503,
+        true
+      );
+    }
+    
+    try {
+      const result = await operation();
+      this.onSuccess();
+      return result;
+    } catch (error) {
+      this.onFailure();
+      throw error;
+    }
+  }
+  
+  private onSuccess(): void {
+    this.failures = 0;
+    this.lastFailure = 0;
+  }
+  
+  private onFailure(): void {
+    this.failures++;
+    this.lastFailure = Date.now();
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(`🔥 Auth circuit breaker: ${this.failures}/${this.maxFailures} failures`);
+    }
+  }
+  
+  private reset(): void {
+    this.failures = 0;
+    this.lastFailure = 0;
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 Auth circuit breaker: Reset after timeout');
+    }
+  }
+}
+
+// Global circuit breaker instance
+const authCircuitBreaker = new AuthCircuitBreaker();
+
+// Get API base URL from environment with validation - CROSS-ORIGIN PATTERN
+const API_BASE_URL = (() => {
+  // Cross-origin pattern: API and frontend on separate ports/domains
+  const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  try {
+    new URL(url); // Validate URL format
+    return url.replace(/\/$/, ''); // Remove trailing slash
   } catch {
-    console.error('Invalid API_BASE_URL, using relative URLs for BFF pattern');
-    return '';
+    console.error('Invalid API_BASE_URL, falling back to localhost:8000');
+    return 'http://localhost:8000';
   }
 })();
 
@@ -62,13 +149,33 @@ interface SessionCache {
   data: SessionStatus | null;
   timestamp: number;
   ttl: number; // Time to live in milliseconds
+  state: 'stable' | 'post-auth' | 'error'; // Cache state for different TTL strategies
 }
 
 const sessionCache: SessionCache = {
   data: null,
   timestamp: 0,
-  ttl: 30000 // 30 seconds cache for production performance
+  ttl: 30000, // 30 seconds default cache for production performance
+  state: 'stable'
 };
+
+// Dynamic TTL based on authentication state (Production pattern)
+const CACHE_TTL_STRATEGY = {
+  stable: 30000,        // 30 seconds for stable authenticated state
+  'post-auth': 5000,    // 5 seconds after authentication for quick synchronization
+  error: 10000          // 10 seconds for error states
+} as const;
+
+/**
+ * Clear session cache and reset to stable state
+ * Used for post-authentication cache invalidation
+ */
+export function clearSessionCache(): void {
+  sessionCache.data = null;
+  sessionCache.timestamp = 0;
+  sessionCache.state = 'stable';
+  sessionCache.ttl = CACHE_TTL_STRATEGY.stable;
+}
 
 // Request timeout configuration
 const REQUEST_TIMEOUT = 10000; // 10 seconds
@@ -88,9 +195,33 @@ function fetchWithTimeout(url: string, options: RequestInit, timeout = REQUEST_T
 /**
  * Get current session status from backend with caching and comprehensive error handling
  */
+/**
+ * Enhanced session status check with post-authentication detection
+ * Production-grade implementation with dynamic cache TTL
+ */
 export async function getSessionStatus(forceRefresh = false): Promise<SessionStatus> {
+  const startTime = Date.now();
+  
+  // Detect post-authentication state from URL parameters
+  const isPostAuth = typeof window !== 'undefined' && 
+    (window.location.search.includes('auth_success=true') || 
+     window.location.search.includes('auth_timestamp='));
+
+  // Use aggressive refresh for post-auth scenarios
+  if (isPostAuth) {
+    sessionCache.state = 'post-auth';
+    sessionCache.ttl = CACHE_TTL_STRATEGY['post-auth'];
+    forceRefresh = true; // Always force refresh after authentication
+  }
+
   // Check cache first (unless force refresh)
-  if (!forceRefresh && sessionCache.data && Date.now() - sessionCache.timestamp < sessionCache.ttl) {
+  const cacheValid = !forceRefresh && 
+    sessionCache.data && 
+    Date.now() - sessionCache.timestamp < sessionCache.ttl;
+    
+  if (cacheValid && sessionCache.data) {
+    // Track cache hit
+    trackAuthMetric('cacheHitRate', Date.now() - startTime, { source: 'cache' });
     return sessionCache.data;
   }
 
@@ -102,19 +233,36 @@ export async function getSessionStatus(forceRefresh = false): Promise<SessionSta
   };
 
   try {
-    const response = await fetchWithTimeout(`${API_BASE_URL}/api/v1/auth/session`, {
-      method: 'GET',
-      credentials: 'include', // Include HTTP-only cookies
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      // Security headers for production
-      cache: 'no-store'
-    });
+    const response = await authCircuitBreaker.execute(() => 
+      fetchWithTimeout(`${API_BASE_URL}/api/v1/auth/session`, {
+        method: 'GET',
+        credentials: 'include', // Include HTTP-only cookies
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        // Security headers for production
+        cache: 'no-store'
+      })
+    );
 
     if (!response.ok) {
       if (response.status === 401) {
+        // Try token refresh before giving up
+        const refreshResponse = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (refreshResponse.ok) {
+          // Retry original request after successful refresh
+          return getSessionStatus(true);
+        }
+        
+        // Refresh failed, user is not authenticated
         const result: SessionStatus = {
           isAuthenticated: false,
           user: null,
@@ -159,9 +307,27 @@ export async function getSessionStatus(forceRefresh = false): Promise<SessionSta
       loading: false,
     };
 
-    // Cache successful result
+    // Production-grade cache strategy: Dynamic TTL based on state
     sessionCache.data = result;
     sessionCache.timestamp = Date.now();
+    
+    // Set appropriate cache state for next requests
+    if (isPostAuth) {
+      sessionCache.state = 'stable'; // Transition to stable after successful post-auth check
+      sessionCache.ttl = CACHE_TTL_STRATEGY.stable;
+      
+      // Track post-auth performance
+      trackAuthMetric('postAuthLatency', Date.now() - startTime, { 
+        success: 'true',
+        authenticated: String(isAuthenticated)
+      });
+    } else {
+      // Track normal session validation
+      trackAuthMetric('sessionValidationTime', Date.now() - startTime, {
+        source: 'backend',
+        authenticated: String(isAuthenticated)
+      });
+    }
     
     return result;
 
@@ -174,10 +340,11 @@ export async function getSessionStatus(forceRefresh = false): Promise<SessionSta
              (error instanceof Error ? error.message : 'Failed to check session status')
     };
 
-    // Cache error state with shorter TTL
+    // Production-grade error caching with shorter TTL
     sessionCache.data = errorResult;
     sessionCache.timestamp = Date.now();
-    sessionCache.ttl = 5000; // 5 seconds for errors
+    sessionCache.state = 'error';
+    sessionCache.ttl = CACHE_TTL_STRATEGY.error;
 
     // Log error for debugging in development
     if (process.env.NODE_ENV === 'development') {
@@ -186,6 +353,73 @@ export async function getSessionStatus(forceRefresh = false): Promise<SessionSta
 
     return errorResult;
   }
+}
+
+/**
+ * Production-grade post-authentication synchronization
+ * Handles cache invalidation and ensures all layers are synchronized
+ */
+export async function handlePostAuthSuccess(callbackUrl = '/feed'): Promise<void> {
+  try {
+    console.log('🎉 Starting post-auth synchronization');
+    
+    // Step 1: Clear all caches to force fresh validation
+    clearSessionCache();
+    
+    // Step 2: Wait for cookie propagation (shorter delay for better UX)
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Step 3: Force fresh session validation
+    const session = await getSessionStatus(true);
+    
+    if (!session.isAuthenticated) {
+      console.log('🚀 Post-auth: Session not authenticated yet, waiting...');
+      // Wait a bit more and try once more
+      await new Promise(resolve => setTimeout(resolve, 200));
+      const retrySession = await getSessionStatus(true);
+      
+      if (!retrySession.isAuthenticated) {
+        console.warn('🚨 Post-auth: Session still not authenticated after retry');
+        // Don't throw error, let client handle fallback
+        return;
+      }
+    }
+    
+    // Step 4: Clean URL parameters
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('auth_success');
+      url.searchParams.delete('auth_timestamp');
+      
+      // Use replaceState to avoid adding to browser history
+      window.history.replaceState({}, '', url.toString());
+    }
+    
+    // Step 5: Navigate to intended destination after synchronization
+    if (typeof window !== 'undefined') {
+      console.log(`🎉 Post-auth complete: Navigating to ${callbackUrl}`);
+      setTimeout(() => {
+        window.location.href = callbackUrl;
+      }, 50); // Minimal delay for final synchronization
+    }
+    
+  } catch (error) {
+    console.error('Post-auth synchronization failed:', error);
+    // Fallback: Direct navigation without throwing
+    if (typeof window !== 'undefined') {
+      window.location.href = callbackUrl;
+    }
+  }
+}
+
+/**
+ * Check if current URL indicates post-authentication state
+ */
+export function isPostAuthentication(): boolean {
+  if (typeof window === 'undefined') return false;
+  
+  const params = new URLSearchParams(window.location.search);
+  return params.has('auth_success') || params.has('auth_timestamp');
 }
 
 /**
@@ -252,15 +486,6 @@ export async function isAuthenticated(useCache = true): Promise<boolean> {
 export async function getCurrentUser(): Promise<SessionUser | null> {
   const session = await getSessionStatus();
   return session.user;
-}
-
-/**
- * Clear session cache (useful for forcing fresh data)
- */
-export function clearSessionCache(): void {
-  sessionCache.data = null;
-  sessionCache.timestamp = 0;
-  sessionCache.ttl = 30000; // Reset TTL
 }
 
 /**

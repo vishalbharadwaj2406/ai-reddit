@@ -8,7 +8,7 @@ Uses modern Pydantic V2 patterns with proper validation.
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from enum import Enum
 
 
@@ -29,7 +29,7 @@ class CommentReactionRequest(BaseModel):
         description="Type of reaction to add/update"
     )
 
-    model_config = {"str_strip_whitespace": True}
+    model_config = ConfigDict(str_strip_whitespace=True)
 
 
 class CommentReactionResponse(BaseModel):
@@ -40,7 +40,7 @@ class CommentReactionResponse(BaseModel):
     reactionType: Optional[str] = Field(None, description="Type of reaction (null if removed)")
     createdAt: Optional[datetime] = Field(None, description="When reaction was created")
     
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CommentReactionCountsResponse(BaseModel):
@@ -59,4 +59,4 @@ class CommentReactionCountsResponse(BaseModel):
     )
     userReaction: Optional[str] = Field(None, description="Current user's reaction")
     
-    model_config = {"from_attributes": True}
+    model_config = ConfigDict(from_attributes=True)

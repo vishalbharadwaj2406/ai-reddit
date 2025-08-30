@@ -57,28 +57,68 @@ class JWTManager:
         return jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
     
     @staticmethod
-    def create_refresh_token(user_id: str) -> str:
+    def create_refresh_token(user_id: str, device_fingerprint: str = None) -> str:
         """
         Create a JWT refresh token for a user.
         
         Args:
             user_id: User's unique identifier
+            device_fingerprint: Optional device fingerprint for security
             
         Returns:
             Encoded JWT refresh token
         """
         # Calculate expiration time (longer than access token)
-        expire = datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
+        expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         
         claims = {
             "sub": user_id,
             "exp": expire,
             "iat": datetime.now(timezone.utc),
             "type": "refresh",
-            "jti": str(uuid.uuid4())
+            "jti": str(uuid.uuid4()),
+            "fingerprint": device_fingerprint or "default"
         }
         
         return jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    
+    @staticmethod
+    def refresh_access_token(refresh_token: str) -> dict:
+        """
+        Exchange refresh token for new access token.
+        
+        Args:
+            refresh_token: Valid refresh token
+            
+        Returns:
+            Dictionary with new access_token, refresh_token, and token_type
+            
+        Raises:
+            JWTError: If refresh token is invalid
+        """
+        try:
+            payload = jwt.decode(refresh_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+            
+            if payload.get("type") != "refresh":
+                raise JWTError("Invalid token type")
+                
+            user_id = payload.get("sub")
+            if not user_id:
+                raise JWTError("Token missing user ID")
+                
+            # Create new access token
+            new_access_token = JWTManager.create_access_token(user_id)
+            new_refresh_token = JWTManager.create_refresh_token(user_id, payload.get("fingerprint"))
+            
+            return {
+                "access_token": new_access_token,
+                "refresh_token": new_refresh_token,
+                "token_type": "bearer"
+            }
+            
+        except JWTError as e:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=401, detail=f"Invalid refresh token: {str(e)}")
     
     @staticmethod
     def decode_token(token: str) -> Dict[str, Any]:

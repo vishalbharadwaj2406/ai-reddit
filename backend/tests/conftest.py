@@ -22,6 +22,9 @@ from app.models.conversation import Conversation
 from app.models import *  # This imports all models including PostFork
 from app.main import app
 
+# Import test fixtures
+from tests.fixtures.auth_fixtures import *
+
 
 # =====================================================
 # TEST DATABASE CONFIGURATION  

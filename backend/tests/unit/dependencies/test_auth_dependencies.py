@@ -222,3 +222,74 @@ class TestAuthenticationDependencies:
         result = await get_current_user_optional(credentials, mock_db)
         
         assert result is None
+
+
+class TestRefreshTokens:
+    """Test refresh token functionality"""
+    
+    def test_create_refresh_token(self, sample_user):
+        """Test refresh token creation"""
+        refresh_token = JWTManager.create_refresh_token(str(sample_user.user_id))
+        
+        # Decode to verify structure
+        payload = jwt.decode(refresh_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        
+        assert payload["sub"] == str(sample_user.user_id)
+        assert payload["type"] == "refresh"
+        assert "exp" in payload
+        assert "iat" in payload
+        assert "jti" in payload
+        assert "fingerprint" in payload
+    
+    def test_create_refresh_token_with_fingerprint(self, sample_user):
+        """Test refresh token creation with custom fingerprint"""
+        fingerprint = "test-device-fingerprint"
+        refresh_token = JWTManager.create_refresh_token(str(sample_user.user_id), fingerprint)
+        
+        payload = jwt.decode(refresh_token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        
+        assert payload["fingerprint"] == fingerprint
+    
+    def test_refresh_access_token_success(self, sample_user):
+        """Test successful token refresh"""
+        refresh_token = JWTManager.create_refresh_token(str(sample_user.user_id))
+        
+        tokens = JWTManager.refresh_access_token(refresh_token)
+        
+        assert "access_token" in tokens
+        assert "refresh_token" in tokens
+        assert tokens["token_type"] == "bearer"
+        
+        # Verify the new tokens are valid
+        access_payload = jwt.decode(tokens["access_token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        refresh_payload = jwt.decode(tokens["refresh_token"], settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        
+        assert access_payload["sub"] == str(sample_user.user_id)
+        assert access_payload["type"] == "access"
+        assert refresh_payload["sub"] == str(sample_user.user_id)
+        assert refresh_payload["type"] == "refresh"
+    
+    def test_refresh_token_invalid_type(self):
+        """Test refresh with invalid token type"""
+        # Create access token instead of refresh token
+        access_token = JWTManager.create_access_token("test-user-id")
+        
+        with pytest.raises(HTTPException) as exc_info:
+            JWTManager.refresh_access_token(access_token)
+        
+        assert exc_info.value.status_code == 401
+        assert "Invalid token type" in str(exc_info.value.detail)
+    
+    def test_refresh_token_expired(self, expired_refresh_token):
+        """Test refresh with expired token"""
+        with pytest.raises(HTTPException) as exc_info:
+            JWTManager.refresh_access_token(expired_refresh_token)
+        
+        assert exc_info.value.status_code == 401
+    
+    def test_refresh_token_invalid_format(self):
+        """Test refresh with malformed token"""
+        with pytest.raises(HTTPException) as exc_info:
+            JWTManager.refresh_access_token("invalid.token.format")
+        
+        assert exc_info.value.status_code == 401

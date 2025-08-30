@@ -1,42 +1,12 @@
 /**
- * Production-Grade Authentication Middleware
+ * Production-Grade Route Protection Middleware
  * 
- * Handles route protection at the middleware level with backend validation
- * and performance optimization through caching
+ * Simplified middleware that handles route protection without backend calls.
+ * Authentication state is managed client-side through SessionWrapper for reliability.
  */
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-
-// Production-grade session cache for middleware performance
-interface SessionValidationCache {
-  [sessionToken: string]: {
-    isValid: boolean;
-    timestamp: number;
-    ttl: number;
-  };
-}
-
-const sessionCache: SessionValidationCache = {};
-const CACHE_TTL = 30000; // 30 seconds cache for middleware performance
-
-/**
- * Clean up expired cache entries to prevent memory leaks
- */
-function cleanupExpiredCache(): void {
-  const now = Date.now();
-  Object.keys(sessionCache).forEach(token => {
-    const entry = sessionCache[token];
-    if (now - entry.timestamp > entry.ttl) {
-      delete sessionCache[token];
-    }
-  });
-}
-
-// Clean up cache every 5 minutes in production
-if (typeof setInterval !== 'undefined') {
-  setInterval(cleanupExpiredCache, 300000);
-}
 
 // Define protected and public routes
 const PROTECTED_ROUTES = [
@@ -63,92 +33,6 @@ const PUBLIC_ROUTES = [
 ];
 
 /**
- * Check if the user has a valid authentication session by validating with backend
- */
-async function isAuthenticated(request: NextRequest): Promise<boolean> {
-  try {
-    // Check for our backend session cookie (matches backend SESSION_COOKIE_NAME: ai_social_session)
-    const sessionToken = request.cookies.get('ai_social_session')?.value;
-    
-    if (!sessionToken) {
-      return false;
-    }
-    
-    // Check cache first for performance
-    const cachedResult = sessionCache[sessionToken];
-    if (cachedResult && Date.now() - cachedResult.timestamp < cachedResult.ttl) {
-      return cachedResult.isValid;
-    }
-    
-    // Production-grade validation: Actually validate with backend API
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-    
-    // Create a timeout promise for reliability
-    const timeoutPromise = new Promise<Response>((_, reject) => {
-      setTimeout(() => reject(new Error('Session validation timeout')), 5000);
-    });
-    
-    // Validate session with backend - Production-grade header forwarding
-    const fetchPromise = fetch(`${apiBaseUrl}/api/v1/auth/session`, {
-      method: 'GET',
-      headers: {
-        'Cookie': `ai_social_session=${sessionToken}`,
-        'Accept': 'application/json',
-        // Forward original browser headers for fingerprint validation (industry standard)
-        'User-Agent': request.headers.get('user-agent') || 'AI-Social-Middleware/1.0',
-        'X-Forwarded-For': request.headers.get('x-forwarded-for') || request.nextUrl.hostname || '127.0.0.1',
-        'X-Real-IP': request.headers.get('x-real-ip') || request.nextUrl.hostname || '127.0.0.1',
-      },
-      cache: 'no-store'
-    });
-    
-    const response = await Promise.race([fetchPromise, timeoutPromise]);
-    
-    if (!response.ok) {
-      // Cache negative result briefly to prevent spam
-      sessionCache[sessionToken] = {
-        isValid: false,
-        timestamp: Date.now(),
-        ttl: 5000 // 5 seconds for negative cache
-      };
-      return false;
-    }
-    
-    const sessionData = await response.json();
-    const isValid = sessionData.authenticated === true;
-    
-    // Cache the result
-    sessionCache[sessionToken] = {
-      isValid,
-      timestamp: Date.now(),
-      ttl: isValid ? CACHE_TTL : 5000
-    };
-    
-    return isValid;
-    
-  } catch (error) {
-    console.error('Auth validation failed:', error);
-    // In case of error, default to false for security
-    return false;
-  }
-}
-
-/**
- * Get the appropriate redirect URL based on the original request
- */
-function getRedirectUrl(request: NextRequest, destination: string): string {
-  const url = request.nextUrl.clone();
-  url.pathname = destination;
-  
-  // Preserve the original URL as a callback for post-login redirect
-  if (destination === '/') {
-    url.searchParams.set('callbackUrl', request.nextUrl.pathname + request.nextUrl.search);
-  }
-  
-  return url.toString();
-}
-
-/**
  * Check if a route requires authentication
  */
 function isProtectedRoute(pathname: string): boolean {
@@ -167,68 +51,76 @@ function isAuthRoute(pathname: string): boolean {
 }
 
 /**
- * Main middleware function
+ * Check if user has session cookie (basic check only)
+ */
+function hasSessionCookie(request: NextRequest): boolean {
+  return request.cookies.has('ai_social_session');
+}
+
+/**
+ * Get the appropriate redirect URL based on the original request
+ */
+function getRedirectUrl(request: NextRequest, destination: string): string {
+  const url = request.nextUrl.clone();
+  url.pathname = destination;
+  
+  // Preserve the original URL as a callback for post-login redirect
+  if (destination === '/') {
+    url.searchParams.set('callbackUrl', request.nextUrl.pathname + request.nextUrl.search);
+  }
+  
+  return url.toString();
+}
+
+/**
+ * Production-grade simplified middleware function
+ * 
+ * This middleware only handles basic route protection without backend authentication calls.
+ * All authentication state management is handled client-side through SessionWrapper.
  */
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isUserAuthenticated = await isAuthenticated(request);
-
-  // Development mode: Add comprehensive debug headers
-  if (process.env.NODE_ENV === 'development') {
-    const response = NextResponse.next();
-    response.headers.set('X-Auth-Status', isUserAuthenticated ? 'authenticated' : 'unauthenticated');
-    response.headers.set('X-Route-Type', isProtectedRoute(pathname) ? 'protected' : 'public');
-    response.headers.set('X-Middleware-Version', '2.1-production-headers');
-    response.headers.set('X-Session-Cookie-Present', request.cookies.has('ai_social_session') ? 'true' : 'false');
-    response.headers.set('X-User-Agent-Forwarded', request.headers.get('user-agent')?.substring(0, 50) || 'none');
-    
-    // Continue with normal middleware logic but return the response with debug headers
-    if (isProtectedRoute(pathname) && !isUserAuthenticated) {
-      const redirectUrl = getRedirectUrl(request, '/');
-      console.log(`🔐 Middleware: Redirecting unauthenticated user from ${pathname} to ${redirectUrl}`);
-      return NextResponse.redirect(redirectUrl);
-    }
-    
-    if (isAuthRoute(pathname) && isUserAuthenticated) {
-      const callbackUrl = request.nextUrl.searchParams.get('callbackUrl') || '/conversations';
-      const redirectUrl = getRedirectUrl(request, callbackUrl);
-      console.log(`✅ Middleware: Redirecting authenticated user from ${pathname} to ${redirectUrl}`);
-      return NextResponse.redirect(redirectUrl);
-    }
-    
-    console.log(`🚀 Middleware: Allowing access to ${pathname} (auth: ${isUserAuthenticated})`);
-    return response;
-  }
-
-  // Production mode: Optimized middleware logic with minimal logging
   
-  // Handle protected routes
+  // Handle post-authentication URLs with special logic
+  const isPostAuth = request.nextUrl.searchParams.has('auth_success') ||
+                     request.nextUrl.searchParams.has('auth_timestamp');
+  
+  if (isPostAuth && pathname === '/') {
+    // For post-auth, always allow access to home page - client will handle redirect
+    console.log('🎉 Post-auth: Allowing access to home page for client-side handling');
+    return NextResponse.next();
+  }
+  
+  // Basic cookie presence check (not validation - client handles that)
+  const hasSession = hasSessionCookie(request);
+
+  // Development mode debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🚀 Middleware: ${pathname} (session cookie: ${hasSession ? 'present' : 'none'})`);
+  }
+
+  // Handle protected routes - redirect to home if no session cookie
   if (isProtectedRoute(pathname)) {
-    if (!isUserAuthenticated) {
-      // Redirect to login with callback URL
+    if (!hasSession) {
       const redirectUrl = getRedirectUrl(request, '/');
-      
-      // Log security events in production
-      if (process.env.NODE_ENV === 'production') {
-        const clientIP = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
-        console.log(`🔐 SECURITY: Unauthenticated access attempt to ${pathname} from ${clientIP}`);
-      }
-      
+      console.log(`🔐 Middleware: Redirecting to home from ${pathname} (no session cookie)`);
       return NextResponse.redirect(redirectUrl);
     }
+    // Has session cookie - allow access, client will validate
+    return NextResponse.next();
   }
 
-  // Handle auth routes (login, signup) - redirect authenticated users
+  // Handle auth routes - if has session, redirect to callback or feed
   if (isAuthRoute(pathname)) {
-    if (isUserAuthenticated) {
-      // Get callback URL from query params or default to conversations
-      const callbackUrl = request.nextUrl.searchParams.get('callbackUrl') || '/conversations';
+    if (hasSession) {
+      const callbackUrl = request.nextUrl.searchParams.get('callbackUrl') || '/feed';
       const redirectUrl = getRedirectUrl(request, callbackUrl);
+      console.log(`✅ Middleware: Redirecting authenticated user from ${pathname} to ${callbackUrl}`);
       return NextResponse.redirect(redirectUrl);
     }
   }
 
-  // Allow the request to continue
+  // Allow all other requests
   return NextResponse.next();
 }
 

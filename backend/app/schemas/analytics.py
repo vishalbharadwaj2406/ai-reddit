@@ -4,7 +4,7 @@ Analytics Schema Definitions
 Pydantic schemas for post analytics endpoints (view and share tracking).
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from uuid import UUID
 from datetime import datetime
 from typing import Optional
@@ -22,8 +22,7 @@ class PostViewResponse(BaseModel):
     user_id: Optional[UUID] = Field(None, description="ID of user who viewed (null for anonymous)")
     viewed_at: datetime = Field(..., description="When the view occurred")
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PostShareCreate(BaseModel):
@@ -43,8 +42,7 @@ class PostShareResponse(BaseModel):
     platform: str = Field(..., description="Platform where shared")
     sharedAt: datetime = Field(..., description="When the share occurred")
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class AnalyticsResponse(BaseModel):

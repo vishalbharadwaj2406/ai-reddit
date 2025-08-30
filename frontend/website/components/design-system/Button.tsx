@@ -14,6 +14,13 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   rightIcon?: React.ReactNode;
 }
 
+/**
+ * Production-Grade Button Component
+ * 
+ * Matches header aesthetic with glass morphism effects
+ * No excessive hover transforms - professional UX only
+ * Used consistently across the entire application
+ */
 export const Button: React.FC<ButtonProps> = ({
   className,
   variant = "primary",
@@ -30,49 +37,46 @@ export const Button: React.FC<ButtonProps> = ({
     "rounded-xl transition-all duration-300 ease-out",
     "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
     "disabled:opacity-40 disabled:cursor-not-allowed",
-    !disabled && !loading && "hover:shadow-lg"
+    "cursor-pointer"
   );
 
   const variants: Record<Variant, string> = {
     primary: clsx(
-      // Clean glass primary button - no strong blue tint
-      "bg-gradient-to-br from-white/10 via-white/5 to-white/10",
-      "border border-white/20 text-white",
-      "backdrop-filter backdrop-blur-xl backdrop-saturate-150",
-      "shadow-[0_4px_16px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)]",
-      "hover:from-white/15 hover:via-white/8 hover:to-white/15",
-      "hover:border-white/30 hover:shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+      // Glass morphism primary - beautiful blue without glow
+      "bg-blue-600/80 backdrop-blur-xl backdrop-saturate-150",
+      "border border-blue-500/30 text-white",
+      "shadow-lg shadow-black/25",
+      "hover:bg-blue-500/80 hover:border-blue-400/40",
+      "hover:shadow-xl hover:shadow-black/30",
+      "font-semibold"
     ),
     secondary: clsx(
-      // Glass secondary with minimal styling
-      "bg-gradient-to-br from-white/[0.08] to-white/[0.04]",
-      "border border-white/15 text-gray-200",
-      "backdrop-blur-lg backdrop-saturate-150",
-      "shadow-[0_4px_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.05)]",
-      "hover:from-white/[0.12] hover:to-white/[0.06]",
-      "hover:border-white/20 hover:text-white"
+      // Glass morphism secondary - gray tones with glass effect
+      "bg-white/10 backdrop-blur-xl backdrop-saturate-150",
+      "border border-white/20 text-white/90",
+      "shadow-lg shadow-black/25",
+      "hover:bg-white/15 hover:border-white/30 hover:text-white",
+      "font-medium"
     ),
     ghost: clsx(
       "bg-transparent text-gray-300",
-      "hover:bg-gradient-to-r hover:from-white/[0.06] hover:to-white/[0.03]",
-      "hover:text-white hover:backdrop-blur-lg",
+      "hover:bg-white/[0.06] hover:text-white",
       "border border-transparent hover:border-white/10"
     ),
     danger: clsx(
-      "bg-gradient-to-br from-red-600/80 via-red-700/80 to-red-800/80",
+      "bg-red-600/80 backdrop-blur-xl backdrop-saturate-150",
       "border border-red-500/30 text-white",
-      "backdrop-blur-sm",
-      "shadow-[0_4px_16px_rgba(220,38,38,0.25),inset_0_1px_0_rgba(255,255,255,0.1)]",
-      "hover:from-red-500/90 hover:via-red-600/90 hover:to-red-700/90",
-      "hover:border-red-400/40"
+      "shadow-lg shadow-black/25",
+      "hover:bg-red-500/80 hover:border-red-400/40",
+      "hover:shadow-xl hover:shadow-black/30"
     ),
   };
 
   const sizes: Record<Size, string> = {
-    sm: "text-xs px-3 py-2 gap-1.5",
-    md: "text-sm px-4 py-2.5 gap-2",
-    lg: "text-base px-6 py-3 gap-2.5",
-    xl: "text-lg px-8 py-4 gap-3",
+    sm: "text-xs px-3 py-2 gap-1.5 rounded-lg",           // Small buttons
+    md: "text-sm px-6 py-2.5 gap-2 rounded-xl",          // Header size - matches current
+    lg: "text-base px-8 py-3 gap-2.5 rounded-xl",        // Welcome page size
+    xl: "text-lg px-10 py-4 gap-3 rounded-2xl",          // Extra large for special cases
   };
 
   return (

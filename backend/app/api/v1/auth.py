@@ -253,6 +253,14 @@ async def handle_google_oauth_callback(
         # Set secure HTTP-only cookie with enhanced security
         set_session_cookie(response, session_token)
         
+        # Create and set refresh token for automatic token renewal
+        from app.core.jwt import JWTManager
+        refresh_token = JWTManager.create_refresh_token(
+            user_id=str(user.user_id),
+            device_fingerprint=client_ip
+        )
+        set_refresh_cookie(response, refresh_token)
+        
         # Update user login timestamp
         user.updated_at = datetime.now(timezone.utc)
         db.commit()
@@ -270,13 +278,13 @@ async def handle_google_oauth_callback(
         
         logger.info(f"User authenticated successfully: {user.google_id}")
         
-        # Production OAuth callback: Direct HTTP redirect with secure cookie
-        # This ensures cookie is set in the same request context as the redirect
-        redirect_url = return_url if return_url and _is_safe_return_url(return_url) else "/conversations"
+        # Cross-origin OAuth callback: Direct HTTP redirect with secure cookies
+        # This ensures cookies are set in the same request context as the redirect
+        redirect_url = return_url if return_url and _is_safe_return_url(return_url) else "/dashboard"
         if not redirect_url.startswith('/'):
-            redirect_url = "/conversations"
+            redirect_url = "/dashboard"
         
-        # Construct final redirect URL (same origin for BFF pattern)
+        # Construct final redirect URL (cross-origin to frontend)
         final_redirect_url = f"{settings.FRONTEND_URL}{redirect_url}"
         
         # Add success parameter to URL for frontend to detect successful authentication
@@ -288,6 +296,9 @@ async def handle_google_oauth_callback(
         
         # Set the session cookie in the redirect response
         set_session_cookie(redirect_response, session_token)
+        
+        # Set the refresh cookie in the redirect response
+        set_refresh_cookie(redirect_response, refresh_token)
         
         return redirect_response
         
@@ -323,8 +334,9 @@ async def logout_user(
         Success message
     """
     try:
-        # Clear session cookie
+        # Clear session cookie and refresh cookie
         clear_session_cookie(response)
+        clear_refresh_cookie(response)
         
         # Log logout event if user was authenticated
         if current_user:
@@ -555,3 +567,113 @@ def clear_session_cookie(response: Response):
     
     if settings.DEBUG:
         logger.info("Session cookie cleared")
+
+
+def set_refresh_cookie(response: Response, refresh_token: str):
+    """
+    Set refresh token cookie for automatic token refresh.
+    
+    Args:
+        response: FastAPI response object
+        refresh_token: JWT refresh token
+    """
+    cookie_settings = {
+        "key": f"{settings.SESSION_COOKIE_NAME}_refresh",
+        "value": refresh_token,
+        "max_age": settings.REFRESH_TOKEN_EXPIRE_DAYS * 24 * 3600,
+        "httponly": True,
+        "secure": settings.COOKIE_SECURE,
+        "samesite": settings.COOKIE_SAMESITE,
+        "path": "/"
+    }
+    
+    if settings.COOKIE_DOMAIN and settings.COOKIE_DOMAIN.strip():
+        cookie_settings["domain"] = settings.COOKIE_DOMAIN
+        
+    response.set_cookie(**cookie_settings)
+    
+    if settings.DEBUG:
+        logger.info("Refresh token cookie set")
+
+
+def clear_refresh_cookie(response: Response):
+    """
+    Clear refresh token cookie.
+    
+    Args:
+        response: FastAPI response object
+    """
+    cookie_settings = {
+        "key": f"{settings.SESSION_COOKIE_NAME}_refresh",
+        "value": "",
+        "max_age": 0,
+        "httponly": True,
+        "secure": settings.COOKIE_SECURE,
+        "samesite": settings.COOKIE_SAMESITE,
+        "path": "/"
+    }
+    
+    if settings.COOKIE_DOMAIN and settings.COOKIE_DOMAIN.strip():
+        cookie_settings["domain"] = settings.COOKIE_DOMAIN
+        
+    response.set_cookie(**cookie_settings)
+    
+    if settings.DEBUG:
+        logger.info("Refresh token cookie cleared")
+
+
+@router.post("/refresh")
+async def refresh_token(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db)
+):
+    """
+    Refresh access token using refresh token from cookie.
+    
+    Returns:
+        Success message with new tokens set in cookies
+        
+    Raises:
+        HTTPException: If refresh token is missing or invalid
+    """
+    try:
+        # Get refresh token from cookie
+        refresh_token = request.cookies.get(f"{settings.SESSION_COOKIE_NAME}_refresh")
+        
+        if not refresh_token:
+            logger.warning("Token refresh attempted without refresh token")
+            raise HTTPException(status_code=401, detail="No refresh token")
+            
+        # Exchange for new tokens
+        from app.core.jwt import JWTManager
+        tokens = JWTManager.refresh_access_token(refresh_token)
+        
+        # Get user info for new session token
+        user_id = JWTManager.get_user_id_from_token(tokens["access_token"])
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        # Create new session token with fingerprint
+        client_ip = get_client_ip(request)
+        user_agent = request.headers.get("user-agent", "")
+        
+        session_token = create_session_token_with_fingerprint(
+            user_id=user_id,
+            user_agent=user_agent,
+            ip_address=client_ip
+        )
+        
+        # Set new cookies
+        set_session_cookie(response, session_token)
+        set_refresh_cookie(response, tokens["refresh_token"])
+        
+        logger.info(f"Token refreshed successfully for user {user_id}")
+        return {"message": "Token refreshed successfully"}
+        
+    except Exception as e:
+        logger.error(f"Token refresh failed: {str(e)}")
+        # Clear potentially invalid cookies
+        clear_session_cookie(response)
+        clear_refresh_cookie(response)
+        raise HTTPException(status_code=401, detail="Token refresh failed")

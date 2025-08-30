@@ -1,18 +1,20 @@
 'use client'
 
-import { WelcomePage } from '@/components/Welcome';
+import WelcomePage from '@/components/Welcome/WelcomePage';
 import { useSessionContext } from '@/components/providers/SessionWrapper';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
+import { isPostAuthentication, handlePostAuthSuccess } from '@/lib/auth/session';
 
 function HomeContent() {
   const session = useSessionContext();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isProcessingAuth, setIsProcessingAuth] = useState(false);
 
+  // Handle authentication errors from URL parameters
   useEffect(() => {
-    // Check for auth error in URL parameters
     const authErrorParam = searchParams.get('auth_error');
     if (authErrorParam) {
       let errorMessage = 'Authentication failed. Please try again.';
@@ -44,20 +46,94 @@ function HomeContent() {
     }
   }, [searchParams, router]);
 
+  // Enhanced post-authentication handling
   useEffect(() => {
-    // If user is signed in, redirect to feed instead of showing welcome page
-    if (session.isAuthenticated && session.user) {
+    const handlePostAuth = async () => {
+      if (isPostAuthentication() && !isProcessingAuth) {
+        setIsProcessingAuth(true);
+        
+        try {
+          console.log('🎉 Post-auth detected: Processing authentication completion');
+          
+          // Get callback URL from search params
+          const callbackUrl = searchParams.get('callbackUrl') || '/feed';
+          
+          // Wait for session to be fully initialized
+          if (session.isInitialized) {
+            if (session.isAuthenticated && session.user) {
+              // Authentication successful - handle post-auth
+              await handlePostAuthSuccess(callbackUrl);
+            } else {
+              // Wait a bit more for session to update
+              setTimeout(() => {
+                if (session.isAuthenticated && session.user) {
+                  handlePostAuthSuccess(callbackUrl);
+                } else {
+                  console.log('🚀 Post-auth: Session not yet authenticated, refreshing');
+                  session.refresh();
+                }
+              }, 500);
+            }
+          }
+        } catch (error) {
+          console.error('Post-auth handling failed:', error);
+          // Fallback: Direct navigation
+          router.push('/feed');
+        } finally {
+          setIsProcessingAuth(false);
+        }
+      }
+    };
+
+    handlePostAuth();
+  }, [session.isAuthenticated, session.isInitialized, session.user, searchParams, router, isProcessingAuth, session.refresh]);
+
+  // Standard authentication redirect for already-authenticated users
+  useEffect(() => {
+    if (session.isAuthenticated && 
+        session.user && 
+        session.isInitialized && 
+        !isPostAuthentication() && 
+        !isProcessingAuth) {
+      
+      console.log('🚀 Redirecting authenticated user to feed');
       router.push('/feed');
     }
-  }, [session.isAuthenticated, session.user, router]);
+  }, [session.isAuthenticated, session.user, session.isInitialized, router, isProcessingAuth]);
 
-  // Show loading or welcome page only if not authenticated
-  if (session.loading) {
-    return null; // Or a loading spinner
+  // Show loading states
+  if (isProcessingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Completing authentication...</p>
+        </div>
+      </div>
+    );
   }
 
-  if (session.isAuthenticated) {
-    return null; // Will redirect, so don't render anything
+  if (!session.isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Initializing session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show minimal loading state while redirecting authenticated users
+  if (session.isAuthenticated && session.user && !isPostAuthentication()) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting to your feed...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

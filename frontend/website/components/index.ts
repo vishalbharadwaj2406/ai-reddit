@@ -1,5 +1,6 @@
 export { default as Header } from './Header'
 export { Sidebar, SidebarButton, SidebarNavItem } from './Sidebar'
 export { AppLayout } from './layout'
-export { WelcomePage } from './Welcome'
+export { ConditionalLayout } from './layout/ConditionalLayout'
+export { default as WelcomePage } from './Welcome'
 export { BlogEditor } from './BlogEditor'

@@ -53,24 +53,30 @@ class Settings(BaseSettings):
         description="JWT refresh token expiration time in days"
     )
     
+    # Refresh Token Configuration for cross-origin
+    REFRESH_TOKEN_EXPIRE_DAYS: int = Field(
+        default=30,
+        description="Refresh token expiration (30 days for great UX)"
+    )
+    
     # Session Token Configuration (for HTTP-only cookies)
     SESSION_TOKEN_EXPIRE_HOURS: int = Field(
         default=24,
         description="Session token expiration time in hours"
     )
     
-    # Cookie Settings
+    # Cookie Settings - Optimized for Cross-Origin
     COOKIE_SECURE: bool = Field(
-        default_factory=lambda: os.getenv("COOKIE_SECURE", "true").lower() == "true",
-        description="Set secure flag on cookies (HTTPS only)"
+        default_factory=lambda: os.getenv("ENVIRONMENT", "development") == "production",
+        description="Secure cookies for HTTPS (false for localhost dev)"
     )
     COOKIE_SAMESITE: str = Field(
         default="lax",
-        description="SameSite cookie attribute (lax, strict, none)"
+        description="SameSite=Lax for cross-origin compatibility"
     )
     COOKIE_DOMAIN: Optional[str] = Field(
-        default=None,
-        description="Cookie domain (None for current domain)"
+        default_factory=lambda: "localhost" if os.getenv("ENVIRONMENT", "development") == "development" else None,
+        description="Cookie domain (localhost for dev cross-origin, .yourdomain.com for prod)"
     )
     COOKIE_HTTPONLY: bool = Field(
         default=True,
@@ -116,8 +122,13 @@ class Settings(BaseSettings):
 
     # CORS Configuration
     ALLOWED_ORIGINS: str = Field(
-        default="http://localhost:3000",
-        description="Comma-separated list of allowed CORS origins"
+        default="http://localhost:3000,http://localhost:3001",
+        description="Frontend origins for development (comma-separated)"
+    )
+    
+    PRODUCTION_ORIGINS: str = Field(
+        default="https://yourdomain.com,https://www.yourdomain.com",
+        description="Production frontend origins (comma-separated)"
     )
 
     # Rate Limiting (for future use)

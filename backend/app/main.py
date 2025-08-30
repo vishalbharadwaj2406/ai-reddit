@@ -1,14 +1,11 @@
 """
 AI Social Backend - Main Application Entry Point
-Simple BFF (Backend for Frontend) pattern implementation.
+Backend-only API serving with cross-origin authentication.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
-from pathlib import Path
 
 from app.core.config import settings
 
@@ -28,13 +25,25 @@ def create_application() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS Middleware
+    # CORS Middleware - Updated for cross-origin authentication
+    def get_cors_origins():
+        if settings.ENVIRONMENT == "production":
+            if hasattr(settings, 'PRODUCTION_ORIGINS'):
+                return settings.PRODUCTION_ORIGINS.split(",")
+            else:
+                return [settings.FRONTEND_URL]
+        return settings.ALLOWED_ORIGINS.split(",")
+
+    cors_origins = get_cors_origins()
+    print(f"🌐 CORS Origins: {cors_origins}")  # Debug output
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.ALLOWED_ORIGINS.split(","),
-        allow_credentials=True,
-        allow_methods=["*"],
+        allow_origins=cors_origins,
+        allow_credentials=True,  # CRITICAL for cookies
+        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allow_headers=["*"],
+        expose_headers=["*"],
     )
 
     # Health endpoint
@@ -98,71 +107,6 @@ def create_application() -> FastAPI:
         print("✅ Images router loaded")
     except ImportError as e:
         print(f"❌ Images router failed: {e}")
-
-    # BFF Next.js Serving
-    frontend_build_path = Path(__file__).parent.parent.parent / "frontend" / "website" / ".next"
-    
-    print(f"Looking for Next.js build at: {frontend_build_path}")
-    print(f"Next.js build exists: {frontend_build_path.exists()}")
-    
-    if frontend_build_path.exists():
-        # Static assets MUST be mounted BEFORE any catch-all routes
-        next_static_path = frontend_build_path / "static"
-        if next_static_path.exists():
-            app.mount("/_next/static", StaticFiles(directory=str(next_static_path)), name="next_static")
-            print(f"✅ Mounted /_next/static from {next_static_path}")
-        
-        # Public assets from frontend/website/public
-        public_path = Path(__file__).parent.parent.parent / "frontend" / "website" / "public"
-        if public_path.exists():
-            app.mount("/images", StaticFiles(directory=str(public_path)), name="public_assets")
-            print(f"✅ Mounted /images from {public_path}")
-    
-    else:
-        print("❌ Next.js build directory not found")
-
-    # Frontend routes AFTER static mounts but BEFORE catch-all
-    if frontend_build_path.exists():
-        # For BFF pattern with Next.js server build, we need to serve index.html for all routes
-        # that don't match API or static assets
-        
-        # Try to serve from the app directory first
-        app_html_path = frontend_build_path / "server" / "app"
-        
-        @app.get("/")
-        async def serve_index():
-            # Look for index.html in the server app directory
-            possible_paths = [
-                app_html_path / "index.html",
-                app_html_path / "page.html",
-                frontend_build_path / "server" / "pages" / "index.html"
-            ]
-            
-            for path in possible_paths:
-                if path.exists():
-                    return FileResponse(path)
-            
-            raise HTTPException(status_code=404, detail="Frontend index not found")
-        
-        # SPA catch-all LAST - least specific - CRITICAL: This must be LAST
-        @app.get("/{path:path}")
-        async def serve_spa(path: str):
-            # Don't interfere with API routes
-            if path.startswith(("api/", "docs", "redoc", "_next/", "images/")):
-                raise HTTPException(status_code=404, detail="Not Found")
-            
-            # For SPA routing, always return the main app HTML
-            possible_paths = [
-                app_html_path / "index.html",
-                app_html_path / "page.html",
-                frontend_build_path / "server" / "pages" / "index.html"
-            ]
-            
-            for path_option in possible_paths:
-                if path_option.exists():
-                    return FileResponse(path_option)
-            
-            raise HTTPException(status_code=404, detail="Page not found")
 
     return app
 

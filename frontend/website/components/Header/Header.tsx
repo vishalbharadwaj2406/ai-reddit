@@ -15,6 +15,7 @@ import { Input } from '@/components/design-system/Input'
 import NewChatButton from '@/components/design-system/NewChatButton'
 import ProfilePicture from '../ui/ProfilePicture';
 import { WithSearchParams } from './WithSearchParams';
+import { Button } from '@/components/design-system/Button';
 
 interface HeaderProps {
   className?: string
@@ -141,13 +142,14 @@ function HeaderContent({ searchParams, className = '' }: HeaderProps & { searchP
 
           {/* Profile section */}
           {!session.isAuthenticated ? (
-          <button
-            className={styles.signInButton}
-            aria-label="Sign in to AI Social"
+          <Button
+            variant="primary"
+            size="md"
             onClick={() => redirectToLogin(pathname)}
+            aria-label="Sign in to AI Social"
           >
             Sign In
-          </button>
+          </Button>
         ) : (
           <div style={{ position: 'relative' }}>
             <div

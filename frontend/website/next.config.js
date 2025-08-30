@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // BFF Pattern: Build for server rendering with FastAPI backend
+  // Standard Next.js configuration for cross-origin backend
   images: {
-    unoptimized: true, // Simplified for BFF pattern
+    unoptimized: true,
     remotePatterns: [
       // Google CDN for profile pictures
       {
@@ -43,23 +43,16 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
-    // Image optimization settings for external images
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     formats: ['image/webp', 'image/avif'],
   },
   
-  // Clean URLs for FastAPI serving
   trailingSlash: false,
   
-  // Windows-specific optimizations
-  experimental: {
-    caseSensitiveRoutes: false,
-  },
-  
-  // Webpack configuration for Windows compatibility
+  // Standard webpack configuration
   webpack: (config, { isServer }) => {
-    // Fix for Windows symlink issues
+    // Standard optimizations only
     config.watchOptions = {
       ...config.watchOptions,
       ignored: /node_modules/,

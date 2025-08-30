@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header/Header";
-import { AppLayout } from "@/components";
+import { ConditionalLayout } from "@/components";
 import "./globals.css";
 import SessionWrapper from "@/components/providers/SessionWrapper";
 import { ToastProvider } from "@/components/feedback/ToastProvider";
-import AuthErrorBoundary from "@/components/auth/AuthErrorBoundary";
+// import AuthErrorBoundary from "@/components/auth/AuthErrorBoundary";
 import ErrorBoundary from "@/components/error/ErrorBoundary";
 
 const geistSans = Geist({
@@ -35,14 +35,15 @@ export default function RootLayout({
       >
         <ErrorBoundary>
           <SessionWrapper>
-            <AuthErrorBoundary>
+            {/* Temporarily disabled AuthErrorBoundary to debug import issue */}
+            {/* <AuthErrorBoundary> */}
               <ToastProvider>
                 <Header />
-                <AppLayout>
+                <ConditionalLayout>
                   {children}
-                </AppLayout>
+                </ConditionalLayout>
               </ToastProvider>
-            </AuthErrorBoundary>
+            {/* </AuthErrorBoundary> */}
           </SessionWrapper>
         </ErrorBoundary>
       </body>

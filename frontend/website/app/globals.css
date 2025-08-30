@@ -42,6 +42,14 @@
   --text-2xl: clamp(20px, 4vw, 24px);
   --text-3xl: clamp(24px, 5vw, 32px);
   --text-4xl: clamp(32px, 6vw, 48px);
+  --text-5xl: clamp(48px, 8vw, 64px);
+  --text-6xl: clamp(64px, 10vw, 96px);
+  
+  /* Logo Scale */
+  --logo-sm: 120px;
+  --logo-md: 180px;
+  --logo-lg: 240px;
+  --logo-xl: 320px;
   
   /* Z-Index Scale - Layering system */
   --z-background: -1;
