@@ -8,7 +8,7 @@
 'use client';
 
 import React from 'react';
-import { signInWithGoogle } from '../../lib/auth/auth.utils';
+import { redirectToLogin } from '../../lib/auth/session';
 
 interface AuthErrorBoundaryState {
   hasError: boolean;
@@ -61,10 +61,10 @@ class AuthErrorBoundary extends React.Component<
 
   handleSignIn = async () => {
     try {
-      await signInWithGoogle();
+      redirectToLogin();
       this.resetError();
     } catch (error) {
-      console.error('Failed to sign in:', error);
+      console.error('Failed to redirect to sign in:', error);
     }
   };
 

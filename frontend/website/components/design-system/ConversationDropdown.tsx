@@ -17,10 +17,10 @@ interface ConversationDropdownProps {
  * Escapes stacking contexts and provides consistent positioning.
  */
 export function ConversationDropdown({
-  conversationId,
+  // conversationId, // TODO: Use for conversation-specific actions
   onOpenConversation,
   onDeleteConversation,
-  className
+  // className // TODO: Implement custom styling
 }: ConversationDropdownProps) {
   const {
     isOpen,

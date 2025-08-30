@@ -27,7 +27,7 @@ export default function ConfirmDeleteModal({
       className={styles.confirmModal}
     >
       <p className={styles.message}>
-        <span className={styles.conversationTitle}>"{conversationTitle}"</span> will be permanently deleted. This action cannot be undone.
+        <span className={styles.conversationTitle}>&ldquo;{conversationTitle}&rdquo;</span> will be permanently deleted. This action cannot be undone.
       </p>
       
       <div className={styles.actions}>

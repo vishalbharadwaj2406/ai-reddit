@@ -11,7 +11,7 @@ Why we use this approach:
 - Auto-completion: IDEs can suggest config options
 """
 
-from typing import List
+from typing import List, Optional
 from pydantic_settings import BaseSettings
 from pydantic import Field, ConfigDict
 import os
@@ -52,6 +52,34 @@ class Settings(BaseSettings):
         default=30,
         description="JWT refresh token expiration time in days"
     )
+    
+    # Session Token Configuration (for HTTP-only cookies)
+    SESSION_TOKEN_EXPIRE_HOURS: int = Field(
+        default=24,
+        description="Session token expiration time in hours"
+    )
+    
+    # Cookie Settings
+    COOKIE_SECURE: bool = Field(
+        default_factory=lambda: os.getenv("COOKIE_SECURE", "true").lower() == "true",
+        description="Set secure flag on cookies (HTTPS only)"
+    )
+    COOKIE_SAMESITE: str = Field(
+        default="lax",
+        description="SameSite cookie attribute (lax, strict, none)"
+    )
+    COOKIE_DOMAIN: Optional[str] = Field(
+        default=None,
+        description="Cookie domain (None for current domain)"
+    )
+    COOKIE_HTTPONLY: bool = Field(
+        default=True,
+        description="Set HttpOnly flag on session cookies"
+    )
+    SESSION_COOKIE_NAME: str = Field(
+        default="ai_social_session",
+        description="Name of the session cookie"
+    )
 
     # Google OAuth Configuration
     GOOGLE_CLIENT_ID: str = Field(
@@ -61,8 +89,23 @@ class Settings(BaseSettings):
         description="Google OAuth client secret"
     )
     GOOGLE_REDIRECT_URI: str = Field(
-        default="http://localhost:8000/auth/google/callback",
+        default="http://localhost:8000/api/v1/auth/google/callback",
         description="Google OAuth redirect URI"
+    )
+    
+    # OAuth Security Configuration
+    ALLOWED_OAUTH_DOMAINS: List[str] = Field(
+        default_factory=lambda: [
+            "localhost:8000", "localhost:3000",
+            "127.0.0.1:8000", "127.0.0.1:3000"
+        ],
+        description="Allowed domains for OAuth redirects"
+    )
+    
+    # Environment Configuration
+    ENVIRONMENT: str = Field(
+        default_factory=lambda: os.getenv("ENVIRONMENT", "development"),
+        description="Application environment (development, staging, production)"
     )
 
     # Frontend Configuration

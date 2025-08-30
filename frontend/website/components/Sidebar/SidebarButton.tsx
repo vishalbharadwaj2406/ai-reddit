@@ -5,7 +5,7 @@ import { MessageSquarePlus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import styles from './SidebarButton.module.css'
 import { useSidebarStore } from '@/lib/stores/sidebarStore'
-import { conversationService, AuthenticationRequiredError, ConversationServiceError } from '@/lib/services/conversationService.production'
+import { conversationService, AuthenticationRequiredError, ConversationServiceError } from '@/lib/services/conversationService'
 
 interface SidebarButtonProps {
   onClick?: () => void
@@ -28,7 +28,7 @@ export default function SidebarButton({ onClick, className = '' }: SidebarButton
     try {
       setIsCreating(true)
       const conversation = await conversationService.createConversation('Untitled')
-      router.push(`/conversations/${conversation.conversationId}`)
+      router.push(`/conversations/${conversation.conversation_id}`)
       onClick?.()
     } catch (err) {
       const msg = getErrorMessage(err)

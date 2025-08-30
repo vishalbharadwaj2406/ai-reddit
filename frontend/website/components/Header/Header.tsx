@@ -4,24 +4,26 @@ import React from 'react'
 import Link from 'next/link'
 import styles from './Header.module.css'
 import Image from 'next/image'
-import { useSession, signOut } from 'next-auth/react';
+import { useSessionContext } from '../providers/SessionWrapper';
+import { logout, redirectToLogin } from '../../lib/auth/session';
 import { useState, useRef, useEffect } from 'react';
 import { Menu, Search } from 'lucide-react'
 import { useSidebarStore } from '@/lib/stores/sidebarStore'
 import { useHeaderStore } from '@/lib/stores/headerStore'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Input } from '@/components/design-system/Input'
 import NewChatButton from '@/components/design-system/NewChatButton'
+import ProfilePicture from '../ui/ProfilePicture';
+import { WithSearchParams } from './WithSearchParams';
 
 interface HeaderProps {
   className?: string
 }
 
-export default function Header({ className = '' }: HeaderProps) {
-  const { data: session } = useSession();
+function HeaderContent({ searchParams, className = '' }: HeaderProps & { searchParams: URLSearchParams }) {
+  const session = useSessionContext();
   const pathname = usePathname();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toggleExpanded, toggleMobile } = useSidebarStore()
   const { conversationTitle } = useHeaderStore()
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -53,7 +55,7 @@ export default function Header({ className = '' }: HeaderProps) {
     };
   }, [dropdownOpen]);
 
-  const handleSignOut = () => { signOut({ callbackUrl: '/' }); };
+  const handleSignOut = () => { logout(); };
 
   const handleHamburgerClick = () => {
     if (window.innerWidth <= 767) {
@@ -133,16 +135,16 @@ export default function Header({ className = '' }: HeaderProps) {
         {/* Right side content */}
         <div className={styles.rightContent}>
           {/* New Chat button - only on conversations list page */}
-          {isConversationsPage && session?.user && (
+          {isConversationsPage && session.isAuthenticated && (
             <NewChatButton variant="header" />
           )}
 
           {/* Profile section */}
-          {!session?.user ? (
+          {!session.isAuthenticated ? (
           <button
             className={styles.signInButton}
             aria-label="Sign in to AI Social"
-            onClick={() => window.dispatchEvent(new CustomEvent('open-login-modal'))}
+            onClick={() => redirectToLogin(pathname)}
           >
             Sign In
           </button>
@@ -158,19 +160,18 @@ export default function Header({ className = '' }: HeaderProps) {
               onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); setDropdownOpen(prev => !prev); } }}
               style={{ cursor: 'pointer' }}
             >
-              <Image
-                src={session.user.image || '/images/blue_lotus_logo.png'}
-                alt={session.user.name || 'Profile'}
-                className={styles.profilePic}
-                width={32}
-                height={32}
+              <ProfilePicture
+                src={session.user?.profile_picture}
+                alt={session.user?.user_name || 'Profile'}
+                size="md"
+                clickable={true}
               />
             </div>
             {dropdownOpen && (
               <div className={styles.profileDropdown} ref={dropdownRef} role="menu">
                 <div className={styles.profileDropdownUserInfo}>
-                  <div className={styles.profileDropdownName}>{session.user.name}</div>
-                  <div className={styles.profileDropdownUsername}>{session.user.email}</div>
+                  <div className={styles.profileDropdownName}>{session.user?.user_name}</div>
+                  <div className={styles.profileDropdownUsername}>{session.user?.email}</div>
                 </div>
                 <div className={styles.profileDropdownActions}>
                   <button className={styles.profileDropdownButton} role="menuitem">
@@ -200,5 +201,13 @@ export default function Header({ className = '' }: HeaderProps) {
         </div>
       </nav>
     </header>
+  );
+}
+
+export default function Header({ className = '' }: HeaderProps) {
+  return (
+    <WithSearchParams>
+      {(searchParams) => <HeaderContent searchParams={searchParams} className={className} />}
+    </WithSearchParams>
   );
 }

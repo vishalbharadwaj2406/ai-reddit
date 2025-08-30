@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import { MessageSquarePlus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { conversationService, AuthenticationRequiredError, ConversationServiceError } from '@/lib/services/conversationService.production'
+import { conversationService, AuthenticationRequiredError, ConversationServiceError } from '@/lib/services/conversationService'
 import styles from './NewChatButton.module.css'
 
 interface NewChatButtonProps {
@@ -33,7 +33,7 @@ export default function NewChatButton({
     try {
       setIsCreating(true)
       const conversation = await conversationService.createConversation('Untitled')
-      router.push(`/conversations/${conversation.conversationId}`)
+      router.push(`/conversations/${conversation.conversation_id}`)
       onClick?.()
     } catch (err) {
       const msg = getErrorMessage(err)

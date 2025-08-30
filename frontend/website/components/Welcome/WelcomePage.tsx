@@ -4,8 +4,14 @@ import React from 'react'
 import styles from './Welcome.module.css'
 import Image from 'next/image'
 import Link from 'next/link'
+import { redirectToLogin } from '../../lib/auth/session';
+import AuthTest from '../debug/AuthTest/AuthTest';
 
 const WelcomePage: React.FC = () => {
+  const handleSignIn = () => {
+    redirectToLogin('/feed'); // Redirect to feed after login
+  };
+
   return (
     <>
       {/* Background Pattern */}
@@ -47,7 +53,7 @@ const WelcomePage: React.FC = () => {
             <button
               className={styles.primaryButton}
               aria-label="Sign in to AI Social"
-              onClick={() => window.dispatchEvent(new CustomEvent('open-login-modal'))}
+              onClick={handleSignIn}
             >
               Sign In
             </button>
@@ -60,6 +66,13 @@ const WelcomePage: React.FC = () => {
             </Link>
           </div>
         </div>
+        
+        {/* Development Auth Test Panel */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-8">
+            <AuthTest />
+          </div>
+        )}
       </div>
     </>
   )

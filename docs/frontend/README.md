@@ -10,4 +10,4 @@ Interactive HTML demo of the Royal Ink Glass theme.
 
 ---
 
-*Production-ready design system for all AI Reddit platforms.*
+*Production-ready design system for all AI Social platforms.*

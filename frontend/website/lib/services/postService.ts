@@ -1,4 +1,4 @@
-import { apiClient, endpoints } from '../config/api.production';
+import { apiClient, endpoints } from '../api/client';
 
 // Type definitions for posts
 export interface Post {
@@ -29,23 +29,29 @@ export interface PostListResponse {
   has_more: boolean;
 }
 
+export interface ForkPostRequest {
+  original_post_id: string;
+  title?: string;
+  content?: string;
+}
+
+// Custom error class
 export class PostServiceError extends Error {
-  constructor(message: string, public code?: string) {
+  constructor(message: string) {
     super(message);
     this.name = 'PostServiceError';
   }
 }
 
-const getErrorMessage = (err: unknown): string => {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  try { return JSON.stringify(err); } catch { return 'Unknown error'; }
-};
-
-export class PostService {
-  private wrapError(err: unknown, context: string): never {
-    if (err instanceof PostServiceError) throw err;
-    throw new PostServiceError(`${context}: ${getErrorMessage(err)}`);
+class PostService {
+  /**
+   * Wraps errors to provide consistent error handling
+   */
+  private wrapError(err: unknown, defaultMessage: string): never {
+    if (err instanceof Error) {
+      throw new PostServiceError(err.message);
+    }
+    throw new PostServiceError(defaultMessage);
   }
 
   /**
@@ -57,8 +63,7 @@ export class PostService {
         endpoints.posts.create,
         { ...data, content_type: data.content_type || 'markdown' }
       );
-      if (response.success) return response.data;
-      throw new PostServiceError(response.message || 'Failed to create post');
+      return response;
     } catch (err) {
       this.wrapError(err, 'Failed to create post');
     }
@@ -73,23 +78,21 @@ export class PostService {
         endpoints.posts.list,
         { limit: limit.toString(), offset: offset.toString() }
       );
-      if (response.success) return response.data;
-      throw new PostServiceError(response.message || 'Failed to fetch posts');
+      return response;
     } catch (err) {
       this.wrapError(err, 'Failed to load posts');
     }
   }
 
   /**
-   * Get a specific post by ID
+   * Get specific post by ID
    */
   async getPost(postId: string): Promise<Post> {
     try {
       const response = await apiClient.get<Post>(
         endpoints.posts.getById(postId)
       );
-      if (response.success) return response.data;
-      throw new PostServiceError(response.message || 'Failed to fetch post');
+      return response;
     } catch (err) {
       this.wrapError(err, 'Failed to load post');
     }
@@ -98,71 +101,66 @@ export class PostService {
   /**
    * Fork an existing post
    */
-  async forkPost(postId: string, content: string, title?: string): Promise<Post> {
+  async forkPost(data: ForkPostRequest): Promise<Post> {
     try {
       const response = await apiClient.post<Post>(
-        endpoints.posts.fork(postId),
-        { content, title: title || 'Forked Conversation', content_type: 'markdown' }
+        endpoints.posts.fork(data.original_post_id),
+        data
       );
-      if (response.success) return response.data;
-      throw new PostServiceError(response.message || 'Failed to fork post');
+      return response;
     } catch (err) {
       this.wrapError(err, 'Failed to fork post');
     }
   }
 
   /**
-   * Convert blog content to a publishable post format
+   * Delete a post
    */
-  async publishBlogAsPost(
-    blogContent: string,
-    title: string
-  ): Promise<Post> {
+  async deletePost(postId: string): Promise<void> {
     try {
-      const cleanContent = this.cleanBlogContent(blogContent);
-      const postTitle = title || this.generateTitleFromContent(cleanContent);
-      const postData: CreatePostRequest = {
-        title: postTitle,
-        content: cleanContent,
-        content_type: 'markdown',
-        post_type: 'original'
-      };
-      return await this.createPost(postData);
+      await apiClient.delete(endpoints.posts.getById(postId));
     } catch (err) {
-      this.wrapError(err, 'Failed to publish blog as post');
+      this.wrapError(err, 'Failed to delete post');
     }
   }
 
   /**
-   * Clean blog content for publishing
+   * Update post status
    */
-  private cleanBlogContent(content: string): string {
-    return content
-      .trim()
-      // Remove excessive newlines
-      .replace(/\n{3,}/g, '\n\n')
-      // Ensure proper heading spacing
-      .replace(/^(#{1,3})\s*(.+)$/gm, '$1 $2')
-      // Clean up list formatting
-      .replace(/^\s*[-*+]\s+/gm, '- ')
-      .replace(/^\s*(\d+)\.\s+/gm, '$1. ');
+  async updatePostStatus(postId: string, status: 'draft' | 'published' | 'archived'): Promise<Post> {
+    try {
+      const response = await apiClient.patch<Post>(
+        endpoints.posts.getById(postId),
+        { status }
+      );
+      return response;
+    } catch (err) {
+      this.wrapError(err, 'Failed to update post status');
+    }
   }
 
   /**
-   * Generate title from blog content
+   * Publish blog content as a post
    */
-  private generateTitleFromContent(content: string): string {
-    // Try to extract first heading
-    const headingMatch = content.match(/^#+\s*(.+)$/m);
-    if (headingMatch) return headingMatch[1].trim();
-    
-    // Fallback to first line/sentence
-    const firstLine = content.split('\n')[0].trim();
-    if (firstLine.length > 0) return firstLine.length > 60 ? firstLine.substring(0, 57) + '...' : firstLine;
-    
-    return 'Untitled Post';
+  async publishBlogAsPost(content: string, title: string): Promise<Post> {
+    try {
+      const response = await apiClient.post<Post>(
+        endpoints.posts.create,
+        {
+          title,
+          content,
+          content_type: 'markdown',
+          post_type: 'original',
+          status: 'published'
+        }
+      );
+      return response;
+    } catch (err) {
+      this.wrapError(err, 'Failed to publish blog as post');
+    }
   }
 }
 
 // Export singleton instance
 export const postService = new PostService();
+export default postService;

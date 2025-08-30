@@ -158,6 +158,109 @@ class JWTManager:
             return True  # If no expiration, consider expired
         except JWTError:
             return True  # If can't decode, consider expired
+    
+    @staticmethod
+    def create_session_token(
+        user_id: str, 
+        session_data: Optional[Dict[str, Any]] = None,
+        fingerprint: Optional[str] = None
+    ) -> str:
+        """
+        Create a JWT session token for HTTP-only cookie authentication.
+        
+        Args:
+            user_id: User's unique identifier
+            session_data: Additional session metadata
+            fingerprint: Session fingerprint for security
+            
+        Returns:
+            Encoded JWT session token
+        """
+        # Session tokens have shorter expiry than refresh tokens
+        expire = datetime.now(timezone.utc) + timedelta(hours=settings.SESSION_TOKEN_EXPIRE_HOURS)
+        
+        claims = {
+            "sub": user_id,
+            "exp": expire,
+            "iat": datetime.now(timezone.utc),
+            "type": "session",
+            "jti": str(uuid.uuid4()),
+            "fingerprint": fingerprint
+        }
+        
+        # Add session metadata
+        if session_data:
+            claims.update(session_data)
+        
+        return jwt.encode(claims, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    
+    @staticmethod
+    def decode_session_token(token: str, expected_fingerprint: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Decode and validate session token with fingerprint verification.
+        
+        Args:
+            token: Session JWT token
+            expected_fingerprint: Expected session fingerprint
+            
+        Returns:
+            Decoded session data
+            
+        Raises:
+            JWTError: If token is invalid or fingerprint doesn't match
+        """
+        try:
+            payload = jwt.decode(
+                token,
+                settings.JWT_SECRET_KEY,
+                algorithms=[settings.JWT_ALGORITHM]
+            )
+            
+            # Verify token type
+            if payload.get("type") != "session":
+                raise JWTError("Invalid token type")
+            
+            # Verify fingerprint if provided
+            if expected_fingerprint and payload.get("fingerprint") != expected_fingerprint:
+                raise JWTError("Session fingerprint mismatch - possible session hijacking")
+            
+            return payload
+            
+        except JWTError as e:
+            raise JWTError(f"Invalid session token: {str(e)}")
+
+
+def create_session_token_with_fingerprint(
+    user_id: str, 
+    user_agent: str, 
+    ip_address: str,
+    additional_data: Optional[Dict[str, Any]] = None
+) -> str:
+    """
+    Create session token with security fingerprint.
+    
+    Args:
+        user_id: User's unique identifier
+        user_agent: Browser user agent
+        ip_address: User's IP address
+        additional_data: Additional session data
+        
+    Returns:
+        Session token with embedded fingerprint
+    """
+    from app.services.oauth_service import OAuthService
+    
+    fingerprint = OAuthService.generate_session_fingerprint(user_agent, ip_address)
+    
+    session_data = {
+        "ip": ip_address,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if additional_data:
+        session_data.update(additional_data)
+    
+    return JWTManager.create_session_token(user_id, session_data, fingerprint)
 
 
 def create_token_pair(user_id: str) -> Dict[str, str]:

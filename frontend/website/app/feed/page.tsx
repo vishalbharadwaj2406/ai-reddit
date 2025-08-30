@@ -1,10 +1,19 @@
 'use client'
 
-import AuthGuard from '../../components/auth/AuthGuard';
-import { useSession } from 'next-auth/react';
+import SessionGuard from '../../components/auth/SessionGuard';
+import { useSessionContext } from '../../components/providers/SessionWrapper';
 
 function FeedPageContent() {
-  const { data: session } = useSession();
+  const { user, isInitialized } = useSessionContext();
+
+  // Show loading state while session initializes
+  if (!isInitialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ 
@@ -22,7 +31,7 @@ function FeedPageContent() {
         WebkitBackgroundClip: 'text',
         WebkitTextFillColor: 'transparent'
       }}>
-        Welcome to AI Social, {session?.user?.name}!
+        Welcome to AI Social{user?.user_name ? `, ${user.user_name}` : ''}!
       </h1>
       <p style={{ 
         fontSize: 'var(--text-lg)', 
@@ -37,8 +46,8 @@ function FeedPageContent() {
 
 export default function FeedPage() {
   return (
-    <AuthGuard>
+    <SessionGuard>
       <FeedPageContent />
-    </AuthGuard>
+    </SessionGuard>
   );
 } 

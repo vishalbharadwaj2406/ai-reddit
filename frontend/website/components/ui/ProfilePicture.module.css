@@ -1,0 +1,201 @@
+/**
+ * ProfilePicture Component Styles
+ * Production-grade styling with accessibility and performance focus
+ */
+
+.profilePicture {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: var(--color-background-secondary, #f8f9fa);
+  transition: all 0.2s ease-in-out;
+  flex-shrink: 0;
+  /* Clean minimal styling - no border */
+}
+
+.profilePicture:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Size variants - clean without borders */
+.xs {
+  width: 20px;
+  height: 20px;
+}
+
+.sm {
+  width: 24px;
+  height: 24px;
+}
+
+.md {
+  width: 32px;
+  height: 32px;
+}
+
+.lg {
+  width: 48px;
+  height: 48px;
+}
+
+.xl {
+  width: 64px;
+  height: 64px;
+  border-width: 3px;
+}
+
+/* Clickable state */
+.clickable {
+  cursor: pointer;
+}
+
+/* Removed hover effects to keep profile picture completely static */
+
+.clickable:active {
+  transform: scale(0.98);
+}
+
+/* Image styles */
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  transition: opacity 0.2s ease-in-out;
+}
+
+/* Loading state */
+.loading .image {
+  opacity: 0;
+}
+
+/* Skeleton loader */
+.skeleton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--color-background-secondary, #f8f9fa) 25%,
+    var(--color-background-tertiary, #e9ecef) 50%,
+    var(--color-background-secondary, #f8f9fa) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 50%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Icon fallback */
+.iconFallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--color-text-secondary, #6c757d);
+  background-color: var(--color-background-tertiary, #e9ecef);
+  border-radius: 50%;
+}
+
+/* Retry button for failed images */
+.retryButton {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background-color: var(--color-error, #dc3545);
+  color: white;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+  z-index: 1;
+}
+
+.retryButton:hover {
+  background-color: var(--color-error-dark, #c82333);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.retryButton:focus-visible {
+  outline: 2px solid var(--color-error, #dc3545);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .profilePicture {
+    border: 1px solid currentColor;
+  }
+  
+  .iconFallback {
+    background-color: transparent;
+    border: 1px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .profilePicture,
+  .image,
+  .clickable:hover,
+  .clickable:active,
+  .retryButton {
+    transition: none;
+  }
+  
+  .skeleton {
+    animation: none;
+  }
+  
+  .clickable:hover {
+    transform: none;
+  }
+  
+  .clickable:active {
+    transform: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .profilePicture {
+    background-color: var(--color-background-secondary-dark, #343a40);
+    border-color: var(--color-border-dark, #495057);
+  }
+  
+  .iconFallback {
+    background-color: var(--color-background-tertiary-dark, #495057);
+    color: var(--color-text-secondary-dark, #adb5bd);
+  }
+  
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--color-background-secondary-dark, #343a40) 25%,
+      var(--color-background-tertiary-dark, #495057) 50%,
+      var(--color-background-secondary-dark, #343a40) 75%
+    );
+  }
+}

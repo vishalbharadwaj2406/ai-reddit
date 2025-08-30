@@ -9,6 +9,9 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import styles from "./MarkdownRenderer.module.css";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Note: This file uses complex third-party markdown/sanitization libraries with difficult-to-type interfaces
+
 // Extend sanitize schema to allow Prism classes and tables
 const schema = {
 	...(defaultSchema as any),

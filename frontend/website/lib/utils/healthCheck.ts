@@ -1,4 +1,4 @@
-import { apiClient, endpoints } from '../config/api.production';
+import { apiClient, endpoints } from '../api/client';
 
 export interface HealthStatus {
   backend: 'healthy' | 'unhealthy' | 'unknown';
@@ -16,7 +16,7 @@ export class HealthChecker {
       // Test basic backend health
       const response = await apiClient.get<{ status: string }>(endpoints.health.system);
       
-      if (response.success && response.data?.status === 'healthy') {
+      if (response?.status === 'healthy') {
         return {
           backend: 'healthy',
           database: 'unknown',
@@ -50,11 +50,11 @@ export class HealthChecker {
         endpoints.health.database
       );
       
-      if (response.success && response.data?.status === 'healthy') {
+      if (response?.status === 'healthy') {
         return {
           backend: 'healthy',
-          database: response.data.migrated ? 'healthy' : 'unhealthy',
-          message: response.data.migrated 
+          database: response.migrated ? 'healthy' : 'unhealthy',
+          message: response.migrated 
             ? 'Database is connected and migrated' 
             : 'Database connected but not properly migrated'
         };

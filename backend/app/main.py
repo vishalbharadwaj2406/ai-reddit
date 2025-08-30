@@ -1,171 +1,176 @@
 """
-[APP_NAME] Backend - Main Application Entry Point
-
-This file is the heart of our FastAPI application. It:
-1. Creates the FastAPI app instance
-2. Sets up middleware (CORS, etc.)
-3. Includes all API routers
-4. Handles startup/shutdown events
+AI Social Backend - Main Application Entry Point
+Simple BFF (Backend for Frontend) pattern implementation.
 """
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-# Import configuration
 from app.core.config import settings
-
-# Import API routers
-# NOTE: Some routers may not work until schemas/services are implemented
-try:
-    from app.api.v1.auth import router as auth_router
-    AUTH_AVAILABLE = True
-except ImportError as e:
-    print(f"⚠️  Warning: Auth module couldn't be imported: {e}")
-    AUTH_AVAILABLE = False
-
-try:
-    from app.api.v1.health import router as health_router
-    HEALTH_AVAILABLE = True
-except ImportError as e:
-    print(f"⚠️  Warning: Health module couldn't be imported: {e}")
-    HEALTH_AVAILABLE = False
-
-try:
-    from app.api.v1.users import router as users_router
-    from app.api.v1.conversations import router as conversations_router
-    from app.api.v1.posts import router as posts_router
-    from app.api.v1.comments import router as comments_router
-    from app.api.v1.tags import router as tags_router
-except ImportError as e:
-    print(f"⚠️  Warning: Some API modules couldn't be imported: {e}")
-    print("This is normal during initial setup. Routes will be added as modules are implemented.")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Application lifespan manager.
-    
-    Handles startup and shutdown events using the modern lifespan pattern.
-    """
-    # Startup
-    print(f"🚀 {settings.APP_NAME} starting up...")
-    
     yield
-    
-    # Shutdown
-    print(f"🛑 {settings.APP_NAME} shutting down...")
 
 
 def create_application() -> FastAPI:
-    """
-    Create and configure the FastAPI application.
-
-    This function creates the app instance and sets up all configuration.
-    We use a factory pattern here to make testing easier later.
-    """
-
-    # Create FastAPI instance with metadata
     app = FastAPI(
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
-        description=f"{settings.APP_NAME} - AI-powered conversation platform",
-        docs_url="/docs",  # Swagger UI
-        redoc_url="/redoc",  # ReDoc documentation
+        description=f"{settings.APP_NAME} - AI conversation platform",
+        docs_url="/docs",
+        redoc_url="/redoc",
         lifespan=lifespan,
     )
 
-    # Add CORS middleware
-    # This allows our frontend (running on localhost:3000) to make requests
+    # CORS Middleware
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.ALLOWED_ORIGINS.split(","),
         allow_credentials=True,
-        allow_methods=["*"],  # Allow all HTTP methods
-        allow_headers=["*"],  # Allow all headers
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
-    # Include API routers with version prefix
-    # Each router handles a different resource collection
-    if AUTH_AVAILABLE:
-        app.include_router(auth_router, prefix="/api/v1/auth")
-        print("✅ Auth router loaded successfully")
-    
-    if HEALTH_AVAILABLE:
-        app.include_router(health_router)
-        print("✅ Health router loaded successfully")
-    
+    # Health endpoint
+    @app.get("/health")
+    async def health():
+        return {"status": "healthy", "app": settings.APP_NAME}
+
+    # Import and register API routers
     try:
-        app.include_router(
-            users_router,
-            prefix="/api/v1/users",
-            tags=["users"]
-        )
-        app.include_router(
-            conversations_router,
-            prefix="/api/v1/conversations",
-            tags=["conversations"]
-        )
-        app.include_router(
-            posts_router,
-            prefix="/api/v1/posts",
-            tags=["posts"]
-        )
-        app.include_router(
-            comments_router,
-            prefix="/api/v1",
-            tags=["comments"]
-        )
-        app.include_router(
-            tags_router,
-            prefix="/api/v1",
-            tags=["tags"]
-        )
-    except NameError:
-        print("⚠️  Some routers not available yet - they'll be added as modules are implemented")
+        from app.api.v1.auth import router as auth_router
+        app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
+        print("✅ Auth router loaded")
+    except ImportError as e:
+        print(f"❌ Auth router failed: {e}")
+
+    try:
+        from app.api.v1.health import router as health_router
+        app.include_router(health_router, tags=["health"])
+        print("✅ Health router loaded")
+    except ImportError as e:
+        print(f"❌ Health router failed: {e}")
+
+    try:
+        from app.api.v1.users import router as users_router
+        app.include_router(users_router, prefix="/api/v1/users", tags=["users"])
+        print("✅ Users router loaded")
+    except ImportError as e:
+        print(f"❌ Users router failed: {e}")
+
+    try:
+        from app.api.v1.conversations import router as conversations_router
+        app.include_router(conversations_router, prefix="/api/v1/conversations", tags=["conversations"])
+        print("✅ Conversations router loaded")
+    except ImportError as e:
+        print(f"❌ Conversations router failed: {e}")
+
+    try:
+        from app.api.v1.posts import router as posts_router
+        app.include_router(posts_router, prefix="/api/v1/posts", tags=["posts"])
+        print("✅ Posts router loaded")
+    except ImportError as e:
+        print(f"❌ Posts router failed: {e}")
+
+    try:
+        from app.api.v1.comments import router as comments_router
+        app.include_router(comments_router, prefix="/api/v1", tags=["comments"])
+        print("✅ Comments router loaded")
+    except ImportError as e:
+        print(f"❌ Comments router failed: {e}")
+
+    try:
+        from app.api.v1.tags import router as tags_router
+        app.include_router(tags_router, prefix="/api/v1", tags=["tags"])
+        print("✅ Tags router loaded")
+    except ImportError as e:
+        print(f"❌ Tags router failed: {e}")
+
+    try:
+        from app.api.v1.images import router as images_router
+        app.include_router(images_router, prefix="/api/v1", tags=["images"])
+        print("✅ Images router loaded")
+    except ImportError as e:
+        print(f"❌ Images router failed: {e}")
+
+    # BFF Next.js Serving
+    frontend_build_path = Path(__file__).parent.parent.parent / "frontend" / "website" / ".next"
+    
+    print(f"Looking for Next.js build at: {frontend_build_path}")
+    print(f"Next.js build exists: {frontend_build_path.exists()}")
+    
+    if frontend_build_path.exists():
+        # Static assets MUST be mounted BEFORE any catch-all routes
+        next_static_path = frontend_build_path / "static"
+        if next_static_path.exists():
+            app.mount("/_next/static", StaticFiles(directory=str(next_static_path)), name="next_static")
+            print(f"✅ Mounted /_next/static from {next_static_path}")
+        
+        # Public assets from frontend/website/public
+        public_path = Path(__file__).parent.parent.parent / "frontend" / "website" / "public"
+        if public_path.exists():
+            app.mount("/images", StaticFiles(directory=str(public_path)), name="public_assets")
+            print(f"✅ Mounted /images from {public_path}")
+    
+    else:
+        print("❌ Next.js build directory not found")
+
+    # Frontend routes AFTER static mounts but BEFORE catch-all
+    if frontend_build_path.exists():
+        # For BFF pattern with Next.js server build, we need to serve index.html for all routes
+        # that don't match API or static assets
+        
+        # Try to serve from the app directory first
+        app_html_path = frontend_build_path / "server" / "app"
+        
+        @app.get("/")
+        async def serve_index():
+            # Look for index.html in the server app directory
+            possible_paths = [
+                app_html_path / "index.html",
+                app_html_path / "page.html",
+                frontend_build_path / "server" / "pages" / "index.html"
+            ]
+            
+            for path in possible_paths:
+                if path.exists():
+                    return FileResponse(path)
+            
+            raise HTTPException(status_code=404, detail="Frontend index not found")
+        
+        # SPA catch-all LAST - least specific - CRITICAL: This must be LAST
+        @app.get("/{path:path}")
+        async def serve_spa(path: str):
+            # Don't interfere with API routes
+            if path.startswith(("api/", "docs", "redoc", "_next/", "images/")):
+                raise HTTPException(status_code=404, detail="Not Found")
+            
+            # For SPA routing, always return the main app HTML
+            possible_paths = [
+                app_html_path / "index.html",
+                app_html_path / "page.html",
+                frontend_build_path / "server" / "pages" / "index.html"
+            ]
+            
+            for path_option in possible_paths:
+                if path_option.exists():
+                    return FileResponse(path_option)
+            
+            raise HTTPException(status_code=404, detail="Page not found")
 
     return app
 
 
-# Create the app instance
+# Create the app
 app = create_application()
 
 
-@app.get("/")
-async def root():
-    """
-    Root endpoint - simple health check.
-
-    This is useful for:
-    - Verifying the server is running
-    - Load balancer health checks
-    - Basic API testing
-    """
-    return {
-        "message": f"{settings.APP_NAME} API is running!",
-        "version": settings.APP_VERSION,
-        "docs": "/docs"
-    }
-
-
-@app.get("/health")
-async def health_check():
-    """
-    Health check endpoint.
-
-    Returns the status of the application.
-    In production, this might check database connectivity, etc.
-    """
-    return {"status": "healthy"}
-
-
-# If running this file directly (for development)
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True  # Auto-reload on code changes (development only)
-    )
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)

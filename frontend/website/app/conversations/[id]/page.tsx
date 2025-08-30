@@ -1,11 +1,11 @@
 'use client';
 
-import AuthGuard from '../../../components/auth/AuthGuard';
+import SessionGuard from '../../../components/auth/SessionGuard';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { conversationService, ConversationDetail, Message, AuthenticationRequiredError, ConversationServiceError } from '../../../lib/services/conversationService.production';
+import { conversationService, ConversationDetail, Message, AuthenticationRequiredError, ConversationServiceError } from '../../../lib/services/conversationService';
 import { postService } from '../../../lib/services/postService';
 import { BlogEditor } from '../../../components/BlogEditor';
 import MarkdownRenderer from '../../../components/Markdown/MarkdownRenderer';
@@ -402,22 +402,22 @@ function ConversationPageContent() {
   };
 
   // ✨ Delete/Archive handler (maps to backend archive like list page)
-  const handleDeleteConversation = async () => {
-    if (!conversation) return;
-    
-    // Confirm deletion
-    const confirmed = window.confirm(`Delete "${conversation.title}"? This action cannot be undone.`);
-    if (!confirmed) return;
-    
-    try {
-      await conversationService.archiveConversation(conversationId);
-      // Navigate back to conversations list
-      window.location.href = '/conversations';
-    } catch (err) {
-      console.error('Failed to delete conversation:', getErrorMessage(err));
-      alert('Failed to delete conversation. Please try again.');
-    }
-  };
+  // const handleDeleteConversation = async () => {
+  //   if (!conversation) return;
+  //   
+  //   // Confirm deletion
+  //   const confirmed = window.confirm(`Delete "${conversation.title}"? This action cannot be undone.`);
+  //   if (!confirmed) return;
+  //   
+  //   try {
+  //     await conversationService.archiveConversation(conversationId);
+  //     // Navigate back to conversations list
+  //     window.location.href = '/conversations';
+  //   } catch (err) {
+  //     console.error('Failed to delete conversation:', getErrorMessage(err));
+  //     alert('Failed to delete conversation. Please try again.');
+  //   }
+  // };
 
   // ✨ Blog editor handlers
   const handleEditBlog = () => {
@@ -499,7 +499,7 @@ function ConversationPageContent() {
   }
 
   // Check if conversation is forked
-  const isForked = Boolean(conversation.forkedFrom);
+  const isForked = Boolean(conversation.forked_from);
   
   // Check if conversation has messages (excluding system messages)
   const hasUserMessages = conversation.messages.some(m => m.role === 'user');
@@ -520,17 +520,6 @@ function ConversationPageContent() {
     if (hasBlogMessages && showGeneratedBlog) count++;
     
     return count;
-  };
-
-  // Get actual visible panels for rendering
-  const getVisiblePanels = () => {
-    const panels = [];
-    
-    if (isForked && showOriginalBlog) panels.push('original');
-    panels.push('chat'); // Always visible
-    if (hasBlogMessages && showGeneratedBlog) panels.push('blog');
-    
-    return panels;
   };
 
   const visiblePanelCount = getVisiblePanelCount();
@@ -913,8 +902,8 @@ function ConversationPageContent() {
 
 export default function ConversationPage() {
   return (
-    <AuthGuard>
+    <SessionGuard>
       <ConversationPageContent />
-    </AuthGuard>
+    </SessionGuard>
   );
 }

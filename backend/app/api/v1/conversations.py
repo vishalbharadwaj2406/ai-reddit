@@ -10,7 +10,7 @@ This module handles conversation-related endpoints:
 Conversations are the core feature where users interact with AI.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from uuid import uuid4, UUID
@@ -22,7 +22,7 @@ from app.schemas.conversation import ConversationCreate, ConversationResponse, C
 from app.schemas.message import MessageCreate, MessageResponse, BlogGenerateRequest
 from app.models.conversation import Conversation
 from app.models.message import Message
-from app.dependencies.auth import get_current_user, get_current_user_sse
+from app.dependencies.auth import get_current_user, get_current_user_sse, get_current_user_from_cookie
 from app.models.user import User
 from app.services.ai_service import AIService
 
@@ -31,8 +31,9 @@ router = APIRouter()
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_conversation(
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_from_cookie),
     conversation_create: ConversationCreate = ConversationCreate()
 ):
     """
@@ -104,8 +105,9 @@ async def create_conversation(
 
 @router.get("/")
 async def get_user_conversations(
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user_from_cookie),
     limit: int = Query(default=20, le=100),
     offset: int = Query(default=0, ge=0)
 ):
@@ -158,8 +160,9 @@ async def get_user_conversations(
 @router.get("/{conversation_id}")
 async def get_conversation(
     conversation_id: str,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """Get specific conversation with messages."""
     try:
@@ -248,8 +251,9 @@ async def get_conversation(
 @router.delete("/{conversation_id}")
 async def archive_conversation(
     conversation_id: str,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Archive conversation.
@@ -338,8 +342,9 @@ async def archive_conversation(
 async def send_message(
     conversation_id: UUID,
     message_data: MessageCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Send a message to a conversation and prepare for AI response.
@@ -620,8 +625,9 @@ async def stream_ai_response(
 async def generate_blog_from_conversation(
     conversation_id: UUID,
     blog_request: BlogGenerateRequest,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Generate a blog post from the conversation content via Server-Sent Events.

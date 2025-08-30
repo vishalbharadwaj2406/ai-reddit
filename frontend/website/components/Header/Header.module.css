@@ -243,44 +243,18 @@
   position: relative;
   display: inline-block;
   border-radius: 50%;
-  padding: 2px; /* Reduced ring thickness for smaller profile pic */
-  background: conic-gradient(from 0deg, #fff, #60A5FA, #3B82F6, #fff 100%);
-  animation: gradient-rotate 4s linear infinite;
-  box-shadow: 0 2px 12px rgba(59,130,246,0.15);
   flex-shrink: 0; /* CRITICAL: Prevent shrinking that causes squashing */
-  /* FIXED DIMENSIONS - Never compress */
-  width: 36px; /* 32px + 2px padding on each side */
-  height: 36px; /* 32px + 2px padding on each side */
-  min-width: 36px; /* Prevent compression */
-  min-height: 36px; /* Prevent compression */
-}
-
-@keyframes gradient-rotate {
-  0% { background: conic-gradient(from 0deg, #fff, #60A5FA, #3B82F6, #fff 100%); }
-  100% { background: conic-gradient(from 360deg, #fff, #60A5FA, #3B82F6, #fff 100%); }
-}
-
-.profilePic {
-  display: block;
-  border-radius: 50%;
-  /* FIXED ASPECT RATIO - Production standard */
-  width: 32px; /* YouTube/Discord standard size */
-  height: 32px; /* Must match width for perfect circle */
+  /* Clean minimal styling - let ProfilePicture component handle the visuals */
+  width: 32px; /* Match ProfilePicture size exactly */
+  height: 32px; /* Match ProfilePicture size exactly */
   min-width: 32px; /* Prevent compression */
   min-height: 32px; /* Prevent compression */
-  max-width: 32px; /* Prevent expansion */
-  max-height: 32px; /* Prevent expansion */
-  
-  /* CRITICAL: Proper image handling to prevent squashing */
-  object-fit: cover; /* Maintain aspect ratio */
-  object-position: center; /* Center the image */
-  
-  background: #111; /* Fallback for loading */
-  border: 2px solid rgba(255,255,255,0.7);
-  
-  /* Prevent any flex shrinking */
-  flex-shrink: 0;
+  cursor: pointer;
 }
+
+/* Removed gradient-rotate animation since we no longer use gradient background */
+
+/* Removed old .profilePic class since ProfilePicture component handles its own styling */
 
 .profileDropdown {
   composes: glass-dropdown from '../../styles/design-system.global.css';
