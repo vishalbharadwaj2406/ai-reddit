@@ -233,8 +233,8 @@ function ConversationPageContent() {
         content: userMessageText
       });
 
-      // Update the temp message with real message ID
-      const messageId = (sentMessage as unknown as { message_id?: string }).message_id || sentMessage.messageId;
+      // Get the real message ID from the sent message
+      const messageId = sentMessage.messageId;
       
       // Add placeholder AI message immediately
       const aiMessage: Message = {
@@ -555,7 +555,7 @@ function ConversationPageContent() {
           left: sidebarExpanded ? `${LAYOUT_CONSTANTS.SIDEBAR_EXPANDED}px` : `${LAYOUT_CONSTANTS.SIDEBAR_COLLAPSED}px`,
           top: `${layout.headerHeight}px`, // Start below header for scrollbar containment
           right: '0px',
-          bottom: `${LAYOUT_CONSTANTS.INPUT_HEIGHT}px`, // End above input for scrollbar containment
+          bottom: '96px', // End above input (80px input + 16px spacing)
           transition: 'left 0.3s ease'
         }}
       >
@@ -621,11 +621,11 @@ function ConversationPageContent() {
                     style={{
                       // Glass scroll effect: Content can scroll behind header/input but remains readable
                       paddingTop: `${glassPadding.top}px`, // Header height + safe zone
-                      paddingBottom: `${glassPadding.bottom}px`, // Input height + safe zone
+                      paddingBottom: '100px', // Input area + safe zone (using fixed value instead of LAYOUT_CONSTANTS)
                       // Content starts above normal area (allows scroll behind header)
                       marginTop: `-${layout.headerHeight}px`,
                       // Content extends below normal area (allows scroll behind input)  
-                      marginBottom: `-${LAYOUT_CONSTANTS.INPUT_HEIGHT}px`
+                      marginBottom: '-80px' // Match the new input area height
                     }}
                   >
                     {conversation.messages.filter(m => m.role !== 'system').map((message, index) => {
@@ -676,6 +676,10 @@ function ConversationPageContent() {
                               <div className="text-xs opacity-70">
                                 {isTyping ? (message.isBlog ? 'Generating blog...' : 'Assistant is typing...') : 
                                  (function() {
+                                   // Prevent hydration mismatch by returning static text during SSR
+                                   if (typeof window === 'undefined') {
+                                     return 'Recently';
+                                   }
                                    try {
                                      const date = new Date(message.createdAt);
                                      return isNaN(date.getTime()) ? 'Just now' : date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -741,9 +745,9 @@ function ConversationPageContent() {
                     style={{
                       // Match the glass scroll padding for consistent layout
                       paddingTop: `${glassPadding.top}px`,
-                      paddingBottom: `${glassPadding.bottom}px`,
+                      paddingBottom: '100px', // Input area + safe zone (using fixed value)
                       marginTop: `-${layout.headerHeight}px`,
-                      marginBottom: `-${LAYOUT_CONSTANTS.INPUT_HEIGHT}px`
+                      marginBottom: '-80px' // Match the new input area height
                     }}
                   >
                     <div className="text-center space-y-4">
@@ -786,7 +790,7 @@ function ConversationPageContent() {
                       <MarkdownRenderer content={mostRecentBlogMessage.content} />
                     </div>
                     <div className="text-xs text-blue-400 pt-3 border-t border-blue-800">
-                      Generated {new Date(mostRecentBlogMessage.createdAt).toLocaleString()} • 
+                      Generated {typeof window === 'undefined' ? 'recently' : new Date(mostRecentBlogMessage.createdAt).toLocaleString()} • 
                       {mostRecentBlogMessage.content.split(' ').length} words • Ready to edit
                     </div>
                   </div>
@@ -800,10 +804,12 @@ function ConversationPageContent() {
 
       {/* Fixed Message Input - Using layout constants for maintainability */}
       <div 
-        className="fixed bottom-0 right-0 border-t border-gray-700/30 bg-black/60 backdrop-blur-md z-50"
+        className="fixed right-0 border-t border-gray-700/30 bg-black/60 backdrop-blur-md z-50"
         style={{ 
           left: sidebarExpanded ? `${LAYOUT_CONSTANTS.SIDEBAR_EXPANDED}px` : `${LAYOUT_CONSTANTS.SIDEBAR_COLLAPSED}px`,
-          height: `${LAYOUT_CONSTANTS.INPUT_HEIGHT}px`,
+          bottom: '16px', // Moved up from bottom-0 to add some spacing from screen edge
+          minHeight: '80px', // Reduced from 100px to ensure it fits
+          maxHeight: '200px', // Allow for expansion
           transition: 'left 0.3s ease'
         }}
       >

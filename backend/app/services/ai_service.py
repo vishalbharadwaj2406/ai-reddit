@@ -113,12 +113,16 @@ class AIService:
             AIServiceError: If AI service fails
         """
 
+        logger.info(f"🤖 AI Service running in {'mock' if self.mock_mode else 'production'} mode")
+        
         if self.mock_mode:
             # Mock AI response for testing/development
+            logger.info("🎭 Using mock AI response")
             async for chunk in self._generate_mock_response(user_message):
                 yield chunk
         else:
             # Real LangChain + Gemini implementation
+            logger.info("🚀 Using real LangChain + Gemini AI response")
             async for chunk in self._generate_langchain_response(
                 user_message, conversation_history, conversation_id
             ):
@@ -162,15 +166,18 @@ class AIService:
             # Add word to current content
             if i == 0:
                 current_content = word
+                new_chunk = word
             else:
-                current_content += f" {word}"
+                new_chunk = f" {word}"
+                current_content += new_chunk
 
             # Simulate streaming delay
             await asyncio.sleep(0.05)  # 50ms delay between tokens
 
             # Yield current state
             yield {
-                "content": current_content,
+                "content": new_chunk,  # Send only the new chunk
+                "accumulated_content": current_content,  # Send accumulated content
                 "is_complete": i == len(words) - 1,
                 "message_id": None  # Will be set by the endpoint
             }
@@ -220,20 +227,35 @@ class AIService:
 
             async for chunk in self.llm.astream(messages, callbacks=[callback_handler]):
                 if chunk.content:
-                    current_content += chunk.content
+                    # Break down large chunks into smaller pieces for better streaming effect
+                    new_content = chunk.content
+                    
+                    # Split the new content into words for smoother streaming
+                    words = new_content.split()
+                    
+                    for word in words:
+                        # Add word to current content
+                        if current_content:
+                            word_with_space = f" {word}"
+                        else:
+                            word_with_space = word
+                        
+                        current_content += word_with_space
 
-                    yield {
-                        "content": current_content,
-                        "is_complete": False,
-                        "message_id": None  # Will be set by the endpoint
-                    }
+                        yield {
+                            "content": word_with_space,  # Send only the new word
+                            "accumulated_content": current_content,  # Send accumulated for reference
+                            "is_complete": False,
+                            "message_id": None  # Will be set by the endpoint
+                        }
 
-                    # Add small delay to simulate more natural streaming
-                    await asyncio.sleep(0.01)
+                        # Add delay between words for visible streaming effect
+                        await asyncio.sleep(0.05)  # 50ms delay between words
 
             # Send final complete message
             yield {
-                "content": current_content,
+                "content": "",  # No new chunk in final message
+                "accumulated_content": current_content,
                 "is_complete": True,
                 "message_id": None
             }

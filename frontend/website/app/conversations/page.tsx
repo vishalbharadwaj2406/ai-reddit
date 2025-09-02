@@ -201,8 +201,13 @@ function ConversationsPageContent() {
     return matchesSearch && matchesFilter;
   });
 
-  // Format relative time
+  // Format relative time (hydration-safe)
   const formatRelativeTime = (dateString: string) => {
+    // Return static format during SSR to prevent hydration mismatch
+    if (typeof window === 'undefined') {
+      return 'Recently';
+    }
+    
     const now = new Date();
     const date = new Date(dateString);
     const diffInMs = now.getTime() - date.getTime();

@@ -445,9 +445,10 @@ async def send_message(
 @router.get("/{conversation_id}/stream")
 async def stream_ai_response(
     conversation_id: UUID,
+    request: Request,
     message_id: UUID = Query(..., description="ID of the user message to respond to"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_sse)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Stream AI response to a user message via Server-Sent Events.
@@ -544,9 +545,9 @@ async def stream_ai_response(
                     # Update message_id in response
                     response_chunk["message_id"] = str(ai_message_id)
                     
-                    # Build complete response
+                    # Build complete response from accumulated content
                     if response_chunk.get("is_complete", False):
-                        complete_response = response_chunk["content"]
+                        complete_response = response_chunk.get("accumulated_content", response_chunk.get("content", ""))
                     
                     # Format as SSE with API wrapper
                     sse_data = {
@@ -560,8 +561,6 @@ async def stream_ai_response(
                         yield f"event: ai_complete\ndata: {json.dumps(sse_data)}\n\n"
                     else:
                         yield f"event: ai_response\ndata: {json.dumps(sse_data)}\n\n"
-                    
-                    # Small delay removed - real AI streaming has natural timing
                 
                 # After streaming is complete, save the AI message to database
                 # Use a new database session to avoid conflicts
@@ -601,8 +600,7 @@ async def stream_ai_response(
             headers={
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Headers": "Cache-Control"
+                "Access-Control-Allow-Credentials": "true"
             }
         )
         
