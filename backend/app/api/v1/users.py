@@ -10,7 +10,7 @@ This module handles all user-related endpoints:
 These endpoints handle the "Users" resource collection.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 from typing import List, Optional
@@ -18,7 +18,7 @@ from typing import List, Optional
 # Import dependencies
 from app.core.database import get_db
 from app.schemas.user import UserResponse, UserUpdate, UserListResponse
-from app.dependencies.auth import get_current_user, get_current_user_optional
+from app.dependencies.auth import get_current_user_from_cookie, get_current_user_from_cookie_optional
 from app.models.user import User
 from app.models.follow import Follow
 from app.services.user_service import UserService
@@ -29,14 +29,17 @@ router = APIRouter()
 
 @router.get("/me", response_model=dict)
 async def get_current_user_profile(
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Get current user's profile.
 
     Returns the profile information for the authenticated user.
-    This is a protected endpoint - requires valid JWT token.
+    This is a protected endpoint - requires HTTP-only session cookie.
+
+    **Authentication:** HTTP-only session cookie required
 
     Returns:
         dict: API response with user profile data
@@ -71,8 +74,9 @@ async def get_current_user_profile(
 @router.patch("/me", response_model=dict)
 async def update_current_user_profile(
     user_update: UserUpdate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Update current user's profile.
@@ -81,6 +85,8 @@ async def update_current_user_profile(
     - Display name
     - Profile picture
     - Privacy settings
+
+    **Authentication:** HTTP-only session cookie required
 
     Args:
         user_update: Fields to update (only provided fields will be updated)
@@ -131,14 +137,17 @@ async def update_current_user_profile(
 @router.get("/{user_id}", response_model=dict)
 async def get_user_profile(
     user_id: str,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: Optional[User] = Depends(get_current_user_from_cookie_optional)
 ):
     """
     Get public user profile.
 
     Returns public profile information for any user.
     If user is authenticated, also includes follow status information.
+
+    **Authentication:** HTTP-only session cookie optional (for follow status)
 
     Args:
         user_id: UUID of the user to get profile for
@@ -206,14 +215,17 @@ async def get_user_profile(
 @router.post("/{user_id}/follow")
 async def follow_user(
     user_id: str,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Follow a user (Instagram-like behavior).
     
     For private accounts: Creates a pending follow request
     For public accounts: Instantly follows the user
+
+    **Authentication:** HTTP-only session cookie required
     
     Args:
         user_id: ID of the user to follow
@@ -304,11 +316,14 @@ async def follow_user(
 @router.delete("/{user_id}/follow")
 async def unfollow_user(
     user_id: str,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Unfollow a user.
+
+    **Authentication:** HTTP-only session cookie required
     
     Args:
         user_id: ID of the user to unfollow
@@ -387,11 +402,14 @@ async def unfollow_user(
 
 @router.get("/me/follow-requests")
 async def get_follow_requests(
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Get pending follow requests for the current user.
+
+    **Authentication:** HTTP-only session cookie required
     
     Args:
         db: Database session
@@ -431,11 +449,14 @@ async def get_follow_requests(
 @router.patch("/me/follow-requests/{follower_id}")
 async def handle_follow_request(
     follower_id: str,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Accept or reject a follow request.
+
+    **Authentication:** HTTP-only session cookie required
     
     Args:
         follower_id: ID of the user who sent the request
@@ -531,8 +552,9 @@ async def handle_follow_request(
 @router.get("/{user_id}/followers")
 async def get_user_followers(
     user_id: str,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    current_user: Optional[User] = Depends(get_current_user_from_cookie_optional),
     limit: int = Query(default=20, le=100, description="Number of followers to return"),
     offset: int = Query(default=0, ge=0, description="Number of followers to skip")
 ):
@@ -541,6 +563,8 @@ async def get_user_followers(
 
     Returns paginated list of users who follow the specified user.
     Respects privacy settings for private accounts.
+
+    **Authentication:** HTTP-only session cookie optional
 
     Args:
         user_id: UUID of user to get followers for
@@ -636,8 +660,9 @@ async def get_user_followers(
 @router.get("/{user_id}/following")
 async def get_user_following(
     user_id: str,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional),
+    current_user: Optional[User] = Depends(get_current_user_from_cookie_optional),
     limit: int = Query(default=20, le=100, description="Number of following to return"),
     offset: int = Query(default=0, ge=0, description="Number of following to skip")
 ):
@@ -646,6 +671,8 @@ async def get_user_following(
 
     Returns paginated list of users that the specified user follows.
     Respects privacy settings for private accounts.
+
+    **Authentication:** HTTP-only session cookie optional
 
     Args:
         user_id: UUID of user to get following for

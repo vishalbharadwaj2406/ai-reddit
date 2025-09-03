@@ -11,7 +11,7 @@ This module handles post-related endpoints:
 Posts are created from AI conversations and shared publicly.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.orm import Session
 from uuid import UUID
 from typing import Optional
@@ -25,7 +25,7 @@ from app.schemas.analytics import PostViewCreate, PostShareCreate, AnalyticsResp
 from app.services.post_service import PostService, PostServiceError
 from app.services.post_reaction_service import PostReactionService
 from app.services.analytics_service import AnalyticsService, AnalyticsServiceError
-from app.dependencies.auth import get_current_user, get_current_user_optional
+from app.dependencies.auth import get_current_user_from_cookie, get_current_user_from_cookie_optional
 from app.models.user import User
 
 router = APIRouter()
@@ -34,13 +34,16 @@ router = APIRouter()
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_post(
     post_data: PostCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Create a post from a conversation message.
 
     Converts a conversation message into a public post with user-edited content.
+    
+    **Authentication:** HTTP-only session cookie required
     
     **Business Flow:**
     1. User has a conversation with AI
@@ -146,6 +149,7 @@ async def create_post(
 
 @router.get("/")
 async def get_posts_feed(
+    request: Request,
     db: Session = Depends(get_db),
     limit: int = Query(default=20, ge=1, le=100, description="Number of posts to return"),
     offset: int = Query(default=0, ge=0, description="Number of posts to skip"),
@@ -153,10 +157,12 @@ async def get_posts_feed(
     time_range: str = Query(default="all", pattern="^(hour|day|week|month|all)$", description="Time range for top sort"),
     tag: Optional[str] = Query(None, description="Filter by tag name"),
     userId: Optional[UUID] = Query(None, description="Filter by user ID"),
-    current_user: Optional[User] = Depends(get_current_user_optional)  # Optional auth for public feed
+    current_user: Optional[User] = Depends(get_current_user_from_cookie_optional)  # Optional auth for public feed
 ):
     """
     Get public posts feed with ranking, filtering, and pagination.
+    
+    **Authentication:** HTTP-only session cookie optional (for personalization)
     
     **Features:**
     - **Hot Ranking**: Time-decay algorithm favoring recent posts with good engagement
@@ -227,11 +233,14 @@ async def get_posts_feed(
 @router.get("/{post_id}")
 async def get_post(
     post_id: str,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: Optional[User] = Depends(get_current_user_from_cookie_optional)
 ):
     """
     Get specific post with full details including comments, reactions, and tags.
+    
+    **Authentication:** HTTP-only session cookie optional (for user-specific data)
     
     **Business Flow:**
     1. Validates post_id as valid UUID
@@ -326,9 +335,10 @@ async def get_post(
 @router.post("/{post_id}/fork", response_model=PostForkAPIResponse, status_code=status.HTTP_201_CREATED)
 async def fork_post(
     post_id: UUID,
-    request: PostForkRequest,
+    fork_request: PostForkRequest,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Fork an existing post to continue the conversation.
@@ -336,9 +346,11 @@ async def fork_post(
     Creates a new conversation with the post content as the starting context.
     This allows users to engage with and build upon existing posts.
     
+    **Authentication:** HTTP-only session cookie required
+    
     **Args:**
     - **post_id**: UUID of the post to fork
-    - **request**: Fork request parameters
+    - **fork_request**: Fork request parameters
     
     **Returns:**
     - **PostForkAPIResponse**: Details of the created fork and conversation
@@ -353,7 +365,7 @@ async def fork_post(
         fork_response = post_service.fork_post(
             post_id=post_id,
             user_id=current_user.user_id,
-            request=request
+            request=fork_request
         )
         
         return PostForkAPIResponse(
@@ -384,11 +396,14 @@ async def fork_post(
 async def add_post_reaction(
     post_id: UUID,
     reaction_data: PostReactionCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Add or update a user's reaction to a post.
+    
+    **Authentication:** HTTP-only session cookie required
     
     **Business Logic:**
     - Users cannot react to their own posts
@@ -576,14 +591,17 @@ async def get_post_conversation(
 @router.post("/{post_id}/view", status_code=status.HTTP_201_CREATED)
 async def track_post_view(
     post_id: UUID,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_current_user_optional)
+    current_user: Optional[User] = Depends(get_current_user_from_cookie_optional)
 ):
     """
     Track a view for a post.
     
     This endpoint tracks when a post is viewed. It supports both authenticated
     and anonymous users. Multiple views by the same user are allowed and tracked.
+    
+    **Authentication:** HTTP-only session cookie optional (for user attribution)
     
     **Args:**
     - **post_id**: UUID of the post being viewed
@@ -658,14 +676,17 @@ async def track_post_view(
 async def share_post(
     post_id: UUID,
     share_data: PostShareCreate,
+    request: Request,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user_from_cookie)
 ):
     """
     Share a post to track sharing activity.
     
     This endpoint records when a post is shared to external platforms.
     Requires authentication to track which user shared the post.
+    
+    **Authentication:** HTTP-only session cookie required
     
     **Args:**
     - **post_id**: UUID of the post being shared

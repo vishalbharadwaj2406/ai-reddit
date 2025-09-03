@@ -422,13 +422,39 @@ export class ApiClient {
 
     try {
       errorData = await response.json();
-      // Type guard for error data
+      
+      // Extract error message with comprehensive FastAPI support
       if (errorData && typeof errorData === 'object') {
-        const typedErrorData = errorData as { message?: string; detail?: string };
-        errorMessage = typedErrorData.message || typedErrorData.detail || errorMessage;
+        const data = errorData as Record<string, any>;
+        
+        // Handle FastAPI HTTPException format: {"detail": {"message": "...", "errorCode": "..."}}
+        if (data.detail && typeof data.detail === 'object') {
+          const detail = data.detail as Record<string, any>;
+          errorMessage = detail.message || detail.detail || errorMessage;
+        }
+        // Handle FastAPI direct string detail: {"detail": "Error message"}
+        else if (data.detail && typeof data.detail === 'string') {
+          errorMessage = data.detail;
+        }
+        // Handle standard formats: {"message": "..."} or {"error": "..."}
+        else if (data.message) {
+          errorMessage = data.message;
+        }
+        else if (data.error) {
+          errorMessage = data.error;
+        }
+        // Handle validation errors: {"detail": [{"msg": "...", "loc": [...]}]}
+        else if (Array.isArray(data.detail) && data.detail.length > 0) {
+          const firstError = data.detail[0];
+          if (firstError && typeof firstError === 'object' && firstError.msg) {
+            const location = firstError.loc ? ` (${firstError.loc.join(' -> ')})` : '';
+            errorMessage = `${firstError.msg}${location}`;
+          }
+        }
       }
-    } catch {
-      // Unable to parse error response as JSON
+    } catch (parseError) {
+      // Unable to parse error response as JSON - keep default message
+      console.warn('Failed to parse error response:', parseError);
     }
 
     // Determine error type based on status code

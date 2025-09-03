@@ -16,9 +16,56 @@ import { copyText } from '../../../lib/utils/copy';
 import { markdownToPlain } from '../../../lib/utils/markdown';
 
 const getErrorMessage = (err: unknown): string => {
-  if (err instanceof Error) return err.message;
-  if (typeof err === 'string') return err;
-  return 'Unknown error';
+  // Production-grade error message extraction
+  
+  // Handle PostServiceError (our custom errors)
+  if (err && typeof err === 'object' && 'name' in err && (err as any).name === 'PostServiceError') {
+    return (err as Error).message;
+  }
+  
+  // Handle ApiError (from API client)
+  if (err && typeof err === 'object' && 'name' in err && (err as any).name === 'ApiError') {
+    return (err as Error).message;
+  }
+  
+  // Handle standard Error instances
+  if (err instanceof Error) {
+    return err.message;
+  }
+  
+  // Handle string errors
+  if (typeof err === 'string') {
+    return err;
+  }
+  
+  // Handle structured error objects
+  if (err && typeof err === 'object') {
+    const errorObj = err as any;
+    
+    // Try various error message locations
+    if (errorObj.message) return errorObj.message;
+    if (errorObj.detail?.message) return errorObj.detail.message;
+    if (errorObj.detail && typeof errorObj.detail === 'string') return errorObj.detail;
+    if (errorObj.error) return errorObj.error;
+    
+    // For validation errors array
+    if (Array.isArray(errorObj.detail) && errorObj.detail.length > 0) {
+      const firstError = errorObj.detail[0];
+      if (firstError?.msg) {
+        return firstError.msg;
+      }
+    }
+    
+    // Last resort: stringify the object
+    try {
+      return JSON.stringify(errorObj);
+    } catch {
+      return 'Invalid error object';
+    }
+  }
+  
+  // Ultimate fallback
+  return 'An unknown error occurred';
 };
 
 function ConversationPageContent() {
@@ -47,6 +94,24 @@ function ConversationPageContent() {
   // ✨ NEW: Blog editor state
   const [isEditingBlog, setIsEditingBlog] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  
+  // ✨ NEW: Toast notification state
+  const [toast, setToast] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+
+  // Auto-hide toast after 5 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const showToast = (type: 'success' | 'error', message: string) => {
+    setToast({ type, message });
+  };
   
   // Chat state
   const [messageText, setMessageText] = useState('');
@@ -444,10 +509,33 @@ function ConversationPageContent() {
       // Generate title from content or use conversation title
       const title = conversation.title || 'Blog Post';
       
+      // Extract simple tags from content (basic implementation)
+      const extractTagsFromContent = (content: string): string[] => {
+        // Look for hashtags in content
+        const hashtagMatches = content.match(/#(\w+)/g);
+        if (hashtagMatches) {
+          return hashtagMatches.map(tag => tag.substring(1).toLowerCase());
+        }
+        
+        // Default tags based on conversation or content
+        const defaultTags = ['blog', 'ai-generated'];
+        return defaultTags;
+      };
+      
+      const tags = extractTagsFromContent(markdown);
+      
+      // Find the blog message to link the post properly
+      const blogMessage = conversation.messages.find(m => m.isBlog && m.content.trim() === markdown.trim());
+      const messageId = blogMessage?.messageId;
+      
+      console.log('Publishing blog with messageId:', messageId, 'tags:', tags);
+      
       // Publish the blog as a post
       const publishedPost = await postService.publishBlogAsPost(
         markdown,
-        title
+        title,
+        messageId,
+        tags
       );
       
       console.log('Blog published as post:', publishedPost.post_id);
@@ -456,13 +544,16 @@ function ConversationPageContent() {
       setIsEditingBlog(false);
       setIsPublishing(false);
       
-      // Optional: Show success notification
-      // TODO: Add toast notification here
+      // Show success notification
+      showToast('success', 'Blog published successfully! 🎉');
+      console.log('✅ Blog published successfully!');
       
     } catch (error) {
       console.error('Failed to publish blog:', getErrorMessage(error));
       setIsPublishing(false);
-      // TODO: Show error notification
+      
+      // Show error notification
+      showToast('error', `Failed to publish blog: ${getErrorMessage(error)}`);
     }
   };
 
@@ -526,6 +617,28 @@ function ConversationPageContent() {
 
   return (
     <div className="h-screen flex flex-col bg-black overflow-hidden">
+      {/* Toast Notification */}
+      {toast && (
+        <div 
+          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg border max-w-sm transition-all duration-300 ${
+            toast.type === 'success' 
+              ? 'bg-green-900/90 border-green-500/30 text-green-100' 
+              : 'bg-red-900/90 border-red-500/30 text-red-100'
+          }`}
+          style={{ backdropFilter: 'blur(10px)' }}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-sm">{toast.message}</p>
+            <button 
+              onClick={() => setToast(null)}
+              className="ml-2 text-lg hover:opacity-70"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      
       {/* Floating Panel Controls - Positioned to not interfere with header */}
       <div className="absolute top-20 right-4 z-10 flex flex-col gap-2">
         {/* Only show Original Blog toggle if forked */}
