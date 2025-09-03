@@ -78,6 +78,7 @@ class AIService:
                     top_p=settings.AI_TOP_P,
                     top_k=settings.AI_TOP_K,
                     max_output_tokens=settings.AI_MAX_TOKENS,
+                    timeout=settings.AI_REQUEST_TIMEOUT,  # Add timeout configuration
                 )
                 self.mock_mode = False
                 logger.info(f"LangChain AI service initialized successfully with {settings.AI_MODEL_NAME}")
@@ -158,27 +159,33 @@ class AIService:
                 "Could you tell me more about what you'd like to explore?"
             )
 
-        # Split response into tokens and stream them
+        # Split response into larger chunks for better performance
         words = mock_response.split()
         current_content = ""
+        
+        # Process words in groups of 3-5 for more natural streaming
+        chunk_size = 4
+        word_chunks = [words[i:i + chunk_size] for i in range(0, len(words), chunk_size)]
 
-        for i, word in enumerate(words):
-            # Add word to current content
+        for i, word_chunk in enumerate(word_chunks):
+            # Join words in this chunk
+            chunk_text = " ".join(word_chunk)
+            
             if i == 0:
-                current_content = word
-                new_chunk = word
+                current_content = chunk_text
+                new_chunk = chunk_text
             else:
-                new_chunk = f" {word}"
+                new_chunk = f" {chunk_text}"
                 current_content += new_chunk
 
-            # Simulate streaming delay
-            await asyncio.sleep(0.05)  # 50ms delay between tokens
+            # Simulate streaming delay - less frequent updates
+            await asyncio.sleep(0.1)  # 100ms delay between chunks
 
             # Yield current state
             yield {
-                "content": new_chunk,  # Send only the new chunk
+                "content": new_chunk,  # Send the chunk
                 "accumulated_content": current_content,  # Send accumulated content
-                "is_complete": i == len(words) - 1,
+                "is_complete": i == len(word_chunks) - 1,
                 "message_id": None  # Will be set by the endpoint
             }
 
@@ -222,35 +229,25 @@ class AIService:
             # Generate streaming response using LangChain
             current_content = ""
 
-            # Use streaming with callback handler
+            # Use streaming with callback handler and timeout
             callback_handler = StreamingCallbackHandler()
 
+            # Stream with proper timeout handling
             async for chunk in self.llm.astream(messages, callbacks=[callback_handler]):
                 if chunk.content:
-                    # Break down large chunks into smaller pieces for better streaming effect
+                    # Use larger chunks for better performance and less frequent updates
                     new_content = chunk.content
-                    
-                    # Split the new content into words for smoother streaming
-                    words = new_content.split()
-                    
-                    for word in words:
-                        # Add word to current content
-                        if current_content:
-                            word_with_space = f" {word}"
-                        else:
-                            word_with_space = word
-                        
-                        current_content += word_with_space
+                    current_content += new_content
 
-                        yield {
-                            "content": word_with_space,  # Send only the new word
-                            "accumulated_content": current_content,  # Send accumulated for reference
-                            "is_complete": False,
-                            "message_id": None  # Will be set by the endpoint
-                        }
+                    yield {
+                        "content": new_content,  # Send the chunk as received from LangChain
+                        "accumulated_content": current_content,  # Send accumulated content
+                        "is_complete": False,
+                        "message_id": None  # Will be set by the endpoint
+                    }
 
-                        # Add delay between words for visible streaming effect
-                        await asyncio.sleep(0.05)  # 50ms delay between words
+                    # Smaller delay for better responsiveness without overwhelming the frontend
+                    await asyncio.sleep(0.01)  # 10ms delay between chunks
 
             # Send final complete message
             yield {
@@ -260,7 +257,16 @@ class AIService:
                 "message_id": None
             }
 
+        except asyncio.TimeoutError:
+            print(f"🚨 [AI] Request timeout after {settings.AI_REQUEST_TIMEOUT} seconds")
+            logger.error(f"LangChain AI service timeout after {settings.AI_REQUEST_TIMEOUT} seconds")
+            
+            # Fallback to mock response on timeout
+            logger.warning("Falling back to mock response due to timeout")
+            async for chunk in self._generate_mock_response(user_message):
+                yield chunk
         except Exception as e:
+            print(f"🚨 [AI] LangChain error: {str(e)}")
             logger.error(f"LangChain AI service error: {str(e)}")
 
             # Fallback to mock response if LangChain fails

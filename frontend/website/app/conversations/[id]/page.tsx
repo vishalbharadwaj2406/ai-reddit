@@ -9,6 +9,7 @@ import { conversationService, ConversationDetail, Message, AuthenticationRequire
 import { postService } from '../../../lib/services/postService';
 import { BlogEditor } from '../../../components/BlogEditor';
 import MarkdownRenderer from '../../../components/Markdown/MarkdownRenderer';
+import StreamingMarkdownRenderer from '../../../components/Markdown/StreamingMarkdownRenderer';
 import { usePageLayout, LAYOUT_CONSTANTS, getGlassScrollPadding } from '../../../hooks/useViewportLayout';
 import { useHeaderStore } from '../../../lib/stores/headerStore';
 import { useSidebarStore } from '../../../lib/stores/sidebarStore';
@@ -771,7 +772,16 @@ function ConversationPageContent() {
                             )}
                             <div className="text-message">
                               {message.content ? (
-                                <MarkdownRenderer content={message.content} />
+                                isTyping ? (
+                                  // During streaming, show content as plain text with cursor
+                                  <div className="whitespace-pre-wrap font-mono text-sm leading-relaxed">
+                                    {message.content}
+                                    <span className="inline-block w-0.5 h-4 bg-blue-400 animate-pulse ml-1 align-middle"></span>
+                                  </div>
+                                ) : (
+                                  // Once streaming is complete, render as markdown
+                                  <MarkdownRenderer content={message.content} />
+                                )
                               ) : (
                                 isTyping ? (
                                   <div className="flex items-center space-x-1">
@@ -780,9 +790,6 @@ function ConversationPageContent() {
                                     <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse delay-150"></div>
                                   </div>
                                 ) : null
-                              )}
-                              {isTyping && message.content && (
-                                <span className="inline-block w-0.5 h-4 bg-blue-400 animate-pulse ml-1 align-middle"></span>
                               )}
                             </div>
                             <div className="mt-2 flex items-center justify-between">

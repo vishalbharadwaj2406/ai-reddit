@@ -341,7 +341,14 @@ class ConversationService {
                 
                 if (parsed.success && parsed.data) {
                   // Extract content and message ID from response
-                  fullContent = parsed.data.content || parsed.data.accumulated_content || '';
+                  // Use accumulated_content first (like working AI chat), fall back to content
+                  if (parsed.data.accumulated_content !== undefined) {
+                    fullContent = parsed.data.accumulated_content;
+                  } else {
+                    // Fallback for old format - append new chunk
+                    const chunk = parsed.data.content || '';
+                    fullContent += chunk;
+                  }
                   blogMessageId = parsed.data.message_id || blogMessageId;
                   
                   console.log('📝 Blog content updated:', { length: fullContent.length, messageId: blogMessageId });

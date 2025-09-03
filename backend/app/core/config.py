@@ -177,7 +177,7 @@ class Settings(BaseSettings):
         description="Enable Google's safety filters for content moderation"
     )
     AI_REQUEST_TIMEOUT: int = Field(
-        default=30,
+        default=120,  # Increased from 30 to 120 seconds for blog generation
         description="Timeout for AI API requests in seconds"
     )
     

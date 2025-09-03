@@ -18,6 +18,7 @@ import json
 import asyncio
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.schemas.conversation import ConversationCreate, ConversationResponse, ConversationListItem
 from app.schemas.message import MessageCreate, MessageResponse, BlogGenerateRequest
 from app.models.conversation import Conversation
@@ -532,6 +533,11 @@ async def stream_ai_response(
         async def generate_sse_stream():
             try:
                 complete_response = ""
+                chunk_count = 0
+                
+                print(f"🚀 [CHAT] Starting AI response for conversation {conversation_id}")
+                print(f"📝 [CHAT] User message: {user_message.content[:100]}...")
+                print(f"💬 [CHAT] Conversation history length: {len(conversation_history)} messages")
                 
                 # Create AI service instance
                 ai_service = AIService()
@@ -542,12 +548,17 @@ async def stream_ai_response(
                     conversation_history=conversation_history,
                     conversation_id=conversation_id
                 ):
+                    chunk_count += 1
                     # Update message_id in response
                     response_chunk["message_id"] = str(ai_message_id)
                     
                     # Build complete response from accumulated content
                     if response_chunk.get("is_complete", False):
                         complete_response = response_chunk.get("accumulated_content", response_chunk.get("content", ""))
+                        print(f"✨ [CHAT] AI response complete - Chunk {chunk_count}, Final length: {len(complete_response)} chars")
+                    else:
+                        current_content = response_chunk.get("accumulated_content", response_chunk.get("content", ""))
+                        print(f"📋 [CHAT] Chunk {chunk_count} - Length: {len(current_content)} chars, Preview: {current_content[:50]}...")
                     
                     # Format as SSE with API wrapper
                     sse_data = {
@@ -558,6 +569,7 @@ async def stream_ai_response(
                     
                     # Send SSE event
                     if response_chunk.get("is_complete", False):
+                        print(f"🎯 [CHAT] Sending ai_complete event")
                         yield f"event: ai_complete\ndata: {json.dumps(sse_data)}\n\n"
                     else:
                         yield f"event: ai_response\ndata: {json.dumps(sse_data)}\n\n"
@@ -583,7 +595,18 @@ async def stream_ai_response(
                 finally:
                     new_db.close()
                 
+            except asyncio.TimeoutError:
+                print(f"🚨 [CHAT] AI response timeout after {settings.AI_REQUEST_TIMEOUT} seconds")
+                # Send timeout error event
+                timeout_error_data = {
+                    "success": False,
+                    "data": None,
+                    "message": f"AI response timed out after {settings.AI_REQUEST_TIMEOUT} seconds. This may be due to API rate limits or high server load. Please try again.",
+                    "errorCode": "AI_TIMEOUT_ERROR"
+                }
+                yield f"event: error\ndata: {json.dumps(timeout_error_data)}\n\n"
             except Exception as e:
+                print(f"🚨 [CHAT] AI service error: {str(e)}")
                 # Send error event
                 error_data = {
                     "success": False,
@@ -690,19 +713,30 @@ async def generate_blog_from_conversation(
                 # Create AI service instance
                 ai_service = AIService()
                 
+                print(f"🚀 [BLOG] Starting blog generation for conversation {conversation_id}")
+                print(f"📝 [BLOG] Conversation content length: {len(conversation_content)} chars")
+                print(f"💬 [BLOG] Additional context: {blog_request.additional_context}")
+                
                 # Generate blog from conversation using real AI service
                 complete_response = ""
+                chunk_count = 0
                 async for response_chunk in ai_service.generate_blog_from_conversation(
                     conversation_content=conversation_content,
                     additional_context=blog_request.additional_context
                 ):
+                    chunk_count += 1
+                    
                     # Update message_id and blog flag in response
                     response_chunk["message_id"] = str(blog_message_id)
                     response_chunk["is_blog"] = True
                     
                     # Build complete response
                     if response_chunk.get("is_complete", False):
-                        complete_response = response_chunk["content"]
+                        complete_response = response_chunk.get("accumulated_content", response_chunk.get("content", ""))
+                        print(f"✨ [BLOG] Generation complete - Chunk {chunk_count}, Final length: {len(complete_response)} chars")
+                    else:
+                        current_content = response_chunk.get("accumulated_content", response_chunk.get("content", ""))
+                        print(f"📋 [BLOG] Chunk {chunk_count} - Length: {len(current_content)} chars, Preview: {current_content[:50]}...")
                     
                     # Format as SSE with API wrapper
                     sse_data = {
@@ -713,6 +747,7 @@ async def generate_blog_from_conversation(
                     
                     # Send SSE event
                     if response_chunk.get("is_complete", False):
+                        print(f"🎯 [BLOG] Sending blog_complete event")
                         yield f"event: blog_complete\ndata: {json.dumps(sse_data)}\n\n"
                     else:
                         yield f"event: blog_response\ndata: {json.dumps(sse_data)}\n\n"

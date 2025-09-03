@@ -166,8 +166,27 @@ class ConversationService {
       );
 
       let fullContent = '';
+      let lastChunkTime = Date.now();
+      const RESPONSE_TIMEOUT = 120000; // 120 seconds timeout (same as backend)
+      
+      // Set up timeout to handle stalled connections
+      const timeoutCheck = setInterval(() => {
+        const now = Date.now();
+        if (now - lastChunkTime > RESPONSE_TIMEOUT) {
+          console.error('⏰ [CHAT] Response timeout - no data received for 120 seconds');
+          clearInterval(timeoutCheck);
+          eventSource.close();
+          onError('Response timed out. This may be due to API rate limits or high server load. Please try again.');
+        }
+      }, 10000); // Check every 10 seconds
+
+      const cleanup = () => {
+        clearInterval(timeoutCheck);
+        eventSource.close();
+      };
 
       eventSource.onmessage = (event) => {
+        lastChunkTime = Date.now(); // Reset timeout
         console.log('📨 SSE default message received:', event.data);
         try {
           const data = JSON.parse(event.data);
@@ -189,7 +208,7 @@ class ConversationService {
             
             if (data.data.is_complete) {
               console.log('✅ Stream complete, closing connection');
-              eventSource.close();
+              cleanup();
               onComplete(fullContent);
             }
           } else {
@@ -197,13 +216,14 @@ class ConversationService {
           }
         } catch (parseError) {
           console.error('❌ Error parsing SSE data:', parseError, 'Raw data:', event.data);
+          cleanup();
           onError('Error parsing streaming response');
-          eventSource.close();
         }
       };
 
       // Listen for ai_response events (streaming chunks)
       eventSource.addEventListener('ai_response', (event) => {
+        lastChunkTime = Date.now(); // Reset timeout
         console.log('🔄 AI response chunk received:', event.data);
         try {
           const data = JSON.parse(event.data);
@@ -225,19 +245,20 @@ class ConversationService {
           }
         } catch (parseError) {
           console.error('❌ Error parsing ai_response event:', parseError);
+          cleanup();
           onError('Error parsing streaming chunk');
-          eventSource.close();
         }
       });
 
       eventSource.onerror = (error) => {
         console.error('❌ SSE connection error:', error);
         console.log('🔌 EventSource readyState:', eventSource.readyState);
-        eventSource.close();
+        cleanup();
         onError('Connection error during AI response streaming');
       };
 
       eventSource.addEventListener('ai_complete', (event) => {
+        lastChunkTime = Date.now(); // Reset timeout
         console.log('🎯 AI completion event received:', event.data);
         try {
           const data = JSON.parse(event.data);
@@ -246,18 +267,40 @@ class ConversationService {
             console.log('✨ Final response:', fullContent);
             onComplete(fullContent);
           }
-          eventSource.close();
+          cleanup();
         } catch (parseError) {
           console.error('❌ Error parsing completion event:', parseError);
+          cleanup();
           onError('Error parsing completion response');
-          eventSource.close();
         }
+      });
+
+      // Handle error events specifically for timeout detection
+      eventSource.addEventListener('error', (event) => {
+        console.error('❌ [CHAT] Error event received:', event);
+        try {
+          const messageEvent = event as MessageEvent;
+          if (messageEvent.data) {
+            const data = JSON.parse(messageEvent.data);
+            if (data.errorCode === 'AI_TIMEOUT_ERROR') {
+              console.error('⏰ [CHAT] Backend timeout detected');
+              cleanup();
+              onError('Response timed out due to API rate limits or high server load. Please try again.');
+              return;
+            }
+          }
+        } catch (parseError) {
+          // Fall through to generic error handling
+        }
+        cleanup();
+        onError('AI service error occurred during streaming');
       });
 
     } catch (err) {
       if (err instanceof Error && err.message.includes('401')) {
         throw new AuthenticationRequiredError();
       }
+      console.error('❌ [CHAT] Failed to start AI response streaming:', err);
       onError('Failed to start AI response streaming');
     }
   }
@@ -274,7 +317,7 @@ class ConversationService {
     onError: (error: string) => void
   ): Promise<void> {
     try {
-      console.log('🚀 Starting blog generation SSE stream:', { conversationId, additionalContext });
+      console.log('🚀 [BLOG] Starting blog generation SSE stream:', { conversationId, additionalContext });
       
       // Use fetch to initiate the SSE stream with POST data
       // This is necessary because EventSource doesn't support POST requests with body
@@ -294,12 +337,20 @@ class ConversationService {
         }
       );
 
+      console.log('🌐 [BLOG] Response received:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('❌ [BLOG] Response not OK:', errorText);
         throw new Error(`Blog generation failed: ${response.status} ${errorText}`);
       }
 
       if (!response.body) {
+        console.error('❌ [BLOG] No response body received');
         throw new Error('No response body received');
       }
 
@@ -309,15 +360,32 @@ class ConversationService {
       let buffer = '';
       let fullContent = '';
       let blogMessageId = '';
+      let chunkCount = 0;
+      let lastChunkTime = Date.now();
+      const CHUNK_TIMEOUT = 30000; // 30 seconds timeout between chunks
+
+      console.log('📡 [BLOG] Starting to read SSE stream...');
 
       try {
         while (true) {
-          const { done, value } = await reader.read();
+          // Add timeout for individual chunk reads
+          const readPromise = reader.read();
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Chunk read timeout')), CHUNK_TIMEOUT)
+          );
+          
+          const { done, value } = await Promise.race([readPromise, timeoutPromise]) as ReadableStreamReadResult<Uint8Array>;
           
           if (done) {
-            console.log('📡 SSE stream ended');
+            console.log('📡 [BLOG] SSE stream ended', { 
+              totalChunks: chunkCount, 
+              finalContentLength: fullContent.length,
+              finalContent: fullContent.substring(0, 200) + '...'
+            });
             break;
           }
+
+          lastChunkTime = Date.now(); // Reset timeout on successful chunk
 
           // Decode chunk and add to buffer
           buffer += decoder.decode(value, { stream: true });
@@ -331,49 +399,71 @@ class ConversationService {
               const data = line.slice(6); // Remove 'data: ' prefix
               
               if (data === '[DONE]') {
-                console.log('✅ Blog generation marked as done');
+                console.log('✅ [BLOG] Blog generation marked as done');
                 break;
               }
 
               try {
                 const parsed = JSON.parse(data);
-                console.log('📋 Parsed SSE data:', parsed);
+                chunkCount++;
+                console.log(`📋 [BLOG] Chunk ${chunkCount} parsed:`, { 
+                  success: parsed.success,
+                  dataLength: parsed.data?.content?.length || 0,
+                  isComplete: parsed.data?.is_complete,
+                  messageId: parsed.data?.message_id,
+                  preview: parsed.data?.content?.substring(0, 50) + '...'
+                });
                 
                 if (parsed.success && parsed.data) {
                   // Extract content and message ID from response
-                  fullContent = parsed.data.content || parsed.data.accumulated_content || '';
+                  // Use accumulated_content first (like working AI chat), fall back to content
+                  if (parsed.data.accumulated_content !== undefined) {
+                    fullContent = parsed.data.accumulated_content;
+                  } else {
+                    // Fallback for old format - append new chunk
+                    const chunk = parsed.data.content || '';
+                    fullContent += chunk;
+                  }
                   blogMessageId = parsed.data.message_id || blogMessageId;
                   
-                  console.log('📝 Blog content updated:', { length: fullContent.length, messageId: blogMessageId });
+                  console.log('📝 [BLOG] Content updated:', { 
+                    length: fullContent.length, 
+                    messageId: blogMessageId,
+                    isComplete: parsed.data.is_complete 
+                  });
                   onChunk(fullContent);
                   
                   // Check if generation is complete
                   if (parsed.data.is_complete) {
-                    console.log('✨ Blog generation complete:', { length: fullContent.length, messageId: blogMessageId });
+                    console.log('✨ [BLOG] Generation complete:', { 
+                      length: fullContent.length, 
+                      messageId: blogMessageId,
+                      finalPreview: fullContent.substring(0, 100) + '...'
+                    });
                     onComplete(fullContent, blogMessageId);
                     return;
                   }
                 } else if (!parsed.success) {
                   const errorMessage = parsed.message || 'Blog generation failed';
-                  console.error('❌ Backend error:', errorMessage);
+                  console.error('❌ [BLOG] Backend error:', errorMessage);
                   onError(errorMessage);
                   return;
                 }
               } catch (parseError) {
-                console.warn('⚠️ Failed to parse SSE data:', data, parseError);
+                console.warn('⚠️ [BLOG] Failed to parse SSE data:', data, parseError);
                 // Continue processing other messages
               }
             } else if (line.startsWith('event: ')) {
               const eventType = line.slice(7); // Remove 'event: ' prefix
-              console.log('📨 SSE event type:', eventType);
+              console.log('📨 [BLOG] SSE event type:', eventType);
               
               // Handle different event types for better debugging
               if (eventType === 'blog_response') {
-                console.log('📝 Received blog_response event - streaming content');
+                console.log('📝 [BLOG] Received blog_response event - streaming content');
               } else if (eventType === 'blog_complete') {
-                console.log('🎯 Received blog_complete event - generation finished');
+                console.log('🎯 [BLOG] Received blog_complete event - generation finished');
               } else if (eventType === 'error') {
-                console.error('❌ Received error event from backend');
+                console.error('❌ [BLOG] Received error event from backend');
               }
             }
           }
@@ -381,7 +471,11 @@ class ConversationService {
         
         // If we reach here without completing, something went wrong
         if (!fullContent) {
+          console.error('❌ [BLOG] Generation completed but no content received');
           onError('Blog generation completed but no content received');
+        } else {
+          console.log('🔄 [BLOG] Stream ended but completion not marked, treating as complete');
+          onComplete(fullContent, blogMessageId);
         }
         
       } finally {
@@ -389,11 +483,20 @@ class ConversationService {
       }
 
     } catch (err) {
-      console.error('❌ Failed to generate blog:', err);
-      if (err instanceof Error && err.message.includes('401')) {
-        throw new AuthenticationRequiredError();
+      console.error('❌ [BLOG] Failed to generate blog:', err);
+      
+      if (err instanceof Error) {
+        if (err.message.includes('401')) {
+          throw new AuthenticationRequiredError();
+        } else if (err.message.includes('timeout') || err.message.includes('Chunk read timeout')) {
+          console.error('⏰ [BLOG] Request timed out - this may be due to Gemini API rate limits or long generation time');
+          onError('Blog generation timed out. This may be due to API rate limits or complex content. Please try again.');
+        } else {
+          onError(err.message);
+        }
+      } else {
+        onError('Failed to generate blog');
       }
-      onError(err instanceof Error ? err.message : 'Failed to generate blog');
     }
   }
 }
