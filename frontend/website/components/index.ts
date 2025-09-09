@@ -1,6 +1,14 @@
-export { default as Header } from './Header'
-export { Sidebar, SidebarButton, SidebarNavItem } from './Sidebar'
-export { AppLayout } from './layout'
-export { ConditionalLayout } from './layout/ConditionalLayout'
-export { default as WelcomePage } from './Welcome'
-export { BlogEditor } from './BlogEditor'
+/**
+ * Main Components Index
+ * Centralized exports for commonly used components
+ * 
+ * This file provides barrel exports for components that need to be imported
+ * with the @/components alias pattern.
+ */
+
+// Layout Components
+export { ConditionalLayout } from './layout/ConditionalLayout';
+export { default as AppLayout } from './layout/AppLayout';
+
+// Feature Components (Re-export from features directory)
+export * from './features';
