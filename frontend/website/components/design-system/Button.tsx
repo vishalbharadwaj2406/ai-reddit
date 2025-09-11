@@ -3,7 +3,7 @@
 import React from "react";
 import clsx from "clsx";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+type Variant = "primary" | "secondary" | "ghost" | "copy" | "danger";
 type Size = "sm" | "md" | "lg" | "xl";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -62,6 +62,15 @@ export const Button: React.FC<ButtonProps> = ({
       "bg-transparent text-gray-300",
       "hover:bg-white/[0.06] hover:text-white",
       "border border-transparent hover:border-white/10"
+    ),
+    copy: clsx(
+      // Glass morphism copy button - visible with professional styling
+      "bg-white/12 backdrop-blur-xl backdrop-saturate-150",
+      "border border-white/30 text-white/85",
+      "shadow-md shadow-black/20",
+      "hover:bg-white/18 hover:border-white/40 hover:text-white",
+      "hover:shadow-lg hover:shadow-black/25",
+      "font-medium"
     ),
     danger: clsx(
       "bg-red-600/80 backdrop-blur-xl backdrop-saturate-150",

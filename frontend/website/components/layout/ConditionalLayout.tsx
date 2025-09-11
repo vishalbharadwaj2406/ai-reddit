@@ -3,7 +3,7 @@
 import React from 'react'
 import { useSessionContext } from '@/components/providers/SessionWrapper'
 import { usePathname } from 'next/navigation'
-import { AppLayout } from '@/components'
+import AppLayout from './AppLayout'
 
 interface ConditionalLayoutProps {
   children: React.ReactNode

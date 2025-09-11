@@ -7,13 +7,16 @@
 
 import { useCallback } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
+import { Button } from '@/components/design-system/Button';
 import { JumpToLatest } from '@/components/features/ui/JumpToLatest';
 
 interface MessageInputProps {
   messageText: string;
   onMessageTextChange: (text: string) => void;
   onSendMessage: (text: string) => Promise<void>;
+  onGenerateBlog: () => void;
   isSending: boolean;
+  isGeneratingBlog: boolean;
   isComposing: boolean;
   onCompositionStart: () => void;
   onCompositionEnd: () => void;
@@ -26,7 +29,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   messageText,
   onMessageTextChange,
   onSendMessage,
+  onGenerateBlog,
   isSending,
+  isGeneratingBlog,
   isComposing,
   onCompositionStart,
   onCompositionEnd,
@@ -69,7 +74,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       
       <div className="flex-1">
         <TextareaAutosize
-          className="glass-input w-full p-3 resize-none text-sm min-h-[48px] max-h-[160px]"
+          className="glass-input w-full p-3 resize-none text-sm min-h-[48px] max-h-[120px]"
           placeholder="Message..."
           value={messageText}
           onChange={(e) => onMessageTextChange(e.target.value)}
@@ -77,18 +82,32 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           onCompositionStart={onCompositionStart}
           onCompositionEnd={onCompositionEnd}
           minRows={1}
-          maxRows={6}
-          disabled={isSending}
+          maxRows={4}
+          disabled={isSending || isGeneratingBlog}
         />
       </div>
       
-      <button
-        onClick={handleSend}
-        disabled={!messageText.trim() || isSending}
-        className="glass-button-primary px-4 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+      {/* Generate Blog Button */}
+      <Button
+        onClick={onGenerateBlog}
+        disabled={isGeneratingBlog}
+        variant="primary"
+        size="md"
+        loading={isGeneratingBlog}
       >
-        {isSending ? '...' : '→'}
-      </button>
+        {isGeneratingBlog ? 'Generating...' : 'Generate Blog'}
+      </Button>
+      
+      {/* Send Button */}
+      <Button
+        onClick={handleSend}
+        disabled={!messageText.trim() || isSending || isGeneratingBlog}
+        variant="secondary"
+        size="md"
+        loading={isSending}
+      >
+        {isSending ? 'Sending...' : '→'}
+      </Button>
     </div>
   );
 };

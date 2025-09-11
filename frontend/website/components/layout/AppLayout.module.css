@@ -9,24 +9,25 @@
   position: relative;
 }
 
-/* Main Content Area */
+/* Main Content Area - Glass Scroll Enabled */
 .mainContent {
   flex: 1;
   min-width: 0; /* Prevent overflow */
   transition: margin-left 250ms cubic-bezier(0.4, 0, 0.2, 1);
-  padding-top: 64px; /* Account for fixed header */
+  /* Remove padding-top to allow glass scroll effect */
   height: 100vh; /* Full viewport height */
-  box-sizing: border-box; /* Include padding in height calculation */
-  overflow: hidden; /* Prevent double scrollbars - each page manages its own scrolling */
+  box-sizing: border-box; /* Include margins in height calculation */
+  /* No overflow constraint - child components manage glass scrolling */
+  position: relative; /* For absolute positioning of glass scroll containers */
 }
 
-/* Content margins based on sidebar state */
+/* Content margins based on sidebar state - Use CSS variables */
 .mainContent.expanded {
-  margin-left: 240px;
+  margin-left: var(--sidebar-expanded);
 }
 
 .mainContent.collapsed {
-  margin-left: 72px;
+  margin-left: var(--sidebar-collapsed);
 }
 
 /* ============================================
@@ -44,21 +45,21 @@
 /* Tablet: Ensure proper spacing */
 @media (min-width: 768px) and (max-width: 1024px) {
   .mainContent.expanded {
-    margin-left: 240px;
+    margin-left: var(--sidebar-expanded);
   }
   
   .mainContent.collapsed {
-    margin-left: 72px;
+    margin-left: var(--sidebar-collapsed);
   }
 }
 
 /* Large screens: Optimal spacing */
 @media (min-width: 1025px) {
   .mainContent.expanded {
-    margin-left: 240px;
+    margin-left: var(--sidebar-expanded);
   }
   
   .mainContent.collapsed {
-    margin-left: 72px;
+    margin-left: var(--sidebar-collapsed);
   }
 } 

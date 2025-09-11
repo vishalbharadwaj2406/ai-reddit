@@ -8,8 +8,6 @@
 import { MessageInput } from '../chat/MessageInput';
 import { MessageSuggestions } from '../chat/MessageSuggestions';
 import { JumpToLatest } from './JumpToLatest';
-import { LAYOUT_CONSTANTS } from '@/hooks/useViewportLayout';
-import { useSidebarStore } from '@/lib/stores/sidebarStore';
 
 interface InputAreaProps {
   // Message state
@@ -31,7 +29,8 @@ interface InputAreaProps {
   hasUserMessages: boolean;
   isGeneratingBlog: boolean;
   
-  // Blog handler
+  // Blog handlers
+  onGenerateBlog: () => void;
   onWriteBlog: () => void;
 }
 
@@ -47,21 +46,11 @@ export const InputArea: React.FC<InputAreaProps> = ({
   onJumpToLatest,
   hasUserMessages,
   isGeneratingBlog,
+  onGenerateBlog,
   onWriteBlog,
 }) => {
-  const { isExpanded: sidebarExpanded } = useSidebarStore();
-
   return (
-    <div 
-      className="fixed right-0 border-t border-gray-700/30 bg-black/60 backdrop-blur-md z-50"
-      style={{ 
-        left: sidebarExpanded ? `${LAYOUT_CONSTANTS.SIDEBAR_EXPANDED}px` : `${LAYOUT_CONSTANTS.SIDEBAR_COLLAPSED}px`,
-        bottom: '16px',
-        minHeight: `${LAYOUT_CONSTANTS.INPUT_HEIGHT}px`,
-        maxHeight: '200px',
-        transition: 'left 0.3s ease'
-      }}
-    >
+    <div className="bg-black/90 backdrop-blur-sm">
       <div className="px-4 py-3">
         <div className="max-w-4xl mx-auto">
           
@@ -78,7 +67,9 @@ export const InputArea: React.FC<InputAreaProps> = ({
             messageText={messageText}
             onMessageTextChange={onMessageTextChange}
             onSendMessage={onSendMessage}
+            onGenerateBlog={onGenerateBlog}
             isSending={isSending}
+            isGeneratingBlog={isGeneratingBlog}
             isComposing={isComposing}
             onCompositionStart={onCompositionStart}
             onCompositionEnd={onCompositionEnd}

@@ -36,47 +36,61 @@
 }
 
 .glass-card:hover {
-  /* MINIMAL change - only border highlight */
-  border-color: rgba(59, 130, 246, 0.2);
+  opacity: 0.95;
 }
 
-/* Glass Input - Clean form styling */
-.glass-input {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+/* ============================================
+   UNIFIED GLASS SYSTEM - PRODUCTION READY
+   Single definitions, no duplicates
+   ============================================ */
+
+/* Main Glass Card - Production-grade subtle interactions */
+.glass-card {
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-radius: 16px;
   transition: border-color 0.2s ease;
-  padding: 12px 16px;
-  color: white;
+  padding: 24px;
+}
+
+.glass-card:hover {
+  opacity: 0.95;
+}
+
+/* Glass Input - Unified definition for all form inputs */
+.glass-input {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-radius: 20px;
+  color: #FFFFFF;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .glass-input:focus {
   outline: none;
-  border-color: rgba(59, 130, 246, 0.3);
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 
+    0 6px 24px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-/* Glass Button Primary - Minimal feedback */
-.glass-button-primary {
-  background: rgba(59, 130, 246, 0.2);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  border-radius: 8px;
-  transition: background-color 0.2s ease;
-  padding: 12px 24px;
-  color: white;
-  font-weight: 500;
+.glass-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
 }
 
-.glass-button-primary:hover {
-  background: rgba(59, 130, 246, 0.25);
-}
-
-.glass-button-primary:active {
-  background: rgba(59, 130, 246, 0.3);
-}
+/* ============================================
+   BUTTON SYSTEM MOVED TO COMPONENT
+   All button styles now handled by Button component
+   No CSS classes needed - everything in TypeScript
+   ============================================ */
 
 /* Glass Dropdown - Following Royal Ink Glass design system */
 .glass-dropdown {
@@ -163,78 +177,9 @@
    UNIFIED GLASS SYSTEM - Based on website-sample.html
    ============================================ */
 
-/* Main Glass Card - Production-grade subtle interactions */
-.glass-card {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  border-radius: 16px;
-  transition: border-color 0.2s ease;
-  padding: 24px;
-}
+/* Duplicate definitions removed - using unified system above */
 
-.glass-card:hover {
-  /* MINIMAL change - only border highlight */
-  border-color: rgba(59, 130, 246, 0.2);
-}
-
-/* Glass Input - For search bars and form inputs */
-.glass-input {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(24px) saturate(150%);
-  -webkit-backdrop-filter: blur(24px) saturate(150%);
-  border: 2px solid rgba(59, 130, 246, 0.3);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
-  border-radius: 20px;
-  transition: all 0.3s ease;
-}
-
-.glass-input:focus {
-  border-color: rgba(59, 130, 246, 0.6);
-  box-shadow: 
-    inset 0 2px 4px rgba(0, 0, 0, 0.1),
-    0 0 32px rgba(59, 130, 246, 0.2);
-}
-
-/* Glass Button Primary - For New Chat buttons */
-.glass-button-primary {
-  background: linear-gradient(135deg, #1E3A8A, #3B82F6);
-  border: none;
-  border-radius: 20px;
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(30, 58, 138, 0.3);
-}
-
-.glass-button-primary:hover {
-  /* NO transform - professional only */
-  box-shadow: 0 12px 32px rgba(30, 58, 138, 0.4);
-  background: linear-gradient(135deg, #1D4ED8, #2563EB);
-}
-
-/* Glass Button Secondary - For sign out, etc */
-.glass-button-secondary {
-  background: rgba(255, 255, 255, 0.02);
-  border: 2px solid rgba(59, 130, 246, 0.3);
-  border-radius: 28px;
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-}
-
-.glass-button-secondary:hover {
-  background: rgba(30, 58, 138, 0.2);
-  color: #3B82F6;
-  border-color: rgba(59, 130, 246, 0.5);
-  box-shadow: 0 6px 20px rgba(30, 58, 138, 0.2);
-}
+/* Button styles moved to design-system Button component */
 
 /* REMOVED DUPLICATE - Using clean version above */
 
@@ -254,12 +199,7 @@
 }
 
 .glass-panel:hover {
-  background: rgba(30, 58, 138, 0.05);
-  border-color: rgba(59, 130, 246, 0.3);
-  box-shadow: 
-    0 12px 40px rgba(0, 0, 0, 0.9),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    0 0 80px rgba(30, 58, 138, 0.2);
+  opacity: 0.95;
 }
 
 /* Glass Panel Subdued - For reference content (Original Blog) */
@@ -276,11 +216,7 @@
 }
 
 .glass-panel-subdued:hover {
-  background: rgba(0, 0, 0, 0.75);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 
-    0 10px 36px rgba(0, 0, 0, 0.95),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  opacity: 0.95;
 }
 
 /* ============================================
@@ -381,27 +317,19 @@
   border-right: 1px solid rgba(107, 114, 128, 0.3);
 }
 
-/* Glass Panel Active - For working content (Generated Blog) */
+/* Glass Panel Active - Professional, clean appearance for working content (Generated Blog) */
 .glass-panel-active {
   background: rgba(15, 30, 60, 0.4);
   backdrop-filter: blur(32px) saturate(160%);
   -webkit-backdrop-filter: blur(32px) saturate(160%);
-  border: 2px solid rgba(59, 130, 246, 0.3);
-  box-shadow: 
-    0 12px 40px rgba(0, 0, 0, 0.8),
-    inset 0 1px 0 rgba(59, 130, 246, 0.2),
-    0 0 40px rgba(30, 58, 138, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8);
   border-radius: 24px;
-  transition: all 0.4s ease;
+  transition: opacity 0.2s ease;
 }
 
 .glass-panel-active:hover {
-  background: rgba(20, 35, 70, 0.5);
-  border-color: rgba(59, 130, 246, 0.4);
-  box-shadow: 
-    0 16px 50px rgba(0, 0, 0, 0.85),
-    inset 0 1px 0 rgba(59, 130, 246, 0.3),
-    0 0 60px rgba(30, 58, 138, 0.25);
+  opacity: 0.95;
 }
 
 /* Sample Chat Panel - From website-sample.html */
@@ -495,12 +423,7 @@
 }
 
 .sample-post-card:hover {
-  background: rgba(30, 58, 138, 0.05);
-  border-color: rgba(59, 130, 246, 0.3);
-  box-shadow: 
-    0 16px 50px rgba(0, 0, 0, 0.9),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15),
-    0 0 80px rgba(30, 58, 138, 0.2);
+  opacity: 0.95;
 }
 
 /* Sample Input Field - From website-sample.html */
@@ -522,33 +445,14 @@
 .sample-input-field:focus {
   outline: none;
   border-color: rgba(59, 130, 246, 0.6);
-  box-shadow: 0 0 32px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .sample-input-field::placeholder {
   color: rgba(255, 255, 255, 0.5);
 }
 
-/* Sample Button - From website-sample.html */
-.sample-btn {
-  background: linear-gradient(135deg, #1E3A8A, #3B82F6);
-  border: none;
-  border-radius: 20px;
-  padding: 20px 32px;
-  color: white;
-  font-weight: 700;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(30, 58, 138, 0.3);
-}
-
-.sample-btn:hover {
-  box-shadow: 0 12px 32px rgba(30, 58, 138, 0.4);
-  border: 1px solid rgba(59, 130, 246, 0.5);
-}
-
-/* REMOVED DUPLICATE - Using clean version above */
+/* Legacy sample styles removed - using unified button system */
 
 @keyframes glassDropdownAppear {
   from {
@@ -561,146 +465,24 @@
   }
 }
 
-/* Glass Input - For form fields */
-.glass-input {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px) saturate(150%);
-  -webkit-backdrop-filter: blur(16px) saturate(150%);
-  border: 2px solid rgba(59, 130, 246, 0.2);
-  border-radius: 20px;
-  color: #FFFFFF;
-  transition: all 0.3s ease;
-  box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.glass-input:focus {
-  outline: none;
-  border-color: rgba(59, 130, 246, 0.6);
-  box-shadow: 
-    0 6px 24px rgba(0, 0, 0, 0.4),
-    0 0 32px rgba(59, 130, 246, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.glass-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
 /* ============================================
-   ENHANCED BUTTON SYSTEM
+   LEGACY CLASSES REMOVED
+   All button styles now handled by Button component
+   All input styles unified above
    ============================================ */
 
-/* Primary Glass Button (RESTORED & TONED DOWN) */
-.glass-button-primary {
-  background: linear-gradient(135deg, 
-    rgba(30, 58, 138, 0.6) 0%,
-    rgba(59, 130, 246, 0.4) 100%);
-  backdrop-filter: var(--glass-blur-light) saturate(150%);
-  -webkit-backdrop-filter: var(--glass-blur-light) saturate(150%);
-  border: 1px solid var(--glass-border-medium);
-  color: #FFFFFF;
-  border-radius: var(--radius-lg);
-  font-weight: 600;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  box-shadow: 
-    0 4px 16px rgba(30, 58, 138, 0.2),
-    0 0 16px rgba(59, 130, 246, 0.1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
+/* Legacy classes completely removed for clean architecture */
 
-.glass-button-primary:hover {
-  box-shadow: 
-    0 6px 20px rgba(30, 58, 138, 0.3),
-    0 0 24px rgba(59, 130, 246, 0.2);
-  border-color: var(--glass-border-heavy);
-  color: #FFFFFF;
-}
+/* All legacy button classes removed - using unified Button component only */
 
-/* Generate Blog Button - Subtle special styling */
-.glass-button-generate {
-  background: linear-gradient(135deg, 
-    rgba(30, 58, 138, 0.7) 0%,
-    rgba(59, 130, 246, 0.5) 100%);
-  backdrop-filter: var(--glass-blur-light) saturate(160%);
-  -webkit-backdrop-filter: var(--glass-blur-light) saturate(160%);
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  color: #FFFFFF;
-  border-radius: var(--radius-lg);
-  font-weight: 700;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  box-shadow: 
-    0 6px 20px rgba(30, 58, 138, 0.25),
-    0 0 24px rgba(59, 130, 246, 0.15);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
+/* ============================================
+   LEGACY CLASSES REMOVED
+   All buttons now use unified Button component
+   ============================================ */
 
-.glass-button-generate:hover {
-  box-shadow: 
-    0 8px 28px rgba(30, 58, 138, 0.35),
-    0 0 32px rgba(59, 130, 246, 0.25);
-  border-color: rgba(59, 130, 246, 0.6);
-}
+/* Legacy classes completely removed for clean architecture */
 
-/* Secondary Glass Button (RESTORED) */
-.glass-button-secondary {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.8);
-  border-radius: var(--radius-lg);
-  font-weight: 500;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  backdrop-filter: var(--glass-blur-light);
-  -webkit-backdrop-filter: var(--glass-blur-light);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.glass-button-secondary:hover {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: var(--glass-border-medium);
-  color: #FFFFFF;
-}
-
-/* Toggle Button - For panel toggles */
-.glass-button-toggle {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(59, 130, 246, 0.3);
-  color: rgba(255, 255, 255, 0.8);
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  cursor: pointer;
-  padding: 8px 16px;
-}
-
-.glass-button-toggle:hover {
-  background: rgba(59, 130, 246, 0.1);
-  color: #FFFFFF;
-  border-color: rgba(59, 130, 246, 0.5);
-}
-
-.glass-button-toggle.active {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60A5FA;
-  border-color: rgba(59, 130, 246, 0.6);
-  box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
-}
+/* All legacy button classes removed - using unified Button component only */
 
 /* ============================================
    ENHANCED TYPOGRAPHY SYSTEM
@@ -752,7 +534,7 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
   animation: gradientShimmer 4s ease-in-out infinite;
 }
 
@@ -769,7 +551,7 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
   animation: gradientShift 25s ease-in-out infinite;
 }
 
@@ -791,10 +573,9 @@
   animation: shimmer 2s ease-in-out infinite;
 }
 
-/* Accent Text */
+/* Accent Text - Clean without glow */
 .text-accent {
   color: var(--color-light-blue);
-  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.2));
 }
 
 /* Message Text - For chat messages */
@@ -849,28 +630,9 @@
   transition: border-color 0.2s ease;
 }
 
-/* Hover effect for AI messages (subtle royal accent) */
-.glass-message-ai:hover {
-  border-color: rgba(59, 130, 246, 0.25);
-}
+/* AI messages have no hover effects - clean, static appearance for professional UX */
 
-/* Message Bubble - Blog */
-.glass-message-blog {
-  background: linear-gradient(135deg, 
-    rgba(30, 58, 138, 0.15) 0%,
-    rgba(59, 130, 246, 0.08) 100%);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border: 2px solid rgba(59, 130, 246, 0.4);
-  border-radius: 20px 20px 20px 4px;
-  padding: 16px 24px;
-  color: rgba(255, 255, 255, 0.95);
-  max-width: 85%;
-  box-shadow: 
-    0 8px 32px rgba(30, 58, 138, 0.2),
-    0 0 40px rgba(59, 130, 246, 0.15);
-  animation: messageSlideIn 0.3s ease-out;
-}
+/* Blog messages now use same styling as AI messages - no separate class needed */
 
 @keyframes messageSlideIn {
   from {
@@ -910,18 +672,20 @@
    UTILITY CLASSES - ENHANCED
    ============================================ */
 
-/* Glow Effects */
-.glow-blue {
-  filter: drop-shadow(0 0 12px rgba(59, 130, 246, 0.4));
+/* Clean Effects - No glows for professional appearance */
+.effect-subtle {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
 }
 
-.glow-blue-strong {
-  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.6));
+.effect-clean-shadow {
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
 }
 
-.glow-blue-intense {
-  filter: drop-shadow(0 0 32px rgba(59, 130, 246, 0.8));
+.effect-professional {
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
 }
+
+/* Unused legacy button classes removed - now using unified Button component */
 
 /* Focus States */
 .focus-ring:focus-visible {

@@ -1,49 +1,62 @@
 /**
- * Custom hook for managing viewport layout calculations
- * Provides consistent height management across the application
- * accounting for fixed header and responsive design
+ * DEPRECATED: Legacy viewport layout hook
+ * 
+ * ⚠️  This hook is deprecated and should not be used in new code.
+ * 
+ * Use the new glass scroll system instead:
+ * - useGlassScroll() for glass morphism scroll layouts
+ * - usePageGlassScroll() for page-level layouts  
+ * - usePanelGlassScroll() for panel-level layouts
+ * 
+ * The new system provides:
+ * - Centralized design tokens from @/lib/layout/tokens
+ * - Automatic CSS variable management
+ * - Production-grade glass scroll effects
+ * - Better height cascade management
+ * 
+ * Migration guide:
+ * - Replace usePageLayout() with usePageGlassScroll()
+ * - Use layout tokens from @/lib/layout/tokens instead of hardcoded values
+ * - Apply glass scroll classes to enable beautiful behind-glass scrolling
+ * 
+ * This file will be removed in a future version.
  */
 
 import { useState, useEffect } from 'react';
 
 interface ViewportLayout {
-  /** Available height for page content (viewport minus header) */
+  /** @deprecated Use useGlassScroll instead */
   availableHeight: number;
-  /** Height of the fixed header */
+  /** @deprecated Use LAYOUT_TOKENS.HEADER_HEIGHT instead */
   headerHeight: number;
-  /** Full viewport height */
+  /** @deprecated Use window.innerHeight directly */
   viewportHeight: number;
-  /** CSS class for content container height */
+  /** @deprecated Use glass scroll classes instead */
   contentHeightClass: string;
-  /** CSS style object for dynamic height calculations */
+  /** @deprecated Use glass scroll inline styles instead */
   contentStyle: React.CSSProperties;
 }
 
 /**
- * Hook that calculates layout dimensions accounting for fixed header
- * @param customHeaderHeight - Override default header height (default: 64px)
- * @returns Layout calculations and CSS helpers
+ * @deprecated Use useGlassScroll() instead
+ * This hook will be removed in a future version
  */
 export function useViewportLayout(customHeaderHeight?: number): ViewportLayout {
-  const HEADER_HEIGHT = customHeaderHeight ?? 64; // Fixed header height
+  console.warn(
+    '⚠️  useViewportLayout is deprecated. Use useGlassScroll() from @/hooks/useGlassScroll instead.'
+  );
   
+  const HEADER_HEIGHT = customHeaderHeight ?? 64;
   const [viewportHeight, setViewportHeight] = useState(0);
   
-  // Update viewport height on resize and initial mount
   useEffect(() => {
     const updateHeight = () => {
       setViewportHeight(window.innerHeight);
     };
     
-    // Set initial height
     updateHeight();
-    
-    // Listen for resize events
     window.addEventListener('resize', updateHeight);
-    
-    // Listen for orientation changes on mobile
     window.addEventListener('orientationchange', () => {
-      // Delay to account for browser UI changes
       setTimeout(updateHeight, 100);
     });
     
@@ -59,35 +72,40 @@ export function useViewportLayout(customHeaderHeight?: number): ViewportLayout {
     availableHeight,
     headerHeight: HEADER_HEIGHT,
     viewportHeight,
-    contentHeightClass: 'h-full', // Use h-full since AppLayout manages the height
+    contentHeightClass: 'h-full',
     contentStyle: {
-      height: '100%', // Full height of the available space
-      maxHeight: '100%', // Prevent overflow
-      overflow: 'hidden' // Each component manages its own scrolling
+      height: '100%',
+      maxHeight: '100%',
+      overflow: 'hidden'
     }
   };
 }
 
 /**
- * Hook specifically for page containers that need full available height
- * Provides common patterns for full-height pages
+ * @deprecated Use usePageGlassScroll() instead
+ * This hook will be removed in a future version
  */
 export function usePageLayout() {
+  console.warn(
+    '⚠️  usePageLayout is deprecated. Use usePageGlassScroll() from @/hooks/useGlassScroll instead.'
+  );
+  
   const layout = useViewportLayout();
   
   return {
     ...layout,
-    /** Props for page container div */
     containerProps: {
-      className: 'h-full flex flex-col',
-      style: { height: '100%' }
+      className: 'flex flex-col',
+      style: { 
+        height: 'calc(100vh - 64px)', // Keep old broken behavior for compatibility
+        maxHeight: 'calc(100vh - 64px)',
+        overflow: 'hidden'
+      }
     },
-    /** Props for scrollable content area */
     scrollableProps: {
       className: 'flex-1 overflow-y-auto overflow-x-hidden',
-      style: { minHeight: 0 } // Allow flex shrinking
+      style: { minHeight: 0 }
     },
-    /** Props for fixed elements (headers, footers) */
     fixedProps: {
       className: 'flex-shrink-0'
     }

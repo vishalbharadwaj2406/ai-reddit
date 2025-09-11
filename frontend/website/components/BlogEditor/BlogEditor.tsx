@@ -1,6 +1,7 @@
 'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
+import { Button } from '@/components/design-system/Button';
 import StarterKit from '@tiptap/starter-kit';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
@@ -177,25 +178,29 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
           )}
         </div>
         <div className="flex items-center gap-3">
-          <button 
+          <Button 
+            variant="secondary"
+            size="md"
             onClick={handleCancel}
-            className="glass-button-secondary px-4 py-2 text-sm"
           >
             Cancel
-          </button>
-          <button 
+          </Button>
+          <Button 
+            variant="ghost"
+            size="md"
             onClick={handleSave}
-            className="glass-button-toggle px-4 py-2 text-sm"
           >
             Save Draft
-          </button>
-          <button 
+          </Button>
+          <Button 
+            variant="primary"
+            size="md"
             onClick={handlePublish}
             disabled={isPublishing}
-            className="glass-button-generate px-4 py-2 text-sm disabled:opacity-50"
+            loading={isPublishing}
           >
             {isPublishing ? 'Publishing...' : '🚀 Publish Post'}
-          </button>
+          </Button>
         </div>
       </div>
 

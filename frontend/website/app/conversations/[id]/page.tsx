@@ -1,6 +1,6 @@
 /**
- * Refactored Conversation Page
- * Production-grade conversation interface using component architecture
+ * Production-Grade Conversation Page
+ * Clean, direct imports for better reliability
  */
 
 'use client';
@@ -12,7 +12,8 @@ import SessionGuard from '../../../components/auth/SessionGuard';
 import { ConversationLayout } from '@/components/features/layout/ConversationLayout';
 import { UnifiedToast } from '@/components/features/ui/UnifiedToast';
 import { ConversationLoading } from '@/components/features/ui/LoadingStates';
-import { usePageLayout } from '@/hooks/useViewportLayout';
+import { Button } from '@/components/design-system/Button';
+import { usePageGlassScroll } from '@/hooks/useGlassScroll';
 import { useHeaderStore } from '@/lib/stores/headerStore';
 
 // Import all conversation hooks
@@ -32,7 +33,7 @@ function ConversationPageContent() {
   
   console.log('🆔 ConversationPage mounted - conversationId:', conversationId);
   
-  const layout = usePageLayout();
+  const glassLayout = usePageGlassScroll();
   const { setConversationTitle } = useHeaderStore();
   
   // Core conversation data hook
@@ -230,7 +231,7 @@ function ConversationPageContent() {
   // Show loading state
   if (loading) {
     return (
-      <div {...layout.containerProps}>
+      <div {...glassLayout.containerProps}>
         <ConversationLoading />
       </div>
     );
@@ -239,14 +240,14 @@ function ConversationPageContent() {
   // Show error state
   if (conversationError || !conversation) {
     return (
-      <div {...layout.containerProps}>
+      <div {...glassLayout.containerProps}>
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <p className="text-red-500 mb-4">{conversationError || 'Conversation not found'}</p>
             <Link href="/conversations">
-              <button className="glass-button-secondary px-4 py-2">
+              <Button variant="secondary" size="md">
                 ← Back to Conversations
-              </button>
+              </Button>
             </Link>
           </div>
         </div>
@@ -258,7 +259,7 @@ function ConversationPageContent() {
   const activeError = unifiedError || messageError || blogError || conversationError;
   
   return (
-    <>
+    <div {...glassLayout.containerProps}>
       {/* Toast Notifications */}
       <UnifiedToast 
         toast={activeError ? { type: 'error', message: activeError } : toast}
@@ -270,33 +271,36 @@ function ConversationPageContent() {
         } : hideToast}
       />
       
-      {/* Main Layout */}
-      <ConversationLayout
-        conversation={conversation}
-        onSendMessage={handleSendMessage}
-        onGenerateBlog={handleGenerateBlog}
-        onEditBlog={handleEditBlog}
-        onCancelEdit={handleCancelEdit}
-        onSaveDraft={handleSaveDraft}
-        onPublishBlog={handlePublishBlog}
-        onWriteBlog={handleWriteBlog}
-        messageText={messageText}
-        onMessageTextChange={setMessageText}
-        isSending={isSending}
-        isAIResponding={isAIResponding}
-        isGeneratingBlog={isGeneratingBlog}
-        isComposing={isComposing}
-        onCompositionStart={() => setIsComposing(true)}
-        onCompositionEnd={() => setIsComposing(false)}
-        showJumpToLatest={showJumpToLatest}
-        onJumpToLatest={handleJumpToLatest}
-        isEditingBlog={isEditingBlog}
-        isPublishing={isPublishing}
-      />
-    </>
+      {/* Main Glass Scroll Content */}
+      <div {...glassLayout.contentProps}>
+        <ConversationLayout
+          conversation={conversation}
+          onSendMessage={handleSendMessage}
+          onGenerateBlog={handleGenerateBlog}
+          onEditBlog={handleEditBlog}
+          onCancelEdit={handleCancelEdit}
+          onSaveDraft={handleSaveDraft}
+          onPublishBlog={handlePublishBlog}
+          onWriteBlog={handleWriteBlog}
+          messageText={messageText}
+          onMessageTextChange={setMessageText}
+          isSending={isSending}
+          isAIResponding={isAIResponding}
+          isGeneratingBlog={isGeneratingBlog}
+          isComposing={isComposing}
+          onCompositionStart={() => setIsComposing(true)}
+          onCompositionEnd={() => setIsComposing(false)}
+          showJumpToLatest={showJumpToLatest}
+          onJumpToLatest={handleJumpToLatest}
+          isEditingBlog={isEditingBlog}
+          isPublishing={isPublishing}
+        />
+      </div>
+    </div>
   );
 }
 
+// Default export required for Next.js App Router
 export default function ConversationPage() {
   return (
     <SessionGuard>

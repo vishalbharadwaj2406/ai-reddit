@@ -5,6 +5,8 @@
 
 'use client';
 
+import { Button } from '@/components/design-system/Button';
+
 interface PanelControlsProps {
   // Panel states
   showOriginalBlog: boolean;
@@ -40,26 +42,30 @@ export const PanelControls: React.FC<PanelControlsProps> = ({
     <div className={`absolute ${isMobile ? 'bottom-20 right-4' : 'top-20 right-4'} z-10 flex ${isMobile ? 'flex-row gap-2' : 'flex-col gap-2'}`}>
       {/* Original Blog Toggle (only if forked) */}
       {isForked && (
-        <button 
-          className={`glass-button-toggle px-3 py-2 text-xs transition-all duration-200 ${showOriginalBlog ? 'active bg-blue-500/20 border-blue-400/50' : ''}`}
+        <Button 
+          variant="ghost"
+          size="sm"
           onClick={onToggleOriginalBlog}
           aria-label="Toggle original blog panel"
           title="Toggle original blog panel"
+          className={showOriginalBlog ? 'bg-blue-500/20 border-blue-400/50' : ''}
         >
           👁 Original
-        </button>
+        </Button>
       )}
       
       {/* Generated Blog Toggle (only if blog messages exist) */}
       {hasBlogMessages && (
-        <button 
-          className={`glass-button-toggle px-3 py-2 text-xs transition-all duration-200 ${showGeneratedBlog ? 'active bg-blue-500/20 border-blue-400/50' : ''}`}
+        <Button 
+          variant="ghost"
+          size="sm"
           onClick={onToggleGeneratedBlog}
           aria-label="Toggle generated blog panel"
           title="Toggle generated blog panel"
+          className={showGeneratedBlog ? 'bg-blue-500/20 border-blue-400/50' : ''}
         >
           📝 Blog
-        </button>
+        </Button>
       )}
     </div>
   );

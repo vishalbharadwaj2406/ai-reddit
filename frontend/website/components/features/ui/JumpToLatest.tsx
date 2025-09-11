@@ -17,7 +17,7 @@ export const JumpToLatest: React.FC<JumpToLatestProps> = ({
   return (
     <button
       onClick={onJumpToLatest}
-      className={`w-7 h-7 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center hover:bg-white/10 hover:border-white/20 transition-all duration-300 shadow-2xl hover:shadow-blue-500/20 hover:scale-110 ${className}`}
+      className={`w-7 h-7 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 flex items-center justify-center hover:opacity-80 transition-opacity duration-200 shadow-2xl ${className}`}
       aria-label="Scroll to latest message"
       style={{ 
         backdropFilter: 'blur(20px)',

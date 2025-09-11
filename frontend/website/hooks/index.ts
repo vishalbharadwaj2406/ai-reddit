@@ -1,6 +1,13 @@
 /**
- * Hooks Module Exports
- * Centralized exports for all custom hooks
+ * Production-Grade Hooks System
+ * Clean, focused exports for production use
  */
 
-export { useViewportLayout, usePageLayout, LAYOUT_CSS_VARS } from './useViewportLayout';
+// Glass scroll system (production-ready)
+export { 
+  useGlassScroll, 
+  usePageGlassScroll, 
+  usePanelGlassScroll 
+} from './useGlassScroll';
+
+// Note: Legacy viewport hooks have been removed to prevent Next.js 15 conflicts

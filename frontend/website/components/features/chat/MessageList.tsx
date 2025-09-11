@@ -7,13 +7,17 @@
 
 import { Message } from '@/lib/services/conversationService';
 import MarkdownRenderer from '@/components/Markdown/MarkdownRenderer';
+import { Button } from '@/components/design-system/Button';
 import { copyText } from '@/lib/utils/copy';
 import { markdownToPlain } from '@/lib/utils/markdown';
+import { BlogMessageButton } from './BlogMessageButton';
 
 interface MessageListProps {
   messages: Message[];
   isAIResponding: boolean;
   isGeneratingBlog: boolean;
+  activeBlogMessageId?: string;
+  onBlogMessageClick?: (message: Message) => void;
   onEditBlog?: () => void;
 }
 
@@ -21,6 +25,8 @@ export const MessageList: React.FC<MessageListProps> = ({
   messages,
   isAIResponding,
   isGeneratingBlog,
+  activeBlogMessageId,
+  onBlogMessageClick,
   onEditBlog,
 }) => {
   // Filter out system messages
@@ -43,22 +49,7 @@ export const MessageList: React.FC<MessageListProps> = ({
             aria-label={`${message.role === 'user' ? 'User' : 'Assistant'} message`}
           >
             <div className={`${message.role === 'user' ? 'glass-message-user' : 
-                            message.isBlog ? 'glass-message-blog' : 'glass-message-ai'} max-w-[85%] relative group`}>
-              
-              {/* Blog message indicator */}
-              {message.isBlog && (
-                <div className="flex items-center gap-2 mb-2 text-xs text-blue-300">
-                  <span className="px-2 py-1 bg-blue-900/30 rounded-full">Blog</span>
-                  {onEditBlog && (
-                    <button 
-                      className="glass-button-secondary px-2 py-1 text-xs"
-                      onClick={onEditBlog}
-                    >
-                      Edit and Post
-                    </button>
-                  )}
-                </div>
-              )}
+                            'glass-message-ai'} max-w-[85%] relative group`}>
               
               {/* Message content */}
               <div className="text-message">
@@ -83,6 +74,14 @@ export const MessageList: React.FC<MessageListProps> = ({
                   ) : null
                 )}
               </div>
+              
+              {/* Blog message button */}
+              {message.isBlog && onBlogMessageClick && (
+                <BlogMessageButton
+                  onClick={() => onBlogMessageClick(message)}
+                  isActive={activeBlogMessageId === message.messageId}
+                />
+              )}
               
               {/* Message metadata and actions */}
               <div className="mt-2 flex items-center justify-between">
