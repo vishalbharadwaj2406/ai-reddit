@@ -1,13 +1,12 @@
 /**
  * InputArea Component
- * Production-grade message input area with suggestions and proper positioning
+ * Clean input area that lives within chat panel only
  */
 
 'use client';
 
 import { MessageInput } from '../chat/MessageInput';
 import { MessageSuggestions } from '../chat/MessageSuggestions';
-import { JumpToLatest } from './JumpToLatest';
 
 interface InputAreaProps {
   // Message state
@@ -50,35 +49,33 @@ export const InputArea: React.FC<InputAreaProps> = ({
   onWriteBlog,
 }) => {
   return (
-    <div className="bg-black/90 backdrop-blur-sm">
-      <div className="px-4 py-3">
-        <div className="max-w-4xl mx-auto">
-          
-          {/* Suggestions for empty state */}
-          {!hasUserMessages && (
-            <MessageSuggestions 
-              onSuggestionClick={onMessageTextChange}
-              onWriteBlog={onWriteBlog}
-              isGeneratingBlog={isGeneratingBlog}
-            />
-          )}
-
-          <MessageInput
-            messageText={messageText}
-            onMessageTextChange={onMessageTextChange}
-            onSendMessage={onSendMessage}
-            onGenerateBlog={onGenerateBlog}
-            isSending={isSending}
+    <div className="w-full">
+      {/* Suggestions for empty state */}
+      {!hasUserMessages && (
+        <div className="mb-4">
+          <MessageSuggestions 
+            onSuggestionClick={onMessageTextChange}
+            onWriteBlog={onWriteBlog}
             isGeneratingBlog={isGeneratingBlog}
-            isComposing={isComposing}
-            onCompositionStart={onCompositionStart}
-            onCompositionEnd={onCompositionEnd}
-            showJumpToLatest={showJumpToLatest}
-            onJumpToLatest={onJumpToLatest}
-            hasUserMessages={hasUserMessages}
           />
         </div>
-      </div>
+      )}
+
+      {/* Main input component */}
+      <MessageInput
+        messageText={messageText}
+        onMessageTextChange={onMessageTextChange}
+        onSendMessage={onSendMessage}
+        onGenerateBlog={onGenerateBlog}
+        isSending={isSending}
+        isGeneratingBlog={isGeneratingBlog}
+        isComposing={isComposing}
+        onCompositionStart={onCompositionStart}
+        onCompositionEnd={onCompositionEnd}
+        showJumpToLatest={showJumpToLatest}
+        onJumpToLatest={onJumpToLatest}
+        hasUserMessages={hasUserMessages}
+      />
     </div>
   );
 };

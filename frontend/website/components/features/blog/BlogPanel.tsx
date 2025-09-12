@@ -1,15 +1,6 @@
 /**
  * BlogPanel Component
- * Clean, minimal blog viewing interface (Claude-style)
- * 
- * Height Management:
- * - Receives full height from ResizablePanels CSS Grid
- * - Uses h-full flex-col for internal height distribution
- * - Header: flex-shrink-0 (fixed height)
- * - Content: flex-1 overflow-y-auto (scrollable area)
- * 
- * Note: Parent ResizablePanels.BLOG_PANEL has no overflow constraint
- * to allow this component's internal scrolling to work properly.
+ * Clean, simple blog viewing interface
  */
 
 'use client';
@@ -18,7 +9,7 @@ import { Message } from '@/lib/services/conversationService';
 import { BlogEditor } from '@/components/BlogEditor';
 import MarkdownRenderer from '@/components/Markdown/MarkdownRenderer';
 import { BlogPanelHeader } from './BlogPanelHeader';
-import { usePanelGlassScroll } from '@/hooks/useGlassScroll';
+import { useSimpleLayout } from '@/hooks/useGlassScroll';
 
 interface BlogPanelProps {
   // Data
@@ -46,19 +37,17 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
   onPublishBlog,
   onClose,
 }) => {
+  const layout = useSimpleLayout();
+
   // If no blog message, don't render anything
-  // Always call hooks at the top level
-  const glassScroll = usePanelGlassScroll();
-  
-  // Early return after hooks
   if (!activeBlogMessage) {
     return null;
   }
 
   return (
-    <div className="h-full bg-black border-l border-gray-700/30">
+    <div {...layout.blogPanelProps}>
       {isEditingBlog ? (
-        // Blog Editor Mode
+        // Blog Editor Mode - Full height
         <BlogEditor
           initialContent={activeBlogMessage.content}
           onSave={onSaveDraft}
@@ -67,13 +56,10 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
           isPublishing={isPublishing}
         />
       ) : (
-        // Blog Viewer Mode - Glass Scroll System
-        <div {...glassScroll.containerProps}>
-          {/* Clean Header - Fixed */}
-          <div 
-            className="fixed top-0 left-0 right-0 z-10 bg-black/80 backdrop-blur-sm border-b border-gray-700/30"
-            style={{ height: 'var(--header-height)' }}
-          >
+        // Blog Viewer Mode - Clean scrollable layout
+        <>
+          {/* Header - Fixed at top */}
+          <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm border-b border-gray-700/30 p-4">
             <BlogPanelHeader
               title={activeBlogMessage.content}
               onEditBlog={onEditBlog}
@@ -81,21 +67,19 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
             />
           </div>
           
-          {/* Blog Content - Glass Scroll Content */}
-          <div {...glassScroll.contentProps}>
-            <div className="px-6 space-y-6">
-              <div className="prose prose-invert max-w-none prose-lg">
-                <MarkdownRenderer content={activeBlogMessage.content} />
-              </div>
-              
-              {/* Minimal metadata */}
-              <div className="text-xs text-gray-500 pt-6 mt-6 border-t border-gray-800/50">
-                Generated {typeof window === 'undefined' ? 'recently' : new Date(activeBlogMessage.createdAt).toLocaleString()} • 
-                {activeBlogMessage.content.split(' ').length} words
-              </div>
+          {/* Blog Content - Scrollable area */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            <div className="prose prose-invert max-w-none prose-lg">
+              <MarkdownRenderer content={activeBlogMessage.content} />
+            </div>
+            
+            {/* Metadata */}
+            <div className="text-xs text-gray-500 pt-6 mt-6 border-t border-gray-800/50">
+              Generated {typeof window === 'undefined' ? 'recently' : new Date(activeBlogMessage.createdAt).toLocaleString()} • 
+              {activeBlogMessage.content.split(' ').length} words
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -86,7 +86,7 @@ function HomeContent() {
     };
 
     handlePostAuth();
-  }, [session.isAuthenticated, session.isInitialized, session.user, searchParams, router, isProcessingAuth, session.refresh]);
+  }, [session, searchParams, router, isProcessingAuth]);
 
   // Standard authentication redirect for already-authenticated users
   useEffect(() => {

@@ -1,166 +1,153 @@
 /**
- * Glass Scroll System Hook
- * Production-grade hook for managing glass morphism scroll layouts
- * Handles CSS variables, height calculations, and scroll behavior
+ * Production-Grade Layout System
+ * 
+ * Clean, maintainable layout management using industry-standard patterns:
+ * - CSS Grid for 2-panel layouts
+ * - Flexbox for panel internal structure  
+ * - CSS variables for consistent spacing
+ * - Responsive design considerations
+ * - No complex absolute positioning
+ * 
+ * Architecture:
+ * - pageContainerProps: Main page with header clearance
+ * - conversationContainerProps: 2-panel CSS Grid container
+ * - chatPanelProps: Left panel (always visible)
+ * - blogPanelProps: Right panel (conditional)
+ * - Internal scrolling management per panel
  */
 
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { useSidebarStore } from '@/lib/stores/sidebarStore';
 import { 
-  setCSSVariables, 
-  updateSidebarVariable, 
-  LAYOUT_TOKENS,
-  GLASS_SCROLL_TOKENS,
-  CSS_VARIABLES
+  initializeLayoutSystem, 
+  updateSidebarVariable,
 } from '@/lib/layout/tokens';
 
-interface UseGlassScrollOptions {
-  /** Whether to enable the glass scroll system */
-  enabled?: boolean;
-  /** Custom input height override */
-  inputHeight?: number;
+interface LayoutContainerProps {
+  style: React.CSSProperties;
+  className?: string;
 }
 
-interface GlassScrollSystem {
-  /** CSS classes for scroll container */
-  containerClasses: string;
-  /** CSS classes for scroll content */
-  contentClasses: string;
-  /** CSS variables object for inline styles */
-  cssVariables: Record<string, string>;
-  /** Height for the scroll container */
-  containerHeight: string;
-  /** Whether the system is initialized */
-  isInitialized: boolean;
+interface SimpleLayoutSystem {
+  /** Props for the main page container (with header padding) */
+  pageContainerProps: LayoutContainerProps;
+  /** Props for the conversation container (2-panel grid) */
+  conversationContainerProps: LayoutContainerProps;
+  /** Props for chat panel */
+  chatPanelProps: LayoutContainerProps;
+  /** Props for blog panel */
+  blogPanelProps: LayoutContainerProps;
+  /** Props for messages area in chat panel */
+  messagesAreaProps: LayoutContainerProps;
+  /** Props for input area in chat panel */
+  inputAreaProps: LayoutContainerProps;
 }
 
 /**
- * Hook to manage glass scroll system
+ * Production-grade layout hook for conversation pages
  * 
- * This hook:
- * 1. Sets up CSS variables for layout dimensions
- * 2. Updates sidebar width dynamically
- * 3. Provides classes and styles for glass scroll components
- * 4. Handles responsive behavior
+ * Provides consistent layout props for:
+ * - 2-panel conversation interface
+ * - Single-panel mode when blog is hidden
+ * - Proper height management and scrolling
+ * - Glass morphism header integration
+ * 
+ * Uses CSS Grid for clean, predictable panel behavior
  */
-export function useGlassScroll(options: UseGlassScrollOptions = {}): GlassScrollSystem {
-  const { enabled = true, inputHeight } = options;
+export function useSimpleLayout(): SimpleLayoutSystem {
   const { isExpanded } = useSidebarStore();
 
-  // Initialize CSS variables on mount
+  // Initialize layout system on mount
   useEffect(() => {
-    if (!enabled) return;
-    
-    setCSSVariables();
-    
-    // Set custom input height if provided
-    if (inputHeight && typeof document !== 'undefined') {
-      document.documentElement.style.setProperty(
-        '--input-height', 
-        `${inputHeight}px`
-      );
-      document.documentElement.style.setProperty(
-        '--glass-padding-bottom', 
-        `${inputHeight + LAYOUT_TOKENS.GLASS_SAFE_ZONE}px`
-      );
-    }
-  }, [enabled, inputHeight]);
+    initializeLayoutSystem();
+  }, []);
 
   // Update sidebar variable when sidebar state changes
   useEffect(() => {
-    if (!enabled) return;
-    
     updateSidebarVariable(isExpanded);
-  }, [isExpanded, enabled]);
-
-  // Create CSS variables object for inline styles
-  const cssVariables = useCallback((): Record<string, string> => {
-    if (!enabled) return {};
-    
-    const variables: Record<string, string> = { ...CSS_VARIABLES };
-    
-    // Add dynamic sidebar width
-    variables['--sidebar-current'] = isExpanded 
-      ? LAYOUT_TOKENS.SIDEBAR_EXPANDED_PX 
-      : LAYOUT_TOKENS.SIDEBAR_COLLAPSED_PX;
-    
-    // Add custom input height if provided
-    if (inputHeight) {
-      variables['--input-height'] = `${inputHeight}px`;
-      variables['--glass-padding-bottom'] = `${inputHeight + LAYOUT_TOKENS.GLASS_SAFE_ZONE}px`;
-    }
-    
-    return variables;
-  }, [enabled, isExpanded, inputHeight]);
+  }, [isExpanded]);
 
   return {
-    containerClasses: enabled ? 'glass-scroll-container' : '',
-    contentClasses: enabled ? 'glass-scroll-content' : '',
-    cssVariables: cssVariables(),
-    containerHeight: enabled ? GLASS_SCROLL_TOKENS.AVAILABLE_HEIGHT : '100%',
-    isInitialized: enabled,
-  };
-}
-
-/**
- * Hook specifically for page-level glass scroll containers
- * Provides full-height container setup with proper overflow handling
- */
-export function usePageGlassScroll(): {
-  containerProps: React.HTMLAttributes<HTMLDivElement>;
-  contentProps: React.HTMLAttributes<HTMLDivElement>;
-} {
-  const glassScroll = useGlassScroll({ enabled: true });
-
-  return {
-    containerProps: {
-      className: 'relative h-full overflow-hidden',
+    // Main page container - creates space for fixed header
+    pageContainerProps: {
       style: {
+        paddingTop: 'var(--header-height)',
         height: '100vh',
-        ...glassScroll.cssVariables,
+        overflow: 'hidden',
+      },
+      className: 'bg-black',
+    },
+
+    // Conversation container - clean 2-panel CSS Grid
+    conversationContainerProps: {
+      style: {
+        height: 'var(--available-height)',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gridTemplateRows: '1fr',
+        gap: '1px',
+      },
+      className: 'bg-gray-700/30', // Visible grid gap
+    },
+
+    // Chat panel - flex column for messages + input
+    chatPanelProps: {
+      style: {
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        overflow: 'hidden',
+      },
+      className: 'bg-black',
+    },
+
+    // Blog panel - full height with internal scrolling
+    blogPanelProps: {
+      style: {
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      },
+      className: 'bg-black border-l border-gray-700/30',
+    },
+
+    // Messages area - scrollable with padding for input
+    messagesAreaProps: {
+      style: {
+        height: 'var(--chat-content-height)',
+        overflowY: 'auto',
+        padding: 'var(--content-safe-zone)',
       },
     },
-    contentProps: {
-      className: glassScroll.containerClasses,
+
+    // Input area - fixed at bottom of chat panel
+    inputAreaProps: {
       style: {
-        position: 'absolute',
-        top: 'var(--header-height)',
-        bottom: '0',
-        left: 'var(--sidebar-current)',
-        right: '0',
-        overflowY: 'auto',
-        transition: 'left 250ms cubic-bezier(0.4, 0, 0.2, 1)',
+        height: 'var(--input-container-height)',
+        background: 'rgba(0, 0, 0, 0.6)',
+        backdropFilter: 'blur(20px) saturate(150%)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        display: 'flex',
+        alignItems: 'center',
+        padding: 'var(--input-padding-vertical) var(--input-padding-horizontal)',
       },
     },
   };
 }
 
 /**
- * Hook for panel-level glass scroll (chat, blog panels)
- * Provides scroll setup for individual panels within a layout
+ * Hook for glass scroll effect on content that should scroll behind header
+ * Much simpler than the old system - just adds top padding
  */
-export function usePanelGlassScroll(): {
-  containerProps: React.HTMLAttributes<HTMLDivElement>;
-  contentProps: React.HTMLAttributes<HTMLDivElement>;
-} {
-  const glassScroll = useGlassScroll({ enabled: true });
-
+export function useGlassScrollContent(): LayoutContainerProps {
   return {
-    containerProps: {
-      className: 'h-full relative overflow-hidden',
-      style: glassScroll.cssVariables,
-    },
-    contentProps: {
-      className: `${glassScroll.contentClasses} h-full overflow-y-auto`,
-      style: {
-        // Content extends beyond bounds for glass effect
-        marginTop: 'calc(-1 * var(--header-height))',
-        marginBottom: '0', // No bottom margin for panel content
-        paddingTop: 'var(--glass-padding-top)',
-        paddingBottom: 'var(--glass-safe-zone)',
-      },
+    style: {
+      paddingTop: 'var(--glass-top-padding)',
+      paddingBottom: 'var(--content-safe-zone)',
     },
   };
 }

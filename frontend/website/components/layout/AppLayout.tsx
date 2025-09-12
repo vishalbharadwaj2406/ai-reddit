@@ -4,7 +4,7 @@ import React, { useEffect } from 'react'
 import { Sidebar } from '@/components/Sidebar'
 import styles from './AppLayout.module.css'
 import { useSidebarStore } from '@/lib/stores/sidebarStore'
-import { setCSSVariables, updateSidebarVariable } from '@/lib/layout/tokens'
+import { initializeLayoutSystem, updateSidebarVariable } from '@/lib/layout/tokens'
 
 interface AppLayoutProps {
   children: React.ReactNode
@@ -15,7 +15,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   
   // Initialize layout system on mount and handle sidebar changes
   useEffect(() => {
-    setCSSVariables()
+    initializeLayoutSystem()
     updateSidebarVariable(isExpanded)
   }, [isExpanded])
 

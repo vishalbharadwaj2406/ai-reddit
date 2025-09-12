@@ -7,7 +7,6 @@
 
 import { Message } from '@/lib/services/conversationService';
 import MarkdownRenderer from '@/components/Markdown/MarkdownRenderer';
-import { Button } from '@/components/design-system/Button';
 import { copyText } from '@/lib/utils/copy';
 import { markdownToPlain } from '@/lib/utils/markdown';
 import { BlogMessageButton } from './BlogMessageButton';
@@ -18,7 +17,6 @@ interface MessageListProps {
   isGeneratingBlog: boolean;
   activeBlogMessageId?: string;
   onBlogMessageClick?: (message: Message) => void;
-  onEditBlog?: () => void;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -27,7 +25,6 @@ export const MessageList: React.FC<MessageListProps> = ({
   isGeneratingBlog,
   activeBlogMessageId,
   onBlogMessageClick,
-  onEditBlog,
 }) => {
   // Filter out system messages
   const displayMessages = messages.filter(m => m.role !== 'system');

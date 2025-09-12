@@ -11,6 +11,16 @@
  * - Retry mechanism with exponential backoff
  */
 
+import type { 
+  ApiErrorResponse
+} from '@/types/api-errors';
+import {
+  isDetailError,
+  isValidationError,
+  isFastAPIError,
+  isStandardError 
+} from '@/types/api-errors';
+
 const API_BASE_URL = (() => {
   const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   try {
@@ -421,36 +431,26 @@ export class ApiClient {
     let errorData: unknown = null;
 
     try {
-      errorData = await response.json();
+      errorData = await response.json() as ApiErrorResponse;
       
-      // Extract error message with comprehensive FastAPI support
-      if (errorData && typeof errorData === 'object') {
-        const data = errorData as Record<string, any>;
-        
-        // Handle FastAPI HTTPException format: {"detail": {"message": "...", "errorCode": "..."}}
-        if (data.detail && typeof data.detail === 'object') {
-          const detail = data.detail as Record<string, any>;
+      // Extract error message using type-safe error handling
+      if (isFastAPIError(errorData)) {
+        if (isValidationError(errorData)) {
+          // Handle validation errors: {"detail": [{"msg": "...", "loc": [...]}]}
+          const firstError = errorData.detail[0];
+          const location = firstError.loc ? ` (${firstError.loc.join(' -> ')})` : '';
+          errorMessage = `${firstError.msg}${location}`;
+        } else if (isDetailError(errorData)) {
+          // Handle FastAPI HTTPException format: {"detail": {"message": "...", "errorCode": "..."}}
+          const detail = errorData.detail;
           errorMessage = detail.message || detail.detail || errorMessage;
+        } else if (typeof errorData.detail === 'string') {
+          // Handle FastAPI direct string detail: {"detail": "Error message"}
+          errorMessage = errorData.detail;
         }
-        // Handle FastAPI direct string detail: {"detail": "Error message"}
-        else if (data.detail && typeof data.detail === 'string') {
-          errorMessage = data.detail;
-        }
+      } else if (isStandardError(errorData)) {
         // Handle standard formats: {"message": "..."} or {"error": "..."}
-        else if (data.message) {
-          errorMessage = data.message;
-        }
-        else if (data.error) {
-          errorMessage = data.error;
-        }
-        // Handle validation errors: {"detail": [{"msg": "...", "loc": [...]}]}
-        else if (Array.isArray(data.detail) && data.detail.length > 0) {
-          const firstError = data.detail[0];
-          if (firstError && typeof firstError === 'object' && firstError.msg) {
-            const location = firstError.loc ? ` (${firstError.loc.join(' -> ')})` : '';
-            errorMessage = `${firstError.msg}${location}`;
-          }
-        }
+        errorMessage = errorData.message || errorData.error || errorMessage;
       }
     } catch (parseError) {
       // Unable to parse error response as JSON - keep default message

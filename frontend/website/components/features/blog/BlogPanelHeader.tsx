@@ -19,25 +19,28 @@ export const BlogPanelHeader: React.FC<BlogPanelHeaderProps> = ({
   onClose,
 }) => {
   return (
-    <div className="flex items-center justify-end gap-2 p-3 border-b border-gray-700/30 bg-black">
-      <Button
-        variant="primary"
-        size="sm"
-        onClick={onEditBlog}
-        className="text-xs"
-      >
-        Edit & Post
-      </Button>
-      {onClose && (
+    <div className="flex items-center justify-between gap-2 p-3 border-b border-gray-700/30 bg-black">
+      <h3 className="text-sm font-medium text-white truncate">{title}</h3>
+      <div className="flex items-center gap-2">
         <Button
-          variant="ghost"
+          variant="primary"
           size="sm"
-          onClick={onClose}
-          className="text-xs w-8 h-8 p-0"
+          onClick={onEditBlog}
+          className="text-xs"
         >
-          ✕
+          Edit & Post
         </Button>
-      )}
+        {onClose && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="text-xs w-8 h-8 p-0"
+          >
+            ✕
+          </Button>
+        )}
+      </div>
     </div>
   );
 };

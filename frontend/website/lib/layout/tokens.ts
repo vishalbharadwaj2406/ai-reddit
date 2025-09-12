@@ -1,88 +1,85 @@
 /**
- * Production-Grade Layout Tokens
- * Self-contained token system for maximum reliability
+ * Production-Grade Layout Tokens - Single Source of Truth
+ * All layout dimensions and calculations centralized here
  */
 
-// Core layout dimensions - hardcoded for production stability
+// Core layout dimensions - Measured from actual components
 export const LAYOUT_TOKENS = {
   // Header
-  HEADER_HEIGHT: 64, // 64px as number
-  HEADER_HEIGHT_PX: '64px', // '64px' as string
+  HEADER_HEIGHT: 64,
   
   // Sidebar
-  SIDEBAR_COLLAPSED: 64, // 64px
-  SIDEBAR_EXPANDED: 256, // 256px
-  SIDEBAR_COLLAPSED_PX: '64px',
-  SIDEBAR_EXPANDED_PX: '256px',
+  SIDEBAR_COLLAPSED: 64,
+  SIDEBAR_EXPANDED: 256,
   
-  // Input area (measured from actual component)
-  INPUT_HEIGHT: 100, // Height of input area including padding
-  INPUT_HEIGHT_PX: '100px',
+  // Input System - Properly measured and tokenized
+  INPUT_CONTAINER_HEIGHT: 120,  // Full container with padding
+  INPUT_FIELD_HEIGHT: 56,       // Actual input field
+  INPUT_PADDING_VERTICAL: 16,   // Top/bottom padding
+  INPUT_PADDING_HORIZONTAL: 20, // Left/right padding
   
-  // Glass scroll safe zones
-  GLASS_SAFE_ZONE: 20, // Padding for readable content behind glass
-  SCROLL_COMFORT_ZONE: 16, // Extra space for UX
+  // Glass effect safe zones
+  GLASS_SAFE_ZONE: 20,          // Reading comfort zone behind glass
+  CONTENT_SAFE_ZONE: 16,        // Content spacing
 } as const;
 
-// Calculated values for glass scroll system
-export const GLASS_SCROLL_TOKENS = {
-  // Top padding: Header + safe zone
-  PADDING_TOP: LAYOUT_TOKENS.HEADER_HEIGHT + LAYOUT_TOKENS.GLASS_SAFE_ZONE,
-  PADDING_TOP_PX: `${LAYOUT_TOKENS.HEADER_HEIGHT + LAYOUT_TOKENS.GLASS_SAFE_ZONE}px`,
+// Calculated layout values - Never hardcode these anywhere
+export const CALCULATED_TOKENS = {
+  // Available heights
+  AVAILABLE_HEIGHT: `calc(100vh - ${LAYOUT_TOKENS.HEADER_HEIGHT}px)`,
+  CHAT_CONTENT_HEIGHT: `calc(100vh - ${LAYOUT_TOKENS.HEADER_HEIGHT}px - ${LAYOUT_TOKENS.INPUT_CONTAINER_HEIGHT}px)`,
+  BLOG_CONTENT_HEIGHT: `calc(100vh - ${LAYOUT_TOKENS.HEADER_HEIGHT}px)`,
   
-  // Bottom padding: Input + safe zone  
-  PADDING_BOTTOM: LAYOUT_TOKENS.INPUT_HEIGHT + LAYOUT_TOKENS.GLASS_SAFE_ZONE,
-  PADDING_BOTTOM_PX: `${LAYOUT_TOKENS.INPUT_HEIGHT + LAYOUT_TOKENS.GLASS_SAFE_ZONE}px`,
-  
-  // Available height calculations
-  AVAILABLE_HEIGHT: `calc(100vh - ${LAYOUT_TOKENS.HEADER_HEIGHT_PX})`,
-  CONTENT_HEIGHT: `calc(100vh - ${LAYOUT_TOKENS.HEADER_HEIGHT_PX} - ${LAYOUT_TOKENS.INPUT_HEIGHT_PX})`,
+  // Glass scroll paddings for when content scrolls behind glass elements
+  GLASS_TOP_PADDING: LAYOUT_TOKENS.HEADER_HEIGHT + LAYOUT_TOKENS.GLASS_SAFE_ZONE,
+  GLASS_BOTTOM_PADDING: LAYOUT_TOKENS.INPUT_CONTAINER_HEIGHT + LAYOUT_TOKENS.GLASS_SAFE_ZONE,
 } as const;
 
 // CSS custom properties for runtime theming
 export const CSS_VARIABLES = {
-  // Layout dimensions
-  '--header-height': LAYOUT_TOKENS.HEADER_HEIGHT_PX,
-  '--input-height': LAYOUT_TOKENS.INPUT_HEIGHT_PX,
-  '--sidebar-collapsed': LAYOUT_TOKENS.SIDEBAR_COLLAPSED_PX,
-  '--sidebar-expanded': LAYOUT_TOKENS.SIDEBAR_EXPANDED_PX,
+  // Core dimensions
+  '--header-height': `${LAYOUT_TOKENS.HEADER_HEIGHT}px`,
+  '--sidebar-collapsed': `${LAYOUT_TOKENS.SIDEBAR_COLLAPSED}px`,
+  '--sidebar-expanded': `${LAYOUT_TOKENS.SIDEBAR_EXPANDED}px`,
   
-  // Glass scroll variables
+  // Input system
+  '--input-container-height': `${LAYOUT_TOKENS.INPUT_CONTAINER_HEIGHT}px`,
+  '--input-field-height': `${LAYOUT_TOKENS.INPUT_FIELD_HEIGHT}px`,
+  '--input-padding-vertical': `${LAYOUT_TOKENS.INPUT_PADDING_VERTICAL}px`,
+  '--input-padding-horizontal': `${LAYOUT_TOKENS.INPUT_PADDING_HORIZONTAL}px`,
+  
+  // Safe zones
   '--glass-safe-zone': `${LAYOUT_TOKENS.GLASS_SAFE_ZONE}px`,
-  '--glass-padding-top': GLASS_SCROLL_TOKENS.PADDING_TOP_PX,
-  '--glass-padding-bottom': GLASS_SCROLL_TOKENS.PADDING_BOTTOM_PX,
+  '--content-safe-zone': `${LAYOUT_TOKENS.CONTENT_SAFE_ZONE}px`,
   
   // Calculated heights
-  '--available-height': GLASS_SCROLL_TOKENS.AVAILABLE_HEIGHT,
-  '--content-height': GLASS_SCROLL_TOKENS.CONTENT_HEIGHT,
+  '--available-height': CALCULATED_TOKENS.AVAILABLE_HEIGHT,
+  '--chat-content-height': CALCULATED_TOKENS.CHAT_CONTENT_HEIGHT,
+  '--blog-content-height': CALCULATED_TOKENS.BLOG_CONTENT_HEIGHT,
+  '--glass-top-padding': `${CALCULATED_TOKENS.GLASS_TOP_PADDING}px`,
+  '--glass-bottom-padding': `${CALCULATED_TOKENS.GLASS_BOTTOM_PADDING}px`,
 } as const;
 
 /**
- * Set CSS variables on document root
- * Call this when layout system initializes
+ * Initialize layout system - Sets all CSS variables
+ * Call this once when the app starts
  */
-export function setCSSVariables(): void {
+export function initializeLayoutSystem(): void {
   if (typeof document === 'undefined') return;
   
   const root = document.documentElement;
   
+  // Set all CSS variables from tokens
   Object.entries(CSS_VARIABLES).forEach(([property, value]) => {
     root.style.setProperty(property, value);
   });
 }
 
 /**
- * Get current sidebar width based on state
- */
-export function getSidebarWidth(isExpanded: boolean): number {
-  return isExpanded ? LAYOUT_TOKENS.SIDEBAR_EXPANDED : LAYOUT_TOKENS.SIDEBAR_COLLAPSED;
-}
-
-/**
  * Get current sidebar width as CSS value
  */
 export function getSidebarWidthPx(isExpanded: boolean): string {
-  return isExpanded ? LAYOUT_TOKENS.SIDEBAR_EXPANDED_PX : LAYOUT_TOKENS.SIDEBAR_COLLAPSED_PX;
+  return isExpanded ? `${LAYOUT_TOKENS.SIDEBAR_EXPANDED}px` : `${LAYOUT_TOKENS.SIDEBAR_COLLAPSED}px`;
 }
 
 /**
@@ -99,5 +96,5 @@ export function updateSidebarVariable(isExpanded: boolean): void {
 
 // Type exports for TypeScript integration
 export type LayoutToken = keyof typeof LAYOUT_TOKENS;
-export type GlassScrollToken = keyof typeof GLASS_SCROLL_TOKENS;
+export type CalculatedToken = keyof typeof CALCULATED_TOKENS;
 export type CSSVariable = keyof typeof CSS_VARIABLES;

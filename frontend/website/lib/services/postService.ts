@@ -1,5 +1,6 @@
 import { apiClient, endpoints } from '../api/client';
-import { debugPost, debugNetwork } from '../utils/debug';
+import { PostServiceError, extractErrorMessage } from '@/types/service-errors';
+import type { ConversationDetail } from './conversationService';
 
 // Type definitions for posts with comprehensive backend alignment
 export interface Post {
@@ -68,52 +69,13 @@ export interface ForkPostRequest {
   content?: string;
 }
 
-// Custom error class
-export class PostServiceError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'PostServiceError';
-  }
-}
-
 class PostService {
   /**
-   * Wraps errors to provide consistent error handling
-   * Now that ApiClient handles error extraction properly, we can simplify this
+   * Wraps errors to provide consistent error handling with type safety
    */
   private wrapError(err: unknown, defaultMessage: string): never {
-    // Handle ApiError instances (already have processed error messages)
-    if (err && typeof err === 'object' && 'name' in err && (err as any).name === 'ApiError') {
-      const apiError = err as any;
-      throw new PostServiceError(apiError.message);
-    }
-    
-    // Handle standard Error instances
-    if (err instanceof Error) {
-      throw new PostServiceError(err.message);
-    }
-    
-    // Handle string errors
-    if (typeof err === 'string') {
-      throw new PostServiceError(err);
-    }
-    
-    // Handle complex error objects as fallback
-    if (err && typeof err === 'object') {
-      const errorObj = err as any;
-      
-      // Try to extract message from various error formats
-      const message = errorObj.message 
-        || errorObj.detail?.message 
-        || errorObj.detail 
-        || errorObj.error
-        || JSON.stringify(errorObj);
-        
-      throw new PostServiceError(message);
-    }
-    
-    // Final fallback
-    throw new PostServiceError(defaultMessage);
+    const errorMessage = extractErrorMessage(err, defaultMessage);
+    throw new PostServiceError(errorMessage, err);
   }
 
   /**
@@ -273,9 +235,9 @@ class PostService {
   /**
    * Get post conversation (if viewable)
    */
-  async getPostConversation(postId: string): Promise<any> {
+  async getPostConversation(postId: string): Promise<ConversationDetail> {
     try {
-      const response = await apiClient.get<ApiResponse<any>>(
+      const response = await apiClient.get<ApiResponse<ConversationDetail>>(
         `${endpoints.posts.getById(postId)}/conversation`
       );
       return response.data;

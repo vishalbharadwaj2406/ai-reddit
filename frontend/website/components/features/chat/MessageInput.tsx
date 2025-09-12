@@ -63,51 +63,63 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   }, [isComposing, handleSend]);
 
   return (
-    <div className="flex items-end gap-3 relative">
-      {/* Jump to Latest Button */}
+    <div className="w-full max-w-4xl mx-auto">
+      {/* Jump to Latest - positioned above input when needed */}
       {showJumpToLatest && hasUserMessages && (
-        <JumpToLatest 
+        <JumpToLatest
           onJumpToLatest={onJumpToLatest}
-          className="absolute -top-10 right-0"
+          className="absolute -top-12 right-4"
         />
       )}
       
-      <div className="flex-1">
-        <TextareaAutosize
-          className="glass-input w-full p-3 resize-none text-sm min-h-[48px] max-h-[120px]"
-          placeholder="Message..."
-          value={messageText}
-          onChange={(e) => onMessageTextChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onCompositionStart={onCompositionStart}
-          onCompositionEnd={onCompositionEnd}
-          minRows={1}
-          maxRows={4}
-          disabled={isSending || isGeneratingBlog}
-        />
+      {/* Input Container - Clean flex layout */}
+      <div className="flex items-end gap-3 w-full">
+        {/* Text Input - Flexible width */}
+        <div className="flex-1">
+          <TextareaAutosize
+            className="w-full resize-none text-sm min-h-[56px] max-h-[120px] px-4 py-3 rounded-2xl
+                     bg-white/5 backdrop-blur-sm border-2 border-blue-500/20 
+                     text-white placeholder-white/50 transition-all duration-200
+                     focus:outline-none focus:border-blue-500/40 focus:bg-white/8"
+            placeholder="Message..."
+            value={messageText}
+            onChange={(e) => onMessageTextChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onCompositionStart={onCompositionStart}
+            onCompositionEnd={onCompositionEnd}
+            minRows={1}
+            maxRows={4}
+            disabled={isSending || isGeneratingBlog}
+          />
+        </div>
+        
+        {/* Buttons - Send first, then Generate Blog */}
+        <div className="flex items-end gap-2">
+          {/* Send Button - Primary action */}
+          <Button
+            onClick={handleSend}
+            disabled={!messageText.trim() || isSending || isGeneratingBlog}
+            variant="primary"
+            size="md"
+            loading={isSending}
+            className="min-w-[80px] h-[56px]"
+          >
+            {isSending ? 'Sending...' : '→'}
+          </Button>
+          
+          {/* Generate Blog Button - Secondary action */}
+          <Button
+            onClick={onGenerateBlog}
+            disabled={isGeneratingBlog}
+            variant="secondary"
+            size="md"
+            loading={isGeneratingBlog}
+            className="min-w-[140px] h-[56px]"
+          >
+            {isGeneratingBlog ? 'Generating...' : 'Generate Blog'}
+          </Button>
+        </div>
       </div>
-      
-      {/* Generate Blog Button */}
-      <Button
-        onClick={onGenerateBlog}
-        disabled={isGeneratingBlog}
-        variant="primary"
-        size="md"
-        loading={isGeneratingBlog}
-      >
-        {isGeneratingBlog ? 'Generating...' : 'Generate Blog'}
-      </Button>
-      
-      {/* Send Button */}
-      <Button
-        onClick={handleSend}
-        disabled={!messageText.trim() || isSending || isGeneratingBlog}
-        variant="secondary"
-        size="md"
-        loading={isSending}
-      >
-        {isSending ? 'Sending...' : '→'}
-      </Button>
     </div>
   );
 };

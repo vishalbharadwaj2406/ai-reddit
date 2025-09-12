@@ -1,6 +1,6 @@
 /**
  * Production-Grade Conversation Page
- * Clean, direct imports for better reliability
+ * Clean, professional layout using industry standards
  */
 
 'use client';
@@ -13,7 +13,7 @@ import { ConversationLayout } from '@/components/features/layout/ConversationLay
 import { UnifiedToast } from '@/components/features/ui/UnifiedToast';
 import { ConversationLoading } from '@/components/features/ui/LoadingStates';
 import { Button } from '@/components/design-system/Button';
-import { usePageGlassScroll } from '@/hooks/useGlassScroll';
+import { useSimpleLayout } from '@/hooks/useGlassScroll';
 import { useHeaderStore } from '@/lib/stores/headerStore';
 
 // Import all conversation hooks
@@ -33,7 +33,7 @@ function ConversationPageContent() {
   
   console.log('🆔 ConversationPage mounted - conversationId:', conversationId);
   
-  const glassLayout = usePageGlassScroll();
+  const layout = useSimpleLayout();
   const { setConversationTitle } = useHeaderStore();
   
   // Core conversation data hook
@@ -45,11 +45,6 @@ function ConversationPageContent() {
     addMessage,
     updateLastMessage,
     clearError: clearConversationError,
-    isForked,
-    hasUserMessages,
-    blogMessages,
-    hasBlogMessages,
-    mostRecentBlogMessage,
   } = useConversationData();
   
   // Message handling hook
@@ -68,7 +63,6 @@ function ConversationPageContent() {
   // Blog generation hook
   const {
     isGeneratingBlog,
-    blogGenerationProgress,
     generateBlogPost,
     error: blogError,
     clearError: clearBlogError,
@@ -85,7 +79,7 @@ function ConversationPageContent() {
   const [isPublishing, setIsPublishing] = useState(false);
   
   // Jump to latest functionality
-  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
+  const [showJumpToLatest] = useState(false);
   
   // Load conversation on mount
   useEffect(() => {
@@ -104,11 +98,8 @@ function ConversationPageContent() {
     };
   }, [conversation?.title, setConversationTitle]);
   
-  // Scroll detection for Jump to Latest functionality would go here
-  // (Implementation depends on refs from child components)
-  
   // Handlers
-  const handleSendMessage = useCallback(async (text: string) => {
+  const handleSendMessage = useCallback(async () => {
     if (!conversation) return;
     
     try {
@@ -127,7 +118,6 @@ function ConversationPageContent() {
     if (!conversation) return;
     
     try {
-      // Use current message text as additional context
       const additionalContext = messageText.trim();
       
       await generateBlogPost(
@@ -136,14 +126,11 @@ function ConversationPageContent() {
         addMessage,
         updateLastMessage,
         (progress) => {
-          // Optional progress updates could be used for UI feedback
           console.log('Blog generation progress:', progress);
         }
       );
       
-      // Clear input since we used it for context
       setMessageText('');
-      
       showToast('success', 'Blog generated successfully! 📝');
       
     } catch (err) {
@@ -161,7 +148,6 @@ function ConversationPageContent() {
   }, []);
   
   const handleSaveDraft = useCallback((markdown: string) => {
-    // Auto-save functionality (could be enhanced with local storage)
     console.log('Draft saved:', markdown.length, 'characters');
     showToast('info', 'Draft saved locally');
   }, [showToast]);
@@ -172,10 +158,7 @@ function ConversationPageContent() {
     try {
       setIsPublishing(true);
       
-      // Generate title from content or use conversation title
       const title = conversation.title || 'Blog Post';
-      
-      // Extract simple tags from content
       const extractTagsFromContent = (content: string): string[] => {
         const hashtagMatches = content.match(/#(\w+)/g);
         if (hashtagMatches) {
@@ -185,14 +168,11 @@ function ConversationPageContent() {
       };
       
       const tags = extractTagsFromContent(markdown);
-      
-      // Find the blog message to link the post properly
       const blogMessage = conversation.messages.find(m => m.isBlog && m.content.trim() === markdown.trim());
       const messageId = blogMessage?.messageId;
       
       console.log('Publishing blog with messageId:', messageId, 'tags:', tags);
       
-      // Publish the blog as a post
       const publishedPost = await postService.publishBlogAsPost(
         markdown,
         title,
@@ -202,7 +182,6 @@ function ConversationPageContent() {
       
       console.log('Blog published as post:', publishedPost.post_id);
       
-      // Close editor and show success
       setIsEditingBlog(false);
       setIsPublishing(false);
       
@@ -217,21 +196,18 @@ function ConversationPageContent() {
   }, [conversation, handleError, showToast]);
   
   const handleWriteBlog = useCallback(() => {
-    // This should open an empty blog editor
-    // For now, we'll trigger the editing state with empty content
     console.log('Write blog functionality - opening empty editor');
     showToast('info', 'Empty blog editor functionality coming soon!');
   }, [showToast]);
   
   const handleJumpToLatest = useCallback(() => {
-    // This will be handled by the ChatPanel component
     console.log('Jump to latest triggered');
   }, []);
   
   // Show loading state
   if (loading) {
     return (
-      <div {...glassLayout.containerProps}>
+      <div {...layout.pageContainerProps}>
         <ConversationLoading />
       </div>
     );
@@ -240,7 +216,7 @@ function ConversationPageContent() {
   // Show error state
   if (conversationError || !conversation) {
     return (
-      <div {...glassLayout.containerProps}>
+      <div {...layout.pageContainerProps}>
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <p className="text-red-500 mb-4">{conversationError || 'Conversation not found'}</p>
@@ -259,7 +235,7 @@ function ConversationPageContent() {
   const activeError = unifiedError || messageError || blogError || conversationError;
   
   return (
-    <div {...glassLayout.containerProps}>
+    <div {...layout.pageContainerProps}>
       {/* Toast Notifications */}
       <UnifiedToast 
         toast={activeError ? { type: 'error', message: activeError } : toast}
@@ -271,31 +247,29 @@ function ConversationPageContent() {
         } : hideToast}
       />
       
-      {/* Main Glass Scroll Content */}
-      <div {...glassLayout.contentProps}>
-        <ConversationLayout
-          conversation={conversation}
-          onSendMessage={handleSendMessage}
-          onGenerateBlog={handleGenerateBlog}
-          onEditBlog={handleEditBlog}
-          onCancelEdit={handleCancelEdit}
-          onSaveDraft={handleSaveDraft}
-          onPublishBlog={handlePublishBlog}
-          onWriteBlog={handleWriteBlog}
-          messageText={messageText}
-          onMessageTextChange={setMessageText}
-          isSending={isSending}
-          isAIResponding={isAIResponding}
-          isGeneratingBlog={isGeneratingBlog}
-          isComposing={isComposing}
-          onCompositionStart={() => setIsComposing(true)}
-          onCompositionEnd={() => setIsComposing(false)}
-          showJumpToLatest={showJumpToLatest}
-          onJumpToLatest={handleJumpToLatest}
-          isEditingBlog={isEditingBlog}
-          isPublishing={isPublishing}
-        />
-      </div>
+      {/* Main Content - Clean 2-Panel Layout */}
+      <ConversationLayout
+        conversation={conversation}
+        onSendMessage={handleSendMessage}
+        onGenerateBlog={handleGenerateBlog}
+        onEditBlog={handleEditBlog}
+        onCancelEdit={handleCancelEdit}
+        onSaveDraft={handleSaveDraft}
+        onPublishBlog={handlePublishBlog}
+        onWriteBlog={handleWriteBlog}
+        messageText={messageText}
+        onMessageTextChange={setMessageText}
+        isSending={isSending}
+        isAIResponding={isAIResponding}
+        isGeneratingBlog={isGeneratingBlog}
+        isComposing={isComposing}
+        onCompositionStart={() => setIsComposing(true)}
+        onCompositionEnd={() => setIsComposing(false)}
+        showJumpToLatest={showJumpToLatest}
+        onJumpToLatest={handleJumpToLatest}
+        isEditingBlog={isEditingBlog}
+        isPublishing={isPublishing}
+      />
     </div>
   );
 }

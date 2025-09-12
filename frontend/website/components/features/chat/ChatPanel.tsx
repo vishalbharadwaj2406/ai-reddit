@@ -1,6 +1,6 @@
 /**
  * ChatPanel Component  
- * Clean chat interface for the left panel
+ * Clean chat interface using professional layout patterns
  */
 
 'use client';
@@ -8,7 +8,7 @@
 import { Message, ConversationDetail } from '@/lib/services/conversationService';
 import { MessageList } from './MessageList';
 import { InputArea } from '../ui/InputArea';
-import { usePanelGlassScroll } from '@/hooks/useGlassScroll';
+import { useSimpleLayout } from '@/hooks/useGlassScroll';
 
 interface ChatPanelProps {
   // Data
@@ -32,7 +32,6 @@ interface ChatPanelProps {
   onWriteBlog: () => void;
   onJumpToLatest: () => void;
   onBlogMessageClick: (message: Message) => void;
-  onEditBlog?: () => void;
 }
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({
@@ -52,52 +51,40 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   onWriteBlog,
   onJumpToLatest,
   onBlogMessageClick,
-  onEditBlog,
 }) => {
   const hasUserMessages = conversation.messages.some(m => m.role === 'user');
-  const glassScroll = usePanelGlassScroll();
+  const layout = useSimpleLayout();
 
   return (
-    <div {...glassScroll.containerProps}>
-      {/* Messages Area - Glass Scroll Content */}
-      <div {...glassScroll.contentProps}>
-        <div className="px-4 space-y-4">
-          <MessageList
-            messages={conversation.messages}
-            isAIResponding={isAIResponding}
-            isGeneratingBlog={isGeneratingBlog}
-            activeBlogMessageId={activeBlogMessageId}
-            onBlogMessageClick={onBlogMessageClick}
-            onEditBlog={onEditBlog}
-          />
-        </div>
+    <div {...layout.chatPanelProps}>
+      {/* Messages Area - Scrollable with proper height */}
+      <div {...layout.messagesAreaProps}>
+        <MessageList
+          messages={conversation.messages}
+          isAIResponding={isAIResponding}
+          isGeneratingBlog={isGeneratingBlog}
+          activeBlogMessageId={activeBlogMessageId}
+          onBlogMessageClick={onBlogMessageClick}
+        />
       </div>
 
-      {/* Input Area - Fixed at bottom with glass effect */}
-      <div 
-        className="fixed bottom-0 left-0 right-0 z-10"
-        style={{
-          left: 'var(--sidebar-current)',
-          background: 'rgba(0, 0, 0, 0.6)',
-          backdropFilter: 'blur(20px) saturate(150%)',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-        }}
-      >
+      {/* Input Area - Fixed at bottom of chat panel only */}
+      <div {...layout.inputAreaProps}>
         <InputArea
-        messageText={messageText}
-        onMessageTextChange={onMessageTextChange}
-        onSendMessage={onSendMessage}
-        onGenerateBlog={onGenerateBlog}
-        isSending={isSending}
-        isGeneratingBlog={isGeneratingBlog}
-        isComposing={isComposing}
-        onCompositionStart={onCompositionStart}
-        onCompositionEnd={onCompositionEnd}
-        showJumpToLatest={showJumpToLatest}
-        onJumpToLatest={onJumpToLatest}
-        hasUserMessages={hasUserMessages}
-        onWriteBlog={onWriteBlog}
-      />
+          messageText={messageText}
+          onMessageTextChange={onMessageTextChange}
+          onSendMessage={onSendMessage}
+          onGenerateBlog={onGenerateBlog}
+          isSending={isSending}
+          isGeneratingBlog={isGeneratingBlog}
+          isComposing={isComposing}
+          onCompositionStart={onCompositionStart}
+          onCompositionEnd={onCompositionEnd}
+          showJumpToLatest={showJumpToLatest}
+          onJumpToLatest={onJumpToLatest}
+          hasUserMessages={hasUserMessages}
+          onWriteBlog={onWriteBlog}
+        />
       </div>
     </div>
   );

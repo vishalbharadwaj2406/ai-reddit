@@ -289,7 +289,7 @@ class ConversationService {
               return;
             }
           }
-        } catch (parseError) {
+        } catch {
           // Fall through to generic error handling
         }
         cleanup();
@@ -361,7 +361,6 @@ class ConversationService {
       let fullContent = '';
       let blogMessageId = '';
       let chunkCount = 0;
-      let lastChunkTime = Date.now();
       const CHUNK_TIMEOUT = 30000; // 30 seconds timeout between chunks
 
       console.log('📡 [BLOG] Starting to read SSE stream...');
@@ -384,8 +383,6 @@ class ConversationService {
             });
             break;
           }
-
-          lastChunkTime = Date.now(); // Reset timeout on successful chunk
 
           // Decode chunk and add to buffer
           buffer += decoder.decode(value, { stream: true });
