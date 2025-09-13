@@ -9,7 +9,7 @@ import { Message } from '@/lib/services/conversationService';
 import { BlogEditor } from '@/components/BlogEditor';
 import MarkdownRenderer from '@/components/Markdown/MarkdownRenderer';
 import { Button } from '@/components/design-system/Button';
-import { useGlassLayout } from '@/hooks/useGlassLayout';
+import { useContentLayout } from '@/lib/layout/hooks';
 
 interface BlogPanelProps {
   // Data
@@ -37,7 +37,7 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
   onPublishBlog,
   onClose,
 }) => {
-  const layout = useGlassLayout();
+  const layout = useContentLayout();
 
   // If no blog message, don't render anything
   if (!activeBlogMessage) {
@@ -56,41 +56,39 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
           isPublishing={isPublishing}
         />
       ) : (
-        // Blog Viewer Mode - Clean glass scroll with content clearance
-        <div className={layout.contentClass} style={layout.contentClearance}>
-          <div className="p-6">
-            {/* Minimal Header - Just buttons */}
-            <div className="flex items-center justify-end gap-2 mb-6">
+        // Blog Viewer Mode - Clean layout with minimal padding
+        <div className={layout.contentClass} style={layout.contentPadding}>
+          {/* Minimal Header - Just buttons */}
+          <div className="flex items-center justify-end gap-2 mb-4">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={onEditBlog}
+              className="text-xs"
+            >
+              Edit & Post
+            </Button>
+            {onClose && (
               <Button
-                variant="primary"
+                variant="ghost"
                 size="sm"
-                onClick={onEditBlog}
-                className="text-xs"
+                onClick={onClose}
+                className="text-xs w-8 h-8 p-0"
               >
-                Edit & Post
+                ✕
               </Button>
-              {onClose && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClose}
-                  className="text-xs w-8 h-8 p-0"
-                >
-                  ✕
-                </Button>
-              )}
-            </div>
-            
-            {/* Blog Content with title integrated */}
-            <div className="prose prose-invert max-w-none prose-lg">
-              <MarkdownRenderer content={activeBlogMessage.content} />
-            </div>
-            
-            {/* Metadata */}
-            <div className="text-xs text-gray-500 pt-6 mt-6 border-t border-gray-800/50">
-              Generated {typeof window === 'undefined' ? 'recently' : new Date(activeBlogMessage.createdAt).toLocaleString()} • 
-              {activeBlogMessage.content.split(' ').length} words
-            </div>
+            )}
+          </div>
+          
+          {/* Blog Content */}
+          <div className="prose prose-invert max-w-none prose-lg">
+            <MarkdownRenderer content={activeBlogMessage.content} />
+          </div>
+          
+          {/* Metadata */}
+          <div className="text-xs text-gray-500 pt-4 mt-4 border-t border-gray-800/50">
+            Generated {typeof window === 'undefined' ? 'recently' : new Date(activeBlogMessage.createdAt).toLocaleString()} • 
+            {activeBlogMessage.content.split(' ').length} words
           </div>
         </div>
       )}

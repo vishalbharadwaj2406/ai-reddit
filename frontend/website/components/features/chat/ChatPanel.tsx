@@ -7,9 +7,9 @@
 
 import { Message, ConversationDetail } from '@/lib/services/conversationService';
 import { MessageList } from './MessageList';
+import { MessageSuggestions } from './MessageSuggestions';
 import { InputArea } from '../ui/InputArea';
-import { useGlassLayout } from '@/hooks/useGlassLayout';
-import { LAYOUT_TOKENS } from '@/lib/layout/tokens';
+import { useChatLayout } from '@/lib/layout/hooks';
 
 interface ChatPanelProps {
   // Data
@@ -54,13 +54,24 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   onBlogMessageClick,
 }) => {
   const hasUserMessages = conversation.messages.some(m => m.role === 'user');
-  const layout = useGlassLayout();
+  const layout = useChatLayout();
 
   return (
     <div className={layout.panelClass}>
-      {/* Messages Area - Industry standard: content with glass clearance */}
+      {/* Messages Area - Clean with proper clearance */}
       <div className={layout.contentClass} style={layout.contentClearance}>
         <div className="px-4">
+          {/* Empty state suggestions */}
+          {!hasUserMessages && (
+            <div className="mb-6">
+              <MessageSuggestions 
+                onSuggestionClick={onMessageTextChange}
+                onWriteBlog={onWriteBlog}
+                isGeneratingBlog={isGeneratingBlog}
+              />
+            </div>
+          )}
+          
           <MessageList
             messages={conversation.messages}
             isAIResponding={isAIResponding}
@@ -71,14 +82,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         </div>
       </div>
 
-      {/* Input Area - Fixed with header-matching glass styling */}
+      {/* Input Area - Clean glass styling */}
       <div 
-        className={layout.inputClass} 
-        style={{
-          ...layout.headerGlassStyle,
-          minHeight: `${LAYOUT_TOKENS.INPUT_MIN_HEIGHT}px`,
-          maxHeight: `${LAYOUT_TOKENS.INPUT_MAX_HEIGHT}px`,
-        }}
+        className={layout.inputContainer.className} 
+        style={layout.inputContainer.style}
       >
         <InputArea
           messageText={messageText}
@@ -93,7 +100,6 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           showJumpToLatest={showJumpToLatest}
           onJumpToLatest={onJumpToLatest}
           hasUserMessages={hasUserMessages}
-          onWriteBlog={onWriteBlog}
         />
       </div>
     </div>

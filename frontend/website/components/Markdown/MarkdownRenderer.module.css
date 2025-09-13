@@ -9,20 +9,53 @@
   white-space: normal;
 }
 
-.markdownRoot :global(h1),
-.markdownRoot :global(h2),
+/* Typography Hierarchy - Proper visual differentiation */
+.markdownRoot :global(h1) {
+  color: #E6F3FF;
+  margin: 0.75rem 0 0.5rem;
+  font-size: 1.875rem;  /* 30px */
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.markdownRoot :global(h2) {
+  color: #E6F3FF;
+  margin: 0.75rem 0 0.5rem;
+  font-size: 1.5rem;    /* 24px */
+  font-weight: 700;
+  line-height: 1.3;
+}
+
 .markdownRoot :global(h3) {
   color: #E6F3FF;
   margin: 0.75rem 0 0.5rem;
-  font-weight: 700;
+  font-size: 1.25rem;   /* 20px */
+  font-weight: 600;
+  line-height: 1.4;
 }
 
-.markdownRoot :global(h4),
-.markdownRoot :global(h5),
+.markdownRoot :global(h4) {
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0.75rem 0 0.5rem;
+  font-size: 1.125rem;  /* 18px */
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.markdownRoot :global(h5) {
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0.75rem 0 0.5rem;
+  font-size: 1rem;      /* 16px */
+  font-weight: 600;
+  line-height: 1.5;
+}
+
 .markdownRoot :global(h6) {
   color: rgba(255, 255, 255, 0.9);
   margin: 0.75rem 0 0.5rem;
+  font-size: 0.875rem;  /* 14px */
   font-weight: 600;
+  line-height: 1.5;
 }
 
 .markdownRoot :global(p) {

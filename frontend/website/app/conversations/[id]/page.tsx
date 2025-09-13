@@ -15,7 +15,7 @@ import { BlogPanel } from '@/components/features/blog/BlogPanel';
 import { UnifiedToast } from '@/components/features/ui/UnifiedToast';
 import { ConversationLoading } from '@/components/features/ui/LoadingStates';
 import { Button } from '@/components/design-system/Button';
-import { useGlassLayout } from '@/hooks/useGlassLayout';
+import { useGlassHeader } from '@/lib/layout/hooks';
 import { useHeaderStore } from '@/lib/stores/headerStore';
 
 // Import all conversation hooks
@@ -36,7 +36,7 @@ function ConversationPageContent() {
   
   console.log('🆔 ConversationPage mounted - conversationId:', conversationId);
   
-  const layout = useGlassLayout();
+  const layout = useGlassHeader();
   const { setConversationTitle } = useHeaderStore();
   
   // Core conversation data hook

@@ -21,7 +21,7 @@ import { HorizontalRule } from '@tiptap/extension-horizontal-rule';
 import { useState, useEffect, useCallback } from 'react';
 import TurndownService from 'turndown';
 import { default as BlogEditorToolbar } from './BlogEditorToolbar';
-import { useGlassLayout } from '@/hooks/useGlassLayout';
+import { useGlassHeader } from '@/lib/layout/hooks';
 import { TEXT_COLORS } from '@/lib/layout/tokens';
 
 interface BlogEditorProps {
@@ -41,7 +41,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
 }) => {
   const [markdown, setMarkdown] = useState('');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const layout = useGlassLayout();
+  const layout = useGlassHeader();
 
   // Initialize Turndown for HTML to Markdown conversion
   const turndownService = new TurndownService({
@@ -173,7 +173,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
   return (
     <div className={layout.panelClass}>
       {/* Content area with proper header clearance */}
-      <div className={layout.contentClass} style={layout.contentClearance}>
+      <div className={layout.contentClass} style={layout.headerClearance}>
         <div className="px-6 py-4">
           {/* Minimal Header - Single row, smaller buttons */}
           <div className="flex items-center justify-between mb-4">

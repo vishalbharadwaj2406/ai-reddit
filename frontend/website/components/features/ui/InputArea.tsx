@@ -6,7 +6,6 @@
 'use client';
 
 import { MessageInput } from '../chat/MessageInput';
-import { MessageSuggestions } from '../chat/MessageSuggestions';
 
 interface InputAreaProps {
   // Message state
@@ -30,7 +29,6 @@ interface InputAreaProps {
   
   // Blog handlers
   onGenerateBlog: () => void;
-  onWriteBlog: () => void;
 }
 
 export const InputArea: React.FC<InputAreaProps> = ({
@@ -46,21 +44,9 @@ export const InputArea: React.FC<InputAreaProps> = ({
   hasUserMessages,
   isGeneratingBlog,
   onGenerateBlog,
-  onWriteBlog,
 }) => {
   return (
-    <div className="w-full space-y-4">
-      {/* Suggestions for empty state - Better integrated spacing */}
-      {!hasUserMessages && (
-        <div className="px-4 pt-4">
-          <MessageSuggestions 
-            onSuggestionClick={onMessageTextChange}
-            onWriteBlog={onWriteBlog}
-            isGeneratingBlog={isGeneratingBlog}
-          />
-        </div>
-      )}
-
+    <div className="w-full">
       {/* Main input component - Clean integration */}
       <MessageInput
         messageText={messageText}
