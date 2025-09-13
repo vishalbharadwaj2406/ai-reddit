@@ -3,10 +3,10 @@
  * Clean, focused exports for production use
  */
 
-// Simple layout system (production-ready)
+// Industry-standard glass layout system
 export { 
-  useSimpleLayout,
-  useGlassScrollContent
-} from './useGlassScroll';
+  useGlassLayout,
+  useHeaderClearance
+} from './useGlassLayout';
 
-// Note: Legacy glass scroll hooks have been simplified for production
+// Legacy note: All layout systems consolidated into clean glass architecture

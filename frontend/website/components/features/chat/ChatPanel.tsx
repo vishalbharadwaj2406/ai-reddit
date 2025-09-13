@@ -1,6 +1,6 @@
 /**
  * ChatPanel Component  
- * Clean chat interface using professional layout patterns
+ * Production-grade chat interface using industry-standard glass layout
  */
 
 'use client';
@@ -8,7 +8,8 @@
 import { Message, ConversationDetail } from '@/lib/services/conversationService';
 import { MessageList } from './MessageList';
 import { InputArea } from '../ui/InputArea';
-import { useSimpleLayout } from '@/hooks/useGlassScroll';
+import { useGlassLayout } from '@/hooks/useGlassLayout';
+import { LAYOUT_TOKENS } from '@/lib/layout/tokens';
 
 interface ChatPanelProps {
   // Data
@@ -53,23 +54,28 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   onBlogMessageClick,
 }) => {
   const hasUserMessages = conversation.messages.some(m => m.role === 'user');
-  const layout = useSimpleLayout();
+  const layout = useGlassLayout();
 
   return (
-    <div {...layout.chatPanelProps}>
-      {/* Messages Area - Scrollable with proper height */}
-      <div {...layout.messagesAreaProps}>
-        <MessageList
-          messages={conversation.messages}
-          isAIResponding={isAIResponding}
-          isGeneratingBlog={isGeneratingBlog}
-          activeBlogMessageId={activeBlogMessageId}
-          onBlogMessageClick={onBlogMessageClick}
-        />
+    <div className={layout.panelClass}>
+      {/* Messages Area - Industry standard: content with glass clearance */}
+      <div className={layout.contentClass} style={layout.contentClearance}>
+        <div className="px-4">
+          <MessageList
+            messages={conversation.messages}
+            isAIResponding={isAIResponding}
+            isGeneratingBlog={isGeneratingBlog}
+            activeBlogMessageId={activeBlogMessageId}
+            onBlogMessageClick={onBlogMessageClick}
+          />
+        </div>
       </div>
 
-      {/* Input Area - Fixed at bottom of chat panel only */}
-      <div {...layout.inputAreaProps}>
+      {/* Input Area - Fixed within panel bounds (Discord/Slack pattern) */}
+      <div 
+        className={layout.inputClass} 
+        style={{ height: `${LAYOUT_TOKENS.INPUT_HEIGHT}px` }}
+      >
         <InputArea
           messageText={messageText}
           onMessageTextChange={onMessageTextChange}

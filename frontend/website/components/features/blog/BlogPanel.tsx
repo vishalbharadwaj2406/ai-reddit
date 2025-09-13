@@ -1,6 +1,6 @@
 /**
  * BlogPanel Component
- * Clean, simple blog viewing interface
+ * Production-grade blog interface with industry-standard glass scroll
  */
 
 'use client';
@@ -8,8 +8,8 @@
 import { Message } from '@/lib/services/conversationService';
 import { BlogEditor } from '@/components/BlogEditor';
 import MarkdownRenderer from '@/components/Markdown/MarkdownRenderer';
-import { BlogPanelHeader } from './BlogPanelHeader';
-import { useSimpleLayout } from '@/hooks/useGlassScroll';
+import { Button } from '@/components/design-system/Button';
+import { useGlassLayout } from '@/hooks/useGlassLayout';
 
 interface BlogPanelProps {
   // Data
@@ -37,7 +37,7 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
   onPublishBlog,
   onClose,
 }) => {
-  const layout = useSimpleLayout();
+  const layout = useGlassLayout();
 
   // If no blog message, don't render anything
   if (!activeBlogMessage) {
@@ -45,7 +45,7 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
   }
 
   return (
-    <div {...layout.blogPanelProps}>
+    <div className={layout.panelClass}>
       {isEditingBlog ? (
         // Blog Editor Mode - Full height
         <BlogEditor
@@ -56,19 +56,37 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
           isPublishing={isPublishing}
         />
       ) : (
-        // Blog Viewer Mode - Clean scrollable layout
-        <>
-          {/* Header - Fixed at top */}
-          <div className="flex-shrink-0 bg-black/90 backdrop-blur-sm border-b border-gray-700/30 p-4">
-            <BlogPanelHeader
-              title={activeBlogMessage.content}
-              onEditBlog={onEditBlog}
-              onClose={onClose}
-            />
-          </div>
-          
-          {/* Blog Content - Scrollable area */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        // Blog Viewer Mode - Clean glass scroll with content clearance
+        <div className={layout.contentClass} style={layout.contentClearance}>
+          <div className="p-6">
+            {/* Blog Controls - At top of scrollable content */}
+            <div className="flex items-center justify-between gap-2 mb-6 p-4 bg-gray-900/30 rounded-lg border border-gray-700/30">
+              <h3 className="text-sm font-medium text-white truncate">
+                {activeBlogMessage.content.split('\n')[0].replace(/^#\s*/, '').substring(0, 50)}...
+              </h3>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={onEditBlog}
+                  className="text-xs"
+                >
+                  Edit & Post
+                </Button>
+                {onClose && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onClose}
+                    className="text-xs w-8 h-8 p-0"
+                  >
+                    ✕
+                  </Button>
+                )}
+              </div>
+            </div>
+            
+            {/* Blog Content */}
             <div className="prose prose-invert max-w-none prose-lg">
               <MarkdownRenderer content={activeBlogMessage.content} />
             </div>
@@ -79,7 +97,7 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
               {activeBlogMessage.content.split(' ').length} words
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

@@ -9,11 +9,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import SessionGuard from '../../../components/auth/SessionGuard';
-import { ConversationLayout } from '@/components/features/layout/ConversationLayout';
+import ResizableConversation from '@/components/ResizableConversation';
+import { ChatPanel } from '@/components/features/chat/ChatPanel';
+import { BlogPanel } from '@/components/features/blog/BlogPanel';
 import { UnifiedToast } from '@/components/features/ui/UnifiedToast';
 import { ConversationLoading } from '@/components/features/ui/LoadingStates';
 import { Button } from '@/components/design-system/Button';
-import { useSimpleLayout } from '@/hooks/useGlassScroll';
+import { useGlassLayout } from '@/hooks/useGlassLayout';
 import { useHeaderStore } from '@/lib/stores/headerStore';
 
 // Import all conversation hooks
@@ -26,6 +28,7 @@ import {
 } from '@/hooks/conversation';
 
 import { postService } from '@/lib/services/postService';
+import { Message } from '@/lib/services/conversationService';
 
 function ConversationPageContent() {
   const params = useParams();
@@ -33,7 +36,7 @@ function ConversationPageContent() {
   
   console.log('🆔 ConversationPage mounted - conversationId:', conversationId);
   
-  const layout = useSimpleLayout();
+  const layout = useGlassLayout();
   const { setConversationTitle } = useHeaderStore();
   
   // Core conversation data hook
@@ -195,11 +198,46 @@ function ConversationPageContent() {
     }
   }, [conversation, handleError, showToast]);
   
+  // Blog panel state  
+  const [activeBlogMessage, setActiveBlogMessage] = useState<Message | null>(null);
+  const [showBlogPanel, setShowBlogPanel] = useState(false);
+  
+  // Blog messages from conversation
+  const blogMessages = conversation?.messages.filter((m: Message) => m.isBlog === true) || [];
+  const hasBlogMessages = blogMessages.length > 0;
+  const mostRecentBlogMessage = hasBlogMessages ? blogMessages[blogMessages.length - 1] : null;
+  
+  // Auto-open blog panel when blog generation starts or when new blog is created
+  useEffect(() => {
+    if (mostRecentBlogMessage) {
+      setActiveBlogMessage(mostRecentBlogMessage);
+      setShowBlogPanel(true);
+    }
+  }, [mostRecentBlogMessage]);
+  
+  // Auto-open blog panel when blog generation starts
+  useEffect(() => {
+    if (isGeneratingBlog && !showBlogPanel) {
+      setShowBlogPanel(true);
+    }
+  }, [isGeneratingBlog, showBlogPanel]);
+  
+  // Handlers for blog messages
+  const handleBlogMessageClick = useCallback((message: Message) => {
+    setActiveBlogMessage(message);
+    setShowBlogPanel(true);
+  }, []);
+  
+  const handleCloseBlogPanel = useCallback(() => {
+    setShowBlogPanel(false);
+    setActiveBlogMessage(null);
+  }, []);
+
   const handleWriteBlog = useCallback(() => {
     console.log('Write blog functionality - opening empty editor');
     showToast('info', 'Empty blog editor functionality coming soon!');
   }, [showToast]);
-  
+
   const handleJumpToLatest = useCallback(() => {
     console.log('Jump to latest triggered');
   }, []);
@@ -207,7 +245,7 @@ function ConversationPageContent() {
   // Show loading state
   if (loading) {
     return (
-      <div {...layout.pageContainerProps}>
+      <div className={layout.pageClass}>
         <ConversationLoading />
       </div>
     );
@@ -216,7 +254,7 @@ function ConversationPageContent() {
   // Show error state
   if (conversationError || !conversation) {
     return (
-      <div {...layout.pageContainerProps}>
+      <div className={layout.pageClass}>
         <div className="flex items-center justify-center h-full">
           <div className="text-center">
             <p className="text-red-500 mb-4">{conversationError || 'Conversation not found'}</p>
@@ -235,7 +273,7 @@ function ConversationPageContent() {
   const activeError = unifiedError || messageError || blogError || conversationError;
   
   return (
-    <div {...layout.pageContainerProps}>
+    <div className={layout.pageClass}>
       {/* Toast Notifications */}
       <UnifiedToast 
         toast={activeError ? { type: 'error', message: activeError } : toast}
@@ -246,30 +284,44 @@ function ConversationPageContent() {
           clearConversationError();
         } : hideToast}
       />
-      
-      {/* Main Content - Clean 2-Panel Layout */}
-      <ConversationLayout
-        conversation={conversation}
-        onSendMessage={handleSendMessage}
-        onGenerateBlog={handleGenerateBlog}
-        onEditBlog={handleEditBlog}
-        onCancelEdit={handleCancelEdit}
-        onSaveDraft={handleSaveDraft}
-        onPublishBlog={handlePublishBlog}
-        onWriteBlog={handleWriteBlog}
-        messageText={messageText}
-        onMessageTextChange={setMessageText}
-        isSending={isSending}
-        isAIResponding={isAIResponding}
-        isGeneratingBlog={isGeneratingBlog}
-        isComposing={isComposing}
-        onCompositionStart={() => setIsComposing(true)}
-        onCompositionEnd={() => setIsComposing(false)}
-        showJumpToLatest={showJumpToLatest}
-        onJumpToLatest={handleJumpToLatest}
-        isEditingBlog={isEditingBlog}
-        isPublishing={isPublishing}
-      />
+
+      {/* Main Content - Clean Resizable Layout */}
+      <ResizableConversation 
+        showBlogPanel={showBlogPanel}
+        onBlogPanelToggle={setShowBlogPanel}
+      >
+        {/* Chat Panel */}
+        <ChatPanel
+          conversation={conversation}
+          messageText={messageText}
+          onMessageTextChange={setMessageText}
+          isSending={isSending}
+          isAIResponding={isAIResponding}
+          isGeneratingBlog={isGeneratingBlog}
+          isComposing={isComposing}
+          onCompositionStart={() => setIsComposing(true)}
+          onCompositionEnd={() => setIsComposing(false)}
+          showJumpToLatest={showJumpToLatest}
+          activeBlogMessageId={activeBlogMessage?.messageId}
+          onSendMessage={handleSendMessage}
+          onGenerateBlog={handleGenerateBlog}
+          onWriteBlog={handleWriteBlog}
+          onJumpToLatest={handleJumpToLatest}
+          onBlogMessageClick={handleBlogMessageClick}
+        />
+
+        {/* Blog Panel */}
+        <BlogPanel
+          activeBlogMessage={activeBlogMessage}
+          isEditingBlog={isEditingBlog}
+          isPublishing={isPublishing}
+          onEditBlog={handleEditBlog}
+          onCancelEdit={handleCancelEdit}
+          onSaveDraft={handleSaveDraft}
+          onPublishBlog={handlePublishBlog}
+          onClose={handleCloseBlogPanel}
+        />
+      </ResizableConversation>
     </div>
   );
 }
