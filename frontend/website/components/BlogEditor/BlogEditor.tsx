@@ -21,6 +21,8 @@ import { HorizontalRule } from '@tiptap/extension-horizontal-rule';
 import { useState, useEffect, useCallback } from 'react';
 import TurndownService from 'turndown';
 import { default as BlogEditorToolbar } from './BlogEditorToolbar';
+import { useGlassLayout } from '@/hooks/useGlassLayout';
+import { TEXT_COLORS } from '@/lib/layout/tokens';
 
 interface BlogEditorProps {
   initialContent: string;
@@ -39,6 +41,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
 }) => {
   const [markdown, setMarkdown] = useState('');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const layout = useGlassLayout();
 
   // Initialize Turndown for HTML to Markdown conversion
   const turndownService = new TurndownService({
@@ -159,69 +162,79 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
 
   if (!editor) {
     return (
-      <div className="glass-panel-active p-6 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      <div className={layout.panelClass}>
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="glass-panel-active p-6 flex flex-col overflow-hidden h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 flex-shrink-0">
-        <div>
-          <h3 className="text-subheading text-blue-300">Edit Blog Post</h3>
-          {lastSaved && (
-            <p className="text-xs text-blue-400 mt-1">
-              Auto-saved {lastSaved.toLocaleTimeString()}
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="secondary"
-            size="md"
-            onClick={handleCancel}
-          >
-            Cancel
-          </Button>
-          <Button 
-            variant="ghost"
-            size="md"
-            onClick={handleSave}
-          >
-            Save Draft
-          </Button>
-          <Button 
-            variant="primary"
-            size="md"
-            onClick={handlePublish}
-            disabled={isPublishing}
-            loading={isPublishing}
-          >
-            {isPublishing ? 'Publishing...' : '🚀 Publish Post'}
-          </Button>
-        </div>
-      </div>
+    <div className={layout.panelClass}>
+      {/* Content area with proper header clearance */}
+      <div className={layout.contentClass} style={layout.contentClearance}>
+        <div className="px-6 py-4">
+          {/* Minimal Header - Single row, smaller buttons */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <h3 className="text-sm font-medium" style={{ color: TEXT_COLORS.SECONDARY }}>
+                Edit Blog Post
+              </h3>
+              {lastSaved && (
+                <span className="text-xs" style={{ color: TEXT_COLORS.TERTIARY }}>
+                  Auto-saved {lastSaved.toLocaleTimeString()}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost"
+                size="sm"
+                onClick={handleSave}
+                className="text-xs"
+              >
+                Save Draft
+              </Button>
+              <Button 
+                variant="secondary"
+                size="sm"
+                onClick={handleCancel}
+                className="text-xs"
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="primary"
+                size="sm"
+                onClick={handlePublish}
+                disabled={isPublishing}
+                loading={isPublishing}
+                className="text-xs"
+              >
+                {isPublishing ? 'Publishing...' : 'Publish'}
+              </Button>
+            </div>
+          </div>
 
-      {/* Toolbar */}
-      <BlogEditorToolbar editor={editor} />
+          {/* Toolbar */}
+          <BlogEditorToolbar editor={editor} />
 
-      {/* Editor Content */}
-      <div className="flex-1 overflow-y-auto mt-4">
-        <div className="blog-editor-container">
-          <EditorContent editor={editor} />
-        </div>
-      </div>
+          {/* Editor Content - Matching blog viewer typography */}
+          <div className="mt-4 prose prose-invert max-w-none prose-lg">
+            <EditorContent editor={editor} />
+          </div>
 
-      {/* Footer Stats */}
-      <div className="flex items-center justify-between mt-4 pt-4 border-t border-blue-800/30 flex-shrink-0">
-        <div className="text-xs text-blue-400">
-          {markdown.split(' ').filter(word => word.length > 0).length} words • 
-          {markdown.split('\n').length} lines
-        </div>
-        <div className="text-xs text-blue-400">
-          {markdown.length > 0 ? 'Ready to publish' : 'Start writing...'}
+          {/* Footer Stats */}
+          <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-800/30">
+            <div className="text-xs" style={{ color: TEXT_COLORS.TERTIARY }}>
+              {markdown.split(' ').filter(word => word.length > 0).length} words • 
+              {markdown.split('\n').length} lines
+            </div>
+            <div className="text-xs" style={{ color: TEXT_COLORS.TERTIARY }}>
+              {markdown.length > 0 ? 'Ready to publish' : 'Start writing...'}
+            </div>
+          </div>
         </div>
       </div>
     </div>

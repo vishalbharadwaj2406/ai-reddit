@@ -12,12 +12,31 @@ export const LAYOUT_TOKENS = {
   SIDEBAR_COLLAPSED: 64,
   SIDEBAR_EXPANDED: 256,
   
-  // Input System - Clean fixed height
-  INPUT_HEIGHT: 80,
+  // Input System - Dynamic height with minimum (ARCHITECTURAL FIX)
+  INPUT_MIN_HEIGHT: 96,   // Minimum height for input area container
+  INPUT_MAX_HEIGHT: 200,  // Maximum height before scrolling
   INPUT_PADDING: 16,
   
   // Glass scroll safe zones
   SAFE_ZONE: 16,
+} as const;
+
+// Text color hierarchy - Production-grade dark theme best practices
+export const TEXT_COLORS = {
+  // Primary text - high contrast for main content
+  PRIMARY: 'rgba(255, 255, 255, 0.95)',
+  
+  // Secondary text - slightly muted for supporting content
+  SECONDARY: 'rgba(255, 255, 255, 0.9)',
+  
+  // Tertiary text - muted for metadata, timestamps, etc.
+  TERTIARY: 'rgba(255, 255, 255, 0.7)',
+  
+  // Disabled text - very muted for disabled states
+  DISABLED: 'rgba(255, 255, 255, 0.4)',
+  
+  // Pure white - only for special emphasis
+  PURE: '#FFFFFF',
 } as const;
 
 // CSS custom properties for runtime theming - Essential only
@@ -27,16 +46,24 @@ export const CSS_VARIABLES = {
   '--sidebar-collapsed': `${LAYOUT_TOKENS.SIDEBAR_COLLAPSED}px`,
   '--sidebar-expanded': `${LAYOUT_TOKENS.SIDEBAR_EXPANDED}px`,
   
-  // Input system
-  '--input-height': `${LAYOUT_TOKENS.INPUT_HEIGHT}px`,
+  // Input system - Dynamic values
+  '--input-min-height': `${LAYOUT_TOKENS.INPUT_MIN_HEIGHT}px`,
+  '--input-max-height': `${LAYOUT_TOKENS.INPUT_MAX_HEIGHT}px`,
   '--input-padding': `${LAYOUT_TOKENS.INPUT_PADDING}px`,
   
   // Safe zones for glass scroll
   '--safe-zone': `${LAYOUT_TOKENS.SAFE_ZONE}px`,
   
-  // Calculated clearances (for CSS usage)
+  // Calculated clearances (using minimum height for layout stability)
   '--top-clearance': `${LAYOUT_TOKENS.HEADER_HEIGHT + LAYOUT_TOKENS.SAFE_ZONE}px`,
-  '--bottom-clearance': `${LAYOUT_TOKENS.INPUT_HEIGHT + LAYOUT_TOKENS.SAFE_ZONE}px`,
+  '--bottom-clearance': `${LAYOUT_TOKENS.INPUT_MIN_HEIGHT + LAYOUT_TOKENS.SAFE_ZONE}px`,
+  
+  // Text color system
+  '--text-primary': TEXT_COLORS.PRIMARY,
+  '--text-secondary': TEXT_COLORS.SECONDARY,
+  '--text-tertiary': TEXT_COLORS.TERTIARY,
+  '--text-disabled': TEXT_COLORS.DISABLED,
+  '--text-pure': TEXT_COLORS.PURE,
 } as const;
 
 /**

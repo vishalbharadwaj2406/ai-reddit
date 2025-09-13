@@ -49,10 +49,10 @@ export const InputArea: React.FC<InputAreaProps> = ({
   onWriteBlog,
 }) => {
   return (
-    <div className="w-full">
-      {/* Suggestions for empty state */}
+    <div className="w-full space-y-4">
+      {/* Suggestions for empty state - Better integrated spacing */}
       {!hasUserMessages && (
-        <div className="mb-4">
+        <div className="px-4 pt-4">
           <MessageSuggestions 
             onSuggestionClick={onMessageTextChange}
             onWriteBlog={onWriteBlog}
@@ -61,7 +61,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
         </div>
       )}
 
-      {/* Main input component */}
+      {/* Main input component - Clean integration */}
       <MessageInput
         messageText={messageText}
         onMessageTextChange={onMessageTextChange}

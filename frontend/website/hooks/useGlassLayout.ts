@@ -1,13 +1,14 @@
 /**
  * Production-Grade Glass Layout System
  * 
- * Industry-standard position-based architecture:
- * - Fixed glass elements (header, input) float above content
+ * Industry-standard position-based architecture with unified glass styling:
+ * - Fixed glass elements (header, input) with identical visual treatment
  * - Content uses padding for clearance (like Discord, Slack, WhatsApp)
- * - No complex flex calculations or negative margins
- * - Clean, maintainable, extensible
+ * - Single glass layer strategy - no competing visual effects
+ * - Dynamic input heights with proper overflow handling
+ * - Clean, maintainable, extensible architecture
  * 
- * Architecture: Position-based glass scroll (Industry Standard)
+ * Architecture: Position-based glass scroll with header consistency
  */
 
 'use client';
@@ -23,7 +24,7 @@ interface GlassLayoutSystem {
   /** Content container - scrollable with glass clearance */
   contentClass: string;
   
-  /** Input container - fixed within panel bounds */
+  /** Input container - fixed with exact header glass styling */
   inputClass: string;
   
   /** Panel container - relative positioning context */
@@ -37,6 +38,9 @@ interface GlassLayoutSystem {
   
   /** Combined clearance for content areas */
   contentClearance: React.CSSProperties;
+  
+  /** Header-matching glass styles for input area */
+  headerGlassStyle: React.CSSProperties;
 }
 
 /**
@@ -59,11 +63,20 @@ export function useGlassLayout(): GlassLayoutSystem {
 
   // Calculate clearance using tokens (zero hardcoding)
   const headerHeight = LAYOUT_TOKENS.HEADER_HEIGHT;
-  const inputHeight = LAYOUT_TOKENS.INPUT_HEIGHT;
+  const inputMinHeight = LAYOUT_TOKENS.INPUT_MIN_HEIGHT;
   const safeZone = LAYOUT_TOKENS.SAFE_ZONE;
   
   const topClearance = headerHeight + safeZone;
-  const bottomClearance = inputHeight + safeZone;
+  const bottomClearance = inputMinHeight + safeZone;
+
+  // Exact header glass styling for perfect consistency
+  const headerGlassStyle: React.CSSProperties = {
+    background: 'rgba(0, 0, 0, 0.6)',
+    backdropFilter: 'blur(24px) saturate(180%)',
+    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+    borderTop: '1px solid rgba(59, 130, 246, 0.15)',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), 0 0 40px rgba(30, 58, 138, 0.12)',
+  };
 
   return {
     // Page container - full viewport, clean slate
@@ -72,8 +85,8 @@ export function useGlassLayout(): GlassLayoutSystem {
     // Content container - industry standard pattern
     contentClass: "h-full overflow-y-auto",
     
-    // Input container - fixed within panel (Discord/Slack pattern)
-    inputClass: "absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm border-t border-gray-700/30 z-40",
+    // Input container - clean base for header glass styling
+    inputClass: "absolute bottom-0 left-0 right-0 z-40",
     
     // Panel container - positioning context for fixed input
     panelClass: "h-full relative bg-black",
@@ -91,6 +104,9 @@ export function useGlassLayout(): GlassLayoutSystem {
       paddingTop: `${topClearance}px`,
       paddingBottom: `${bottomClearance}px`
     },
+
+    // Header-matching glass styles for perfect consistency
+    headerGlassStyle,
   };
 }
 

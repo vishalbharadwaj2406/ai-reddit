@@ -288,7 +288,6 @@ function ConversationPageContent() {
       {/* Main Content - Clean Resizable Layout */}
       <ResizableConversation 
         showBlogPanel={showBlogPanel}
-        onBlogPanelToggle={setShowBlogPanel}
       >
         {/* Chat Panel */}
         <ChatPanel

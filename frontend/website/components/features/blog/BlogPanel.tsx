@@ -59,34 +59,29 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
         // Blog Viewer Mode - Clean glass scroll with content clearance
         <div className={layout.contentClass} style={layout.contentClearance}>
           <div className="p-6">
-            {/* Blog Controls - At top of scrollable content */}
-            <div className="flex items-center justify-between gap-2 mb-6 p-4 bg-gray-900/30 rounded-lg border border-gray-700/30">
-              <h3 className="text-sm font-medium text-white truncate">
-                {activeBlogMessage.content.split('\n')[0].replace(/^#\s*/, '').substring(0, 50)}...
-              </h3>
-              <div className="flex items-center gap-2">
+            {/* Minimal Header - Just buttons */}
+            <div className="flex items-center justify-end gap-2 mb-6">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={onEditBlog}
+                className="text-xs"
+              >
+                Edit & Post
+              </Button>
+              {onClose && (
                 <Button
-                  variant="primary"
+                  variant="ghost"
                   size="sm"
-                  onClick={onEditBlog}
-                  className="text-xs"
+                  onClick={onClose}
+                  className="text-xs w-8 h-8 p-0"
                 >
-                  Edit & Post
+                  ✕
                 </Button>
-                {onClose && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={onClose}
-                    className="text-xs w-8 h-8 p-0"
-                  >
-                    ✕
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
             
-            {/* Blog Content */}
+            {/* Blog Content with title integrated */}
             <div className="prose prose-invert max-w-none prose-lg">
               <MarkdownRenderer content={activeBlogMessage.content} />
             </div>

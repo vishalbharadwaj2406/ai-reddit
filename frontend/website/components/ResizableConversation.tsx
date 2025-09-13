@@ -17,13 +17,11 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 interface ResizableConversationProps {
   children: [React.ReactNode, React.ReactNode]; // [ChatPanel, BlogPanel]
   showBlogPanel?: boolean;
-  onBlogPanelToggle?: (show: boolean) => void;
 }
 
 export const ResizableConversation: React.FC<ResizableConversationProps> = ({
   children,
   showBlogPanel = false,
-  onBlogPanelToggle,
 }) => {
   const [chatPanel, blogPanel] = children;
   const [isMounted, setIsMounted] = useState(false);

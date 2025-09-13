@@ -1,6 +1,7 @@
 /**
  * MessageInput Component
- * Production-grade message input with auto-resize and keyboard handling
+ * Production-grade message input with clean inner styling
+ * Works within glass container from layout system for perfect header consistency
  */
 
 'use client';
@@ -9,6 +10,7 @@ import { useCallback } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import { Button } from '@/components/design-system/Button';
 import { JumpToLatest } from '@/components/features/ui/JumpToLatest';
+import { TEXT_COLORS } from '@/lib/layout/tokens';
 
 interface MessageInputProps {
   messageText: string;
@@ -72,15 +74,20 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         />
       )}
       
-      {/* Input Container - Clean flex layout */}
-      <div className="flex items-end gap-3 w-full">
-        {/* Text Input - Flexible width */}
+      {/* Inner Content - Clean styling that works within glass container */}
+      <div className="flex items-end gap-3 w-full p-4">
+        {/* Text Input - Clean inner styling without competing glass effects */}
         <div className="flex-1">
           <TextareaAutosize
-            className="w-full resize-none text-sm min-h-[56px] max-h-[120px] px-4 py-3 rounded-2xl
-                     bg-white/5 backdrop-blur-sm border-2 border-blue-500/20 
-                     text-white placeholder-white/50 transition-all duration-200
-                     focus:outline-none focus:border-blue-500/40 focus:bg-white/8"
+            className="w-full resize-none text-sm min-h-[48px] max-h-[120px] px-4 py-3 rounded-xl
+                     bg-white/5 border border-white/10 
+                     placeholder-white/50 transition-all duration-200
+                     focus:outline-none focus:border-blue-400/40 focus:bg-white/8
+                     focus:shadow-sm focus:shadow-blue-500/20"
+            style={{ 
+              resize: 'none',
+              color: TEXT_COLORS.SECONDARY
+            }}
             placeholder="Message..."
             value={messageText}
             onChange={(e) => onMessageTextChange(e.target.value)}
@@ -93,18 +100,18 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           />
         </div>
         
-        {/* Buttons - Send first, then Generate Blog */}
+        {/* Buttons - Clean styling within glass container */}
         <div className="flex items-end gap-2">
           {/* Send Button - Primary action */}
           <Button
             onClick={handleSend}
             disabled={!messageText.trim() || isSending || isGeneratingBlog}
             variant="primary"
-            size="md"
+            size="sm"
             loading={isSending}
-            className="min-w-[80px] h-[56px]"
+            className="min-w-[60px] h-[48px] px-4"
           >
-            {isSending ? 'Sending...' : '→'}
+            {isSending ? '...' : '→'}
           </Button>
           
           {/* Generate Blog Button - Secondary action */}
@@ -112,9 +119,9 @@ export const MessageInput: React.FC<MessageInputProps> = ({
             onClick={onGenerateBlog}
             disabled={isGeneratingBlog}
             variant="secondary"
-            size="md"
+            size="sm"
             loading={isGeneratingBlog}
-            className="min-w-[140px] h-[56px]"
+            className="min-w-[120px] h-[48px] px-4 text-xs font-medium"
           >
             {isGeneratingBlog ? 'Generating...' : 'Generate Blog'}
           </Button>

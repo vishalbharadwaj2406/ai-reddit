@@ -10,6 +10,7 @@ import MarkdownRenderer from '@/components/Markdown/MarkdownRenderer';
 import { copyText } from '@/lib/utils/copy';
 import { markdownToPlain } from '@/lib/utils/markdown';
 import { BlogMessageButton } from './BlogMessageButton';
+import { TEXT_COLORS } from '@/lib/layout/tokens';
 
 interface MessageListProps {
   messages: Message[];
@@ -30,7 +31,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   const displayMessages = messages.filter(m => m.role !== 'system');
   
   return (
-    <>
+    <div className="space-y-4">
       {displayMessages.map((message, index) => {
         const isLastAIMessage = message.role === 'assistant' && 
                               index === displayMessages.length - 1;
@@ -82,7 +83,7 @@ export const MessageList: React.FC<MessageListProps> = ({
               
               {/* Message metadata and actions */}
               <div className="mt-2 flex items-center justify-between">
-                <div className="text-xs opacity-70">
+                <div className="text-xs" style={{ color: TEXT_COLORS.TERTIARY }}>
                   {isTyping ? (message.isBlog ? 'Generating blog...' : 'Assistant is typing...') : 
                    (function() {
                      // Prevent hydration mismatch by returning static text during SSR
@@ -132,6 +133,6 @@ export const MessageList: React.FC<MessageListProps> = ({
           </div>
         );
       })}
-    </>
+    </div>
   );
 };

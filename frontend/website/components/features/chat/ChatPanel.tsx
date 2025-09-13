@@ -71,10 +71,14 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         </div>
       </div>
 
-      {/* Input Area - Fixed within panel bounds (Discord/Slack pattern) */}
+      {/* Input Area - Fixed with header-matching glass styling */}
       <div 
         className={layout.inputClass} 
-        style={{ height: `${LAYOUT_TOKENS.INPUT_HEIGHT}px` }}
+        style={{
+          ...layout.headerGlassStyle,
+          minHeight: `${LAYOUT_TOKENS.INPUT_MIN_HEIGHT}px`,
+          maxHeight: `${LAYOUT_TOKENS.INPUT_MAX_HEIGHT}px`,
+        }}
       >
         <InputArea
           messageText={messageText}
