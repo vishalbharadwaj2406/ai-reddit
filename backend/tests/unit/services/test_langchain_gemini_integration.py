@@ -169,7 +169,7 @@ class TestLangChainGeminiIntegration:
         """Test blog generation from conversation"""
         with patch.object(ai_service, 'generate_ai_response') as mock_generate:
             async def mock_generator():
-                yield {"content": "Blog post content", "is_complete": True, "message_id": None}
+                yield {"content": "TITLE: Understanding Renewable Energy\nCONTENT: Blog post content about renewable energy...", "is_complete": True, "message_id": None}
             
             mock_generate.return_value = mock_generator()
             
@@ -182,6 +182,11 @@ class TestLangChainGeminiIntegration:
                 
             assert len(responses) > 0
             assert responses[-1]["is_complete"] is True
+            
+            # Verify the response follows TITLE: CONTENT: format
+            content = responses[-1]["content"]
+            assert content.startswith("TITLE:")
+            assert "CONTENT:" in content
 
     @pytest.mark.asyncio
     async def test_blog_generation_error(self, ai_service):

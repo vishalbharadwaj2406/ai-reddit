@@ -143,9 +143,41 @@ class TestAIServiceIntegration:
         final_response = responses[-1]
         assert final_response["is_complete"] is True
         
+        # Get the complete content (should be in accumulated_content for the final response)
+        content = final_response.get("accumulated_content") or final_response.get("content", "")
+        
         # Blog should be longer than original conversation
-        content = final_response["content"]
         assert len(content) > len(conversation_content.strip())
+        
+        # Verify the blog follows the TITLE: CONTENT: format
+        assert content.startswith("TITLE:")
+        assert "CONTENT:" in content
+        
+        # Parse and validate the structure - handle potential empty lines
+        lines = content.split('\n')
+        
+        # Find TITLE line
+        title_line = lines[0] if lines else ""
+        assert title_line.startswith("TITLE:")
+        title = title_line[6:].strip()
+        assert len(title) > 0  # Should have a non-empty title
+        
+        # Find CONTENT line (might not be immediately after TITLE)
+        content_start_idx = -1
+        for i, line in enumerate(lines):
+            if line.startswith("CONTENT:"):
+                content_start_idx = i
+                break
+        
+        assert content_start_idx >= 0, "Could not find CONTENT: line"
+        
+        # Extract blog content (everything after CONTENT: line)
+        content_lines = lines[content_start_idx:]
+        blog_content = content_lines[0][8:].strip()  # Remove "CONTENT:" prefix
+        if len(content_lines) > 1:
+            blog_content += '\n' + '\n'.join(content_lines[1:])
+        
+        assert len(blog_content) > 0  # Should have non-empty content
 
     @pytest.mark.asyncio
     async def test_error_handling_with_invalid_input(self, ai_service):

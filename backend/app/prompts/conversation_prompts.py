@@ -95,22 +95,26 @@ Please respond in a natural, conversational tone while being informative and eng
         Returns:
             Formatted blog generation prompt
         """
-        base_prompt = """Transform the following conversation into a well-structured, engaging blog post:
+        base_prompt = """Transform the following conversation into a well-structured, engaging blog post.
+
+Please format your response EXACTLY as follows:
+TITLE: [Your engaging blog title here]
+CONTENT: [Your complete blog content with proper markdown formatting]
 
 Conversation Content:
 {conversation_content}
 
 Blog Post Requirements:
-1. Create an engaging title and introduction
+1. Create an engaging title (keep it concise and descriptive)
 2. Organize content into logical sections with clear headings
 3. Maintain the key insights and information from the conversation
 4. Write in a clear, accessible style suitable for a general audience
 5. Include a conclusion that summarizes key takeaways
-6. Ensure the post is informative, engaging, and well-structured
+6. Use proper markdown formatting for headers, lists, etc.
 
 {additional_instructions}
 
-Please generate a complete blog post based on this conversation."""
+Remember: Start with TITLE: followed by CONTENT: on the next line."""
 
         additional_instructions = ""
         if additional_context:

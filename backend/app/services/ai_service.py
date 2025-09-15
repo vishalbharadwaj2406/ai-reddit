@@ -138,7 +138,24 @@ class AIService:
         """
 
         # Generate mock response based on user message
-        if "quantum" in user_message.lower():
+        if "TITLE:" in user_message and "CONTENT:" in user_message:
+            # This is a blog generation request
+            mock_response = (
+                "TITLE: Understanding AI and Technology\n"
+                "CONTENT: This blog post explores the fascinating world of artificial intelligence "
+                "and its applications in modern technology. We'll examine how AI systems work, "
+                "their benefits and challenges, and what the future holds for this revolutionary field.\n\n"
+                "## Introduction\n\n"
+                "Artificial Intelligence has become an integral part of our daily lives, "
+                "transforming how we work, communicate, and solve complex problems.\n\n"
+                "## Key Benefits\n\n"
+                "AI technology offers numerous advantages including automation, "
+                "improved decision-making, and enhanced problem-solving capabilities.\n\n"
+                "## Conclusion\n\n"
+                "As we continue to advance in AI technology, it's important to consider "
+                "both the opportunities and responsibilities that come with these powerful tools."
+            )
+        elif "quantum" in user_message.lower():
             mock_response = (
                 "Quantum computing is a revolutionary technology that "
                 "harnesses the principles of quantum mechanics to process "
