@@ -27,6 +27,23 @@ class ConversationCreate(BaseModel):
         return v
 
 
+class ConversationUpdate(BaseModel):
+    """Conversation update request model"""
+    title: str = Field(..., min_length=1, max_length=200, description="Updated conversation title")
+
+    @field_validator('title')
+    @classmethod
+    def validate_title(cls, v):
+        if v is not None:
+            # Remove leading/trailing spaces
+            v = v.strip()
+            if not v:
+                raise ValueError("Title cannot be empty")
+            if len(v) > 200:
+                raise ValueError("Title cannot exceed 200 characters")
+        return v
+
+
 class ConversationResponse(BaseModel):
     """Conversation response model"""
     model_config = ConfigDict(from_attributes=True)

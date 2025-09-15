@@ -19,7 +19,7 @@ import asyncio
 
 from app.core.database import get_db
 from app.core.config import settings
-from app.schemas.conversation import ConversationCreate, ConversationResponse, ConversationListItem
+from app.schemas.conversation import ConversationCreate, ConversationUpdate, ConversationResponse, ConversationListItem
 from app.schemas.message import MessageCreate, MessageResponse, BlogGenerateRequest
 from app.models.conversation import Conversation
 from app.models.message import Message
@@ -334,6 +334,81 @@ async def archive_conversation(
             detail={
                 "error": "CONVERSATION_ARCHIVE_ERROR",
                 "message": "Failed to archive conversation",
+                "details": str(e)
+            }
+        )
+
+
+@router.patch("/{conversation_id}")
+async def update_conversation(
+    conversation_id: UUID,
+    conversation_update: ConversationUpdate,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)  # Using JWT auth for testing compatibility
+):
+    """
+    Update conversation details (currently supports title updates).
+    
+    Allows users to modify their conversation titles for better organization.
+    """
+    
+    try:
+        # Find the conversation
+        conversation = db.query(Conversation).filter(
+            Conversation.conversation_id == conversation_id,
+            Conversation.status == "active"
+        ).first()
+
+        if not conversation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={
+                    "error": "CONVERSATION_NOT_FOUND",
+                    "message": "Conversation not found or has been archived"
+                }
+            )
+
+        # Check ownership
+        if conversation.user_id != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": "CONVERSATION_ACCESS_FORBIDDEN",
+                    "message": "You can only update your own conversations"
+                }
+            )
+
+        # Update the conversation title
+        conversation.title = conversation_update.title
+        from datetime import datetime, timezone
+        conversation.updated_at = datetime.now(timezone.utc)
+        
+        db.commit()
+        db.refresh(conversation)
+
+        return {
+            "success": True,
+            "data": {
+                "conversation_id": str(conversation.conversation_id),
+                "title": conversation.title,
+                "updated_at": conversation.updated_at.isoformat(),
+                "created_at": conversation.created_at.isoformat()
+            },
+            "message": "Conversation updated successfully",
+            "errorCode": None
+        }
+
+    except HTTPException:
+        # Re-raise HTTP exceptions (404, 403, 422)
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={
+                "error": "CONVERSATION_UPDATE_ERROR",
+                "message": "Failed to update conversation",
                 "details": str(e)
             }
         )

@@ -804,3 +804,180 @@ class TestConversationEndpoints:
 
         finally:
             app.dependency_overrides.clear()
+
+    # PATCH /conversations/{conversation_id} Tests - Update Conversation Title
+    
+    def test_update_conversation_title_success(self, client, mock_user, mock_db):
+        """Test successful conversation title update"""
+        # Mock existing conversation
+        conversation_id = str(uuid4())
+        mock_conversation = Mock()
+        mock_conversation.conversation_id = conversation_id
+        mock_conversation.user_id = mock_user.user_id
+        mock_conversation.title = "Old Title"
+        mock_conversation.status = "active"
+        mock_conversation.created_at = datetime.now(timezone.utc)
+        mock_conversation.updated_at = datetime.now(timezone.utc)
+
+        # Mock database query to return the conversation
+        mock_query = Mock()
+        mock_query.filter.return_value.first.return_value = mock_conversation
+        mock_db.query.return_value = mock_query
+
+        # Override dependencies
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        try:
+            # Make request to update title
+            response = client.patch(
+                f"/api/v1/conversations/{conversation_id}",
+                json={"title": "Updated Title"}
+            )
+
+            # Verify response
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert_api_response_format(data)
+            assert data["success"] is True
+            assert data["data"]["title"] == "Updated Title"
+            assert data["data"]["conversation_id"] == conversation_id
+            assert "updated_at" in data["data"]
+
+            # Verify database was updated
+            assert mock_conversation.title == "Updated Title"
+            mock_db.commit.assert_called_once()
+
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_update_conversation_title_not_found(self, client, mock_user, mock_db):
+        """Test updating non-existent conversation"""
+        conversation_id = str(uuid4())
+        
+        # Mock database query to return None (not found)
+        mock_query = Mock()
+        mock_query.filter.return_value.first.return_value = None
+        mock_db.query.return_value = mock_query
+
+        # Override dependencies
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        try:
+            response = client.patch(
+                f"/api/v1/conversations/{conversation_id}",
+                json={"title": "New Title"}
+            )
+
+            assert response.status_code == status.HTTP_404_NOT_FOUND
+            data = response.json()
+            assert "detail" in data
+
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_update_conversation_title_forbidden_other_user(self, client, mock_user, mock_db):
+        """Test updating conversation owned by another user"""
+        conversation_id = str(uuid4())
+        other_user_id = uuid4()
+        
+        # Mock conversation owned by different user
+        mock_conversation = Mock()
+        mock_conversation.conversation_id = conversation_id
+        mock_conversation.user_id = other_user_id  # Different user
+        mock_conversation.status = "active"
+
+        mock_query = Mock()
+        mock_query.filter.return_value.first.return_value = mock_conversation
+        mock_db.query.return_value = mock_query
+
+        # Override dependencies
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        try:
+            response = client.patch(
+                f"/api/v1/conversations/{conversation_id}",
+                json={"title": "Hacker Title"}
+            )
+
+            assert response.status_code == status.HTTP_403_FORBIDDEN
+            data = response.json()
+            assert "detail" in data
+
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_update_conversation_title_invalid_title_empty(self, client, mock_user, mock_db):
+        """Test updating with empty title"""
+        conversation_id = str(uuid4())
+
+        # Override dependencies
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        try:
+            response = client.patch(
+                f"/api/v1/conversations/{conversation_id}",
+                json={"title": "   "}  # Empty after strip
+            )
+
+            assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+            data = response.json()
+            assert "detail" in data
+
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_update_conversation_title_invalid_title_too_long(self, client, mock_user, mock_db):
+        """Test updating with title that's too long"""
+        conversation_id = str(uuid4())
+        long_title = "A" * 201  # Exceeds 200 character limit
+
+        # Override dependencies
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        try:
+            response = client.patch(
+                f"/api/v1/conversations/{conversation_id}",
+                json={"title": long_title}
+            )
+
+            assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+            data = response.json()
+            assert "detail" in data
+
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_update_conversation_title_unauthorized(self, client):
+        """Test updating conversation without authentication"""
+        conversation_id = str(uuid4())
+        
+        response = client.patch(
+            f"/api/v1/conversations/{conversation_id}",
+            json={"title": "New Title"}
+        )
+        
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_update_conversation_title_invalid_uuid(self, client, mock_user, mock_db):
+        """Test updating conversation with invalid UUID format"""
+        # Override dependencies
+        app.dependency_overrides[get_current_user] = lambda: mock_user
+        app.dependency_overrides[get_db] = lambda: mock_db
+
+        try:
+            response = client.patch(
+                "/api/v1/conversations/invalid-uuid-format",
+                json={"title": "New Title"}
+            )
+
+            assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+            data = response.json()
+            assert "detail" in data
+
+        finally:
+            app.dependency_overrides.clear()

@@ -401,6 +401,40 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 **Auth Required**: Yes
 **Implementation Status**: Complete with 7 test cases
 
+#### PATCH /conversations/{conversation_id} ✅ IMPLEMENTED
+**Purpose**: Update conversation details (currently supports title updates)
+**Auth Required**: Yes
+**Implementation Status**: Complete with 7 test cases covering all edge cases
+**Request Body**:
+```json
+{
+  "title": "string"
+}
+```
+**Response**:
+```json
+{
+  "success": true,
+  "data": {
+    "conversation_id": "uuid",
+    "title": "string",
+    "updated_at": "timestamp",
+    "created_at": "timestamp"
+  },
+  "message": "Conversation updated successfully"
+}
+```
+**Validation**:
+- Title is required and cannot be empty
+- Title cannot exceed 200 characters
+- User can only update their own conversations
+- Conversation must exist and not be archived
+
+**Error Responses**:
+- `404 Not Found`: Conversation doesn't exist or is archived
+- `403 Forbidden`: User doesn't own the conversation
+- `422 Unprocessable Entity`: Invalid title (empty, too long, or invalid format)
+
 ---
 
 ### 4. AI Chat Endpoints
@@ -435,15 +469,28 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 - Uses conversation history as context for blog creation
 - Supports additional context instructions
 - Returns blog content with `is_blog: true` flag
+- **Blog content follows delimiter format**: `TITLE:` and `CONTENT:` delimiters for frontend parsing
+
+**Blog Content Format**:
+All generated blog content follows a structured delimiter pattern for reliable frontend parsing:
+```
+TITLE: The Blog Title Here
+
+CONTENT:
+The blog content starts here and continues...
+with multiple paragraphs and formatting as needed.
+```
 
 ### SSE Blog Generation Format:
 ```
 event: blog_response
-data: {"success": true, "data": {"content": "# Blog Title\n\nPartial content...", "is_complete": false, "message_id": "uuid", "is_blog": true}, "message": "Streaming blog generation"}
+data: {"success": true, "data": {"content": "TITLE: Renewable Energy Revolution\n\nCONTENT:\nRenewable energy is transforming...", "is_complete": false, "message_id": "uuid", "is_blog": true}, "message": "Streaming blog generation"}
 
 event: blog_complete
-data: {"success": true, "data": {"content": "# Complete Blog\n\nFull blog content here...", "is_complete": true, "message_id": "uuid", "is_blog": true}, "message": "Blog generation complete"}
+data: {"success": true, "data": {"content": "TITLE: Renewable Energy Revolution\n\nCONTENT:\nRenewable energy is transforming our world by providing clean, sustainable power sources that reduce our dependence on fossil fuels...", "is_complete": true, "message_id": "uuid", "is_blog": true}, "message": "Blog generation complete"}
 ```
+
+**Important**: When saved to the database with `is_blog: true`, the message content will always contain both `TITLE:` and `CONTENT:` delimiters to ensure consistent frontend parsing.
 
 ---
 
