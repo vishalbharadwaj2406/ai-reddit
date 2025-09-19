@@ -150,34 +150,21 @@ function ConversationPageContent() {
     setIsEditingBlog(false);
   }, []);
   
-  const handleSaveDraft = useCallback((markdown: string) => {
-    console.log('Draft saved:', markdown.length, 'characters');
+  const handleSaveDraft = useCallback((title: string, content: string, tags: string[]) => {
+    console.log('Draft saved:', { title, contentLength: content.length, tags });
     showToast('info', 'Draft saved locally');
   }, [showToast]);
   
-  const handlePublishBlog = useCallback(async (markdown: string) => {
-    if (!conversation || !markdown.trim()) return;
+  const handlePublishBlog = useCallback(async (title: string, content: string, tags: string[], messageId: string) => {
+    if (!conversation || !title.trim() || !content.trim()) return;
     
     try {
       setIsPublishing(true);
       
-      const title = conversation.title || 'Blog Post';
-      const extractTagsFromContent = (content: string): string[] => {
-        const hashtagMatches = content.match(/#(\w+)/g);
-        if (hashtagMatches) {
-          return hashtagMatches.map(tag => tag.substring(1).toLowerCase());
-        }
-        return ['blog', 'ai-generated'];
-      };
-      
-      const tags = extractTagsFromContent(markdown);
-      const blogMessage = conversation.messages.find(m => m.isBlog && m.content.trim() === markdown.trim());
-      const messageId = blogMessage?.messageId;
-      
-      console.log('Publishing blog with messageId:', messageId, 'tags:', tags);
+      console.log('Publishing blog with messageId:', messageId, 'title:', title, 'tags:', tags);
       
       const publishedPost = await postService.publishBlogAsPost(
-        markdown,
+        content,
         title,
         messageId,
         tags
