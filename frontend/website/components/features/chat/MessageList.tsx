@@ -10,6 +10,9 @@ import MarkdownRenderer from '@/components/Markdown/MarkdownRenderer';
 import { copyText } from '@/lib/utils/copy';
 import { markdownToPlain } from '@/lib/utils/markdown';
 import { BlogMessageButton } from './BlogMessageButton';
+import { Badge } from '@/components/design-system/Badge';
+import { parseBlogContent } from '@/lib/utils/blogParser';
+import { tagService } from '@/lib/services/tagService';
 import { TEXT_COLORS } from '@/lib/layout/tokens';
 
 interface MessageListProps {
@@ -58,8 +61,53 @@ export const MessageList: React.FC<MessageListProps> = ({
                       {message.content}
                       <span className="inline-block w-0.5 h-4 bg-blue-400 animate-pulse ml-1 align-middle"></span>
                     </div>
+                  ) : message.isBlog ? (
+                    // Blog messages: Parse JSON and display structured content
+                    (() => {
+                      const parsedBlog = parseBlogContent(message.content);
+                      
+                      if (parsedBlog.isValid) {
+                        return (
+                          <div className="space-y-3">
+                            {/* Blog Title */}
+                            <h3 className="text-2xl font-bold text-white leading-tight mb-2">
+                              {parsedBlog.title}
+                            </h3>
+                            
+                            {/* Tags */}
+                            {parsedBlog.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5">
+                                {parsedBlog.tags.map((tag) => (
+                                  <Badge 
+                                    key={tag} 
+                                    variant="blue" 
+                                    className="text-xs"
+                                  >
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Blog Content Preview */}
+                            <div className="prose prose-invert prose-sm max-w-none">
+                              <MarkdownRenderer content={parsedBlog.content.substring(0, 300) + (parsedBlog.content.length > 300 ? '...' : '')} />
+                            </div>
+                            
+                            {parsedBlog.content.length > 300 && (
+                              <p className="text-xs text-gray-400 italic">
+                                Click "View Blog" to see full content
+                              </p>
+                            )}
+                          </div>
+                        );
+                      } else {
+                        // Fallback for invalid blog JSON
+                        return <MarkdownRenderer content={message.content} />;
+                      }
+                    })()
                   ) : (
-                    // Once streaming is complete, render as markdown
+                    // Regular messages: render as markdown
                     <MarkdownRenderer content={message.content} />
                   )
                 ) : (

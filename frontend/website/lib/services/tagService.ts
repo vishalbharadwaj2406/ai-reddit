@@ -44,9 +44,10 @@ class TagService {
 
   /**
    * Get display name from normalized tag name
+   * Always returns the hyphenated lowercase format
    */
   getDisplayName(normalizedName: string): string {
-    return normalizedName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    return normalizedName;
   }
 
   /**
