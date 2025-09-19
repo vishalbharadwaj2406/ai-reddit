@@ -169,7 +169,7 @@ class TestLangChainGeminiIntegration:
         """Test blog generation from conversation"""
         with patch.object(ai_service, 'generate_ai_response') as mock_generate:
             async def mock_generator():
-                yield {"content": "TITLE: Understanding Renewable Energy\nCONTENT: Blog post content about renewable energy...", "is_complete": True, "message_id": None}
+                yield {"content": '{"title": "Understanding Renewable Energy", "content": "Blog post content about renewable energy...", "tags": ["technology", "environment", "science"]}', "is_complete": True, "message_id": None}
             
             mock_generate.return_value = mock_generator()
             
@@ -183,10 +183,24 @@ class TestLangChainGeminiIntegration:
             assert len(responses) > 0
             assert responses[-1]["is_complete"] is True
             
-            # Verify the response follows TITLE: CONTENT: format
+            # Verify the response follows JSON format with title, content, and tags
             content = responses[-1]["content"]
-            assert content.startswith("TITLE:")
-            assert "CONTENT:" in content
+            
+            # Parse and validate JSON structure
+            import json
+            blog_json = json.loads(content)
+            
+            assert "title" in blog_json, "Blog JSON must contain 'title' field"
+            assert "content" in blog_json, "Blog JSON must contain 'content' field"
+            assert "tags" in blog_json, "Blog JSON must contain 'tags' field"
+            
+            assert isinstance(blog_json["title"], str), "Title must be a string"
+            assert isinstance(blog_json["content"], str), "Content must be a string"
+            assert isinstance(blog_json["tags"], list), "Tags must be a list"
+            
+            assert len(blog_json["title"].strip()) > 0, "Title cannot be empty"
+            assert len(blog_json["content"].strip()) > 0, "Content cannot be empty"
+            assert len(blog_json["tags"]) > 0, "Tags list cannot be empty"
 
     @pytest.mark.asyncio
     async def test_blog_generation_error(self, ai_service):

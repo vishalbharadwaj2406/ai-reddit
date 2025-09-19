@@ -27,9 +27,68 @@ from langchain_core.callbacks import AsyncCallbackHandler
 from langchain_core.outputs import LLMResult
 
 from app.prompts import conversation_prompts, system_prompts
+from app.prompts.conversation_prompts import PREDEFINED_BLOG_TAGS
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def extract_json_from_markdown(content: str) -> str:
+    """
+    Extract JSON from markdown code blocks or return the content as-is if it's already valid JSON.
+    
+    Args:
+        content: Raw content that may contain JSON wrapped in markdown code blocks
+        
+    Returns:
+        Clean JSON string
+        
+    Raises:
+        json.JSONDecodeError: If no valid JSON is found
+    """
+    import re
+    
+    # First, try parsing the content directly as JSON
+    try:
+        json.loads(content.strip())
+        return content.strip()
+    except json.JSONDecodeError:
+        pass
+    
+    # Try to extract JSON from markdown code blocks
+    # Look for ```json...``` or ```...``` patterns (more flexible)
+    patterns = [
+        r'```json\s*\n(.*?)\n```',  # ```json ... ```
+        r'```\s*\n(.*?)\n```',      # ``` ... ```
+        r'```json\s*(.*?)```',      # ```json...``` (without newlines)
+        r'```\s*(.*?)```',          # ```...``` (without newlines)
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, content, re.DOTALL | re.MULTILINE)
+        if match:
+            extracted = match.group(1).strip()
+            try:
+                json.loads(extracted)  # Validate it's valid JSON
+                return extracted
+            except json.JSONDecodeError:
+                continue
+    
+    # If no code blocks found, try to find JSON-like content
+    # Look for content between { and } that might be JSON (more robust)
+    json_pattern = r'\{.*?\}'
+    matches = re.findall(json_pattern, content, re.DOTALL)
+    
+    # Try each potential JSON match
+    for match in matches:
+        try:
+            json.loads(match.strip())  # Validate it's valid JSON
+            return match.strip()
+        except json.JSONDecodeError:
+            continue
+    
+    # If all else fails, raise an error with more details
+    raise json.JSONDecodeError(f"No valid JSON found in content. Content preview: {content[:200]}...", content, 0)
 
 
 class AIServiceError(Exception):
@@ -359,7 +418,7 @@ class AIService:
             additional_context: Additional instructions or context
 
         Yields:
-            Dict containing response tokens for blog generation
+            Dict containing response tokens for blog generation with clean JSON
         """
 
         try:
@@ -369,9 +428,81 @@ class AIService:
                 conversation_content, additional_context
             )
 
-            # Generate blog using the same response mechanism
+            # Collect the complete response first
+            complete_response = ""
+            final_chunk = None
+            
             async for chunk in self.generate_ai_response(blog_prompt):
-                yield chunk
+                if isinstance(chunk, dict) and "content" in chunk:
+                    complete_response += chunk["content"]
+                    final_chunk = chunk.copy()  # Keep the last chunk structure
+                elif isinstance(chunk, str):
+                    complete_response += chunk
+
+            # Extract clean JSON from the response
+            try:
+                # Debug: Save the raw content for analysis
+                with open("/tmp/debug_raw_content.txt", "w") as f:
+                    f.write(complete_response)
+                
+                clean_json = extract_json_from_markdown(complete_response)
+                
+                # Validate that it's proper JSON with required fields
+                blog_data = json.loads(clean_json)
+                
+                # Verify required fields exist
+                required_fields = ["title", "content", "tags"]
+                for field in required_fields:
+                    if field not in blog_data:
+                        raise ValueError(f"Missing required field: {field}")
+                
+                # Verify field types
+                if not isinstance(blog_data["title"], str):
+                    raise ValueError("Title must be a string")
+                if not isinstance(blog_data["content"], str):
+                    raise ValueError("Content must be a string")
+                if not isinstance(blog_data["tags"], list):
+                    raise ValueError("Tags must be a list")
+                
+                # Verify non-empty values
+                if not blog_data["title"].strip():
+                    raise ValueError("Title cannot be empty")
+                if not blog_data["content"].strip():
+                    raise ValueError("Content cannot be empty")
+                if not blog_data["tags"]:
+                    raise ValueError("Tags list cannot be empty")
+                
+                # Verify all tags are strings
+                for tag in blog_data["tags"]:
+                    if not isinstance(tag, str):
+                        raise ValueError(f"All tags must be strings, got {type(tag)}: {tag}")
+                
+                # Verify all tags are from the predefined list
+                for tag in blog_data["tags"]:
+                    if tag not in PREDEFINED_BLOG_TAGS:
+                        raise ValueError(f"Tag '{tag}' is not in the predefined list. Must be one of: {', '.join(PREDEFINED_BLOG_TAGS)}")
+                
+                # Verify tag count is within range (2-5 tags)
+                if len(blog_data["tags"]) < 2:
+                    raise ValueError("Must have at least 2 tags")
+                if len(blog_data["tags"]) > 5:
+                    raise ValueError("Must have no more than 5 tags")
+                
+                # Yield the cleaned JSON response
+                if final_chunk:
+                    final_chunk["content"] = clean_json
+                    yield final_chunk
+                else:
+                    yield {
+                        "content": clean_json,
+                        "is_complete": True,
+                        "message_id": None
+                    }
+                    
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.error(f"Blog generation produced invalid JSON: {str(e)}")
+                logger.error(f"Raw response: {complete_response[:500]}...")
+                raise AIServiceError(f"Blog generation produced invalid format: {str(e)}")
 
         except Exception as e:
             logger.error(f"Blog generation error: {str(e)}")

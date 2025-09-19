@@ -176,7 +176,7 @@ class TestAIConversationEndpoints:
 
     @pytest.mark.asyncio
     async def test_blog_generation_integration(self, client: TestClient, test_conversation: Conversation, auth_headers: dict, db_session: Session):
-        """Test that blog generation creates a message with TITLE:/CONTENT: delimiter format"""
+        """Test that blog generation creates a message with JSON format including title, content, and tags"""
         # Add conversation context
         ai_message = Message(
             message_id=uuid4(),
@@ -217,16 +217,34 @@ class TestAIConversationEndpoints:
             latest_blog = blog_messages[-1]
             blog_content = latest_blog.content
             
-            # Core requirement: Blog must have TITLE: and CONTENT: delimiters
-            assert "TITLE:" in blog_content, f"Blog content must contain 'TITLE:' delimiter. Got: {blog_content[:200]}..."
-            assert "CONTENT:" in blog_content, f"Blog content must contain 'CONTENT:' delimiter. Got: {blog_content[:200]}..."
+            # Core requirement: Blog must be valid JSON with title, content, and tags
+            try:
+                import json
+                blog_json = json.loads(blog_content)
+                
+                # Verify required fields exist
+                assert "title" in blog_json, f"Blog JSON must contain 'title' field. Got: {blog_content[:200]}..."
+                assert "content" in blog_json, f"Blog JSON must contain 'content' field. Got: {blog_content[:200]}..."
+                assert "tags" in blog_json, f"Blog JSON must contain 'tags' field. Got: {blog_content[:200]}..."
+                
+                # Verify field types
+                assert isinstance(blog_json["title"], str), "Title must be a string"
+                assert isinstance(blog_json["content"], str), "Content must be a string"
+                assert isinstance(blog_json["tags"], list), "Tags must be a list"
+                
+                # Verify non-empty values
+                assert len(blog_json["title"].strip()) > 0, "Title cannot be empty"
+                assert len(blog_json["content"].strip()) > 0, "Content cannot be empty"
+                assert len(blog_json["tags"]) > 0, "Tags list cannot be empty"
+                
+                # Verify all tags are strings
+                for tag in blog_json["tags"]:
+                    assert isinstance(tag, str), f"All tags must be strings, got {type(tag)}: {tag}"
+                    
+            except json.JSONDecodeError as e:
+                pytest.fail(f"Blog content must be valid JSON. Got: {blog_content[:200]}... Error: {e}")
             
-            # Verify structure: TITLE should come before CONTENT
-            title_pos = blog_content.find("TITLE:")
-            content_pos = blog_content.find("CONTENT:")
-            assert title_pos < content_pos, "TITLE: must come before CONTENT:"
-            
-            print(f"✅ Blog message created with proper delimiter format")
+            print(f"✅ Blog message created with proper JSON format")
             print(f"Blog preview: {blog_content[:100]}...")
         else:
             # If no blog was created, test the AI service directly to ensure it generates proper format
@@ -253,11 +271,34 @@ class TestAIConversationEndpoints:
                 elif isinstance(chunk, str):
                     blog_result += chunk
                 
-            # Verify the AI service generates proper format
-            assert "TITLE:" in blog_result, f"AI service must generate 'TITLE:' delimiter. Got: {blog_result[:200]}..."
-            assert "CONTENT:" in blog_result, f"AI service must generate 'CONTENT:' delimiter. Got: {blog_result[:200]}..."
+            # Verify the AI service generates proper JSON format
+            try:
+                import json
+                blog_json = json.loads(blog_result)
+                
+                # Verify required fields exist
+                assert "title" in blog_json, f"AI service must generate JSON with 'title' field. Got: {blog_result[:200]}..."
+                assert "content" in blog_json, f"AI service must generate JSON with 'content' field. Got: {blog_result[:200]}..."
+                assert "tags" in blog_json, f"AI service must generate JSON with 'tags' field. Got: {blog_result[:200]}..."
+                
+                # Verify field types
+                assert isinstance(blog_json["title"], str), "Title must be a string"
+                assert isinstance(blog_json["content"], str), "Content must be a string"
+                assert isinstance(blog_json["tags"], list), "Tags must be a list"
+                
+                # Verify non-empty values
+                assert len(blog_json["title"].strip()) > 0, "Title cannot be empty"
+                assert len(blog_json["content"].strip()) > 0, "Content cannot be empty"
+                assert len(blog_json["tags"]) > 0, "Tags list cannot be empty"
+                
+                # Verify all tags are strings
+                for tag in blog_json["tags"]:
+                    assert isinstance(tag, str), f"All tags must be strings, got {type(tag)}: {tag}"
+                    
+            except json.JSONDecodeError as e:
+                pytest.fail(f"AI service must generate valid JSON. Got: {blog_result[:200]}... Error: {e}")
             
-            print(f"✅ AI service generates proper delimiter format")
+            print(f"✅ AI service generates proper JSON format")
             print(f"AI blog preview: {blog_result[:100]}...")
             
         # Note: The blog message is saved using a separate database session

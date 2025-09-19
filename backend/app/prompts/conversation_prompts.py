@@ -9,6 +9,20 @@ from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, Field
 from .system_prompts import system_prompts
 
+# Predefined tags that the LLM can choose from for blog generation
+PREDEFINED_BLOG_TAGS = [
+    "technology", "science", "ai", "machine-learning", "programming", "web-development",
+    "mobile-development", "data-science", "cybersecurity", "cloud-computing", "blockchain",
+    "environment", "climate-change", "sustainability", "renewable-energy", "conservation",
+    "health", "fitness", "nutrition", "mental-health", "medicine", "wellness",
+    "business", "entrepreneurship", "finance", "investing", "marketing", "productivity",
+    "education", "learning", "career", "leadership", "management", "skills",
+    "lifestyle", "travel", "food", "culture", "entertainment", "sports",
+    "philosophy", "psychology", "society", "politics", "economics", "history",
+    "art", "design", "creativity", "music", "literature", "photography",
+    "gaming", "automotive", "space", "innovation", "research", "tutorial"
+]
+
 
 class ConversationPrompts(BaseModel):
     """Conversation-specific prompt templates"""
@@ -95,11 +109,21 @@ Please respond in a natural, conversational tone while being informative and eng
         Returns:
             Formatted blog generation prompt
         """
+        tags_list = ", ".join(PREDEFINED_BLOG_TAGS)
+        
         base_prompt = """Transform the following conversation into a well-structured, engaging blog post.
 
-Please format your response EXACTLY as follows:
-TITLE: [Your engaging blog title here]
-CONTENT: [Your complete blog content with proper markdown formatting]
+CRITICAL: You MUST respond with ONLY valid JSON in the following exact format:
+{{
+    "title": "Your engaging blog title here",
+    "content": "Your complete blog content with proper markdown formatting",
+    "tags": ["tag1", "tag2", "tag3"]
+}}
+
+TAGS REQUIREMENT:
+- You MUST select 2-5 tags ONLY from this predefined list: {predefined_tags}
+- DO NOT create any tags that are not in this list
+- Choose tags that best represent the main topics discussed in the conversation
 
 Conversation Content:
 {conversation_content}
@@ -111,10 +135,12 @@ Blog Post Requirements:
 4. Write in a clear, accessible style suitable for a general audience
 5. Include a conclusion that summarizes key takeaways
 6. Use proper markdown formatting for headers, lists, etc.
+7. Select 2-5 relevant tags from the predefined list only
+8. IMPORTANT: Do NOT repeat the title as a header in the content - the title will be displayed separately
 
 {additional_instructions}
 
-Remember: Start with TITLE: followed by CONTENT: on the next line."""
+IMPORTANT: Return ONLY the raw JSON object. Do NOT wrap it in markdown code blocks. Do NOT use ```json or ``` markers. Start your response directly with the opening brace {{ and end with the closing brace }}. No other text, explanations, or formatting."""
 
         additional_instructions = ""
         if additional_context:
@@ -122,7 +148,8 @@ Remember: Start with TITLE: followed by CONTENT: on the next line."""
             
         return base_prompt.format(
             conversation_content=conversation_content,
-            additional_instructions=additional_instructions
+            additional_instructions=additional_instructions,
+            predefined_tags=tags_list
         )
     
     def format_follow_up_prompt(self, topic: str, depth_level: str = "medium") -> str:

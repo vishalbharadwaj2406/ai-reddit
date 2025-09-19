@@ -124,7 +124,7 @@ class TestAIServiceIntegration:
 
     @pytest.mark.asyncio
     async def test_blog_generation_integration(self, ai_service):
-        """Test blog generation from conversation content"""
+        """Test blog generation from conversation content with JSON format"""
         conversation_content = """
         User: What are the benefits of renewable energy?
         AI: Renewable energy offers environmental protection and economic advantages.
@@ -149,35 +149,35 @@ class TestAIServiceIntegration:
         # Blog should be longer than original conversation
         assert len(content) > len(conversation_content.strip())
         
-        # Verify the blog follows the TITLE: CONTENT: format
-        assert content.startswith("TITLE:")
-        assert "CONTENT:" in content
-        
-        # Parse and validate the structure - handle potential empty lines
-        lines = content.split('\n')
-        
-        # Find TITLE line
-        title_line = lines[0] if lines else ""
-        assert title_line.startswith("TITLE:")
-        title = title_line[6:].strip()
-        assert len(title) > 0  # Should have a non-empty title
-        
-        # Find CONTENT line (might not be immediately after TITLE)
-        content_start_idx = -1
-        for i, line in enumerate(lines):
-            if line.startswith("CONTENT:"):
-                content_start_idx = i
-                break
-        
-        assert content_start_idx >= 0, "Could not find CONTENT: line"
-        
-        # Extract blog content (everything after CONTENT: line)
-        content_lines = lines[content_start_idx:]
-        blog_content = content_lines[0][8:].strip()  # Remove "CONTENT:" prefix
-        if len(content_lines) > 1:
-            blog_content += '\n' + '\n'.join(content_lines[1:])
-        
-        assert len(blog_content) > 0  # Should have non-empty content
+        # Verify the blog follows JSON format with title, content, and tags
+        import json
+        try:
+            blog_json = json.loads(content)
+            
+            # Verify required fields exist
+            assert "title" in blog_json, "Blog JSON must contain 'title' field"
+            assert "content" in blog_json, "Blog JSON must contain 'content' field"
+            assert "tags" in blog_json, "Blog JSON must contain 'tags' field"
+            
+            # Verify field types
+            assert isinstance(blog_json["title"], str), "Title must be a string"
+            assert isinstance(blog_json["content"], str), "Content must be a string"
+            assert isinstance(blog_json["tags"], list), "Tags must be a list"
+            
+            # Verify non-empty values
+            assert len(blog_json["title"].strip()) > 0, "Title cannot be empty"
+            assert len(blog_json["content"].strip()) > 0, "Content cannot be empty"
+            assert len(blog_json["tags"]) > 0, "Tags list cannot be empty"
+            
+            # Verify all tags are strings
+            for tag in blog_json["tags"]:
+                assert isinstance(tag, str), f"All tags must be strings, got {type(tag)}: {tag}"
+                
+            # Verify tag count is within expected range (2-5 tags)
+            assert 2 <= len(blog_json["tags"]) <= 5, f"Expected 2-5 tags, got {len(blog_json['tags'])}"
+            
+        except json.JSONDecodeError as e:
+            pytest.fail(f"Blog content must be valid JSON. Got: {content[:200]}... Error: {e}")
 
     @pytest.mark.asyncio
     async def test_error_handling_with_invalid_input(self, ai_service):
