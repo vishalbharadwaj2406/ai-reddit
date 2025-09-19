@@ -13,7 +13,6 @@ import { Button } from '@/components/design-system/Button';
 import { Badge } from '@/components/design-system/Badge';
 import { useContentLayout } from '@/lib/layout/hooks';
 import { parseBlogContent, getBlogDisplayData, type ParsedBlogContent } from '@/lib/utils/blogParser';
-import { tagService } from '@/lib/services/tagService';
 
 interface BlogPanelProps {
   // Data
@@ -120,7 +119,7 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
                     variant="blue" 
                     className="text-xs"
                   >
-                    {tagService.getDisplayName(tag)}
+                    {tag}
                   </Badge>
                 ))}
               </div>

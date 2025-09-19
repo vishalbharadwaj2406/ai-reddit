@@ -83,7 +83,7 @@ export function TagInput({
         .filter(tag => !value.includes(tag.name)) // Exclude already selected tags
         .map(tag => ({
           tag,
-          displayText: tagService.getDisplayName(tag.name),
+          displayText: tag.name,
           normalizedName: tag.name,
           exists: true,
           isCreateOption: false
@@ -93,7 +93,7 @@ export function TagInput({
       const exactMatch = existingTags.find(tag => tag.name === normalizedQuery);
       if (!exactMatch && normalizedQuery && !value.includes(normalizedQuery)) {
         suggestions.push({
-          displayText: tagService.getDisplayName(normalizedQuery),
+          displayText: normalizedQuery,
           normalizedName: normalizedQuery,
           exists: false,
           isCreateOption: true
@@ -238,7 +238,7 @@ export function TagInput({
             variant="blue" 
             className="flex items-center gap-1 text-xs"
           >
-            <span>{tagService.getDisplayName(tag)}</span>
+            <span>{tag}</span>
             {!disabled && (
               <button
                 type="button"
