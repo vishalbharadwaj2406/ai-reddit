@@ -33,6 +33,115 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
+def repair_malformed_json(json_str: str) -> str:
+    """
+    Attempt to repair common JSON malformation issues from LLM output.
+    
+    Common issues this fixes:
+    1. Unclosed quotes: "title": "Hello -> "title": "Hello"
+    2. Missing commas between fields
+    3. Trailing commas
+    4. Unescaped quotes within strings
+    
+    Args:
+        json_str: Potentially malformed JSON string
+        
+    Returns:
+        Repaired JSON string
+    """
+    import re
+    
+    # Start with the original string
+    repaired = json_str
+    
+    # Fix 1: Handle quotes within string values that break JSON structure
+    # This is the main issue: "title": "Text with "quote" here"
+    # We need to escape the internal quotes
+    def fix_internal_quotes(text):
+        # Pattern to find string values that contain unescaped quotes
+        # This matches: "key": "value with "internal quote" more value"
+        def fix_string_value(match):
+            key = match.group(1)
+            value = match.group(2)
+            
+            # If the value contains quotes, escape them
+            # But be careful not to escape already escaped quotes
+            fixed_value = value.replace('"', '\\"')
+            
+            return f'{key}: "{fixed_value}"'
+        
+        # Look for field values that might contain unescaped quotes
+        # Pattern: "key": "value with potential quotes"
+        pattern = r'("[\w\s:]+"):\s*"([^"]*(?:"[^"]*)*)"'
+        
+        # This is tricky because we need to handle the case where the string
+        # is broken by internal quotes. Let's try a different approach:
+        
+        # Split by field boundaries and fix each field value
+        lines = text.split(',')
+        fixed_lines = []
+        
+        for line in lines:
+            line = line.strip()
+            # Look for field definitions: "key": "value"
+            if '":' in line and '"' in line:
+                # Find the key and value parts
+                parts = line.split('": "', 1)
+                if len(parts) == 2:
+                    key_part = parts[0] + '": "'
+                    value_part = parts[1]
+                    
+                    # If value_part contains quotes, we need to handle it
+                    # Remove the trailing quote if it exists
+                    if value_part.endswith('"'):
+                        value_content = value_part[:-1]
+                        # Escape any internal quotes
+                        value_content = value_content.replace('"', '\\"')
+                        fixed_line = key_part + value_content + '"'
+                    else:
+                        # Value doesn't end properly, add closing quote
+                        value_content = value_part.replace('"', '\\"')
+                        fixed_line = key_part + value_content + '"'
+                    
+                    fixed_lines.append(fixed_line)
+                else:
+                    fixed_lines.append(line)
+            else:
+                fixed_lines.append(line)
+        
+        return ', '.join(fixed_lines)
+    
+    repaired = fix_internal_quotes(repaired)
+    
+    # Fix 2: Handle unclosed quotes at the end of values
+    def fix_unclosed_quotes(text):
+        # Pattern to find unclosed string values
+        pattern = r'("[\w\s:]+"):\s*"([^"]*?)(?=\s*[,}]|\s*$)'
+        
+        def replace_func(match):
+            key = match.group(1)
+            value = match.group(2)
+            return f'{key}: "{value}"'
+        
+        return re.sub(pattern, replace_func, text, flags=re.MULTILINE)
+    
+    repaired = fix_unclosed_quotes(repaired)
+    
+    # Fix 3: Handle missing commas between fields
+    repaired = re.sub(r'"\s*"', '", "', repaired)
+    
+    # Fix 4: Remove trailing commas before closing braces/brackets
+    repaired = re.sub(r',(\s*[}\]])', r'\1', repaired)
+    
+    # Fix 5: Add missing closing braces if needed
+    open_braces = repaired.count('{')
+    close_braces = repaired.count('}')
+    if open_braces > close_braces:
+        repaired += '}' * (open_braces - close_braces)
+        
+    return repaired
+
+
 def extract_json_from_markdown(content: str) -> str:
     """
     Extract JSON from markdown code blocks or return the content as-is if it's already valid JSON.
@@ -55,6 +164,14 @@ def extract_json_from_markdown(content: str) -> str:
     except json.JSONDecodeError:
         pass
     
+    # Try to repair malformed JSON first
+    try:
+        repaired_content = repair_malformed_json(content.strip())
+        json.loads(repaired_content)
+        return repaired_content
+    except json.JSONDecodeError:
+        pass
+    
     # Try to extract JSON from markdown code blocks
     # Look for ```json...``` or ```...``` patterns (more flexible)
     patterns = [
@@ -72,7 +189,13 @@ def extract_json_from_markdown(content: str) -> str:
                 json.loads(extracted)  # Validate it's valid JSON
                 return extracted
             except json.JSONDecodeError:
-                continue
+                # Try to repair this extracted JSON
+                try:
+                    repaired = repair_malformed_json(extracted)
+                    json.loads(repaired)
+                    return repaired
+                except json.JSONDecodeError:
+                    continue
     
     # If no code blocks found, try to find JSON-like content
     # Look for content between { and } that might be JSON (more robust)
@@ -85,7 +208,13 @@ def extract_json_from_markdown(content: str) -> str:
             json.loads(match.strip())  # Validate it's valid JSON
             return match.strip()
         except json.JSONDecodeError:
-            continue
+            # Try to repair this JSON
+            try:
+                repaired = repair_malformed_json(match.strip())
+                json.loads(repaired)
+                return repaired
+            except json.JSONDecodeError:
+                continue
     
     # If all else fails, raise an error with more details
     raise json.JSONDecodeError(f"No valid JSON found in content. Content preview: {content[:200]}...", content, 0)

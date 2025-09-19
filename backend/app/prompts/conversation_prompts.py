@@ -137,6 +137,12 @@ Blog Post Requirements:
 6. Use proper markdown formatting for headers, lists, etc.
 7. Select 2-5 relevant tags from the predefined list only
 8. IMPORTANT: Do NOT repeat the title as a header in the content - the title will be displayed separately
+9. CRITICAL QUOTE PREVENTION: Do NOT use any quotation marks (single quotes ' or double quotes ") anywhere in the title or content text. When referencing movie quotes, book lines, or spoken dialogue, use alternative phrasing instead of direct quotes. For example:
+   - Instead of: The famous line "There is no spoon" from The Matrix
+   - Write: The famous line about there being no spoon from The Matrix
+   - Instead of: Einstein said "Imagination is more important than knowledge"
+   - Write: Einstein believed that imagination is more important than knowledge
+   You can use regular apostrophes for contractions (like "don't", "it's") but avoid quotation marks entirely. Never wrap referenced text, dialogue, or phrases in quotation marks.
 
 {additional_instructions}
 
