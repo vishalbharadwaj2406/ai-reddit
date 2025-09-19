@@ -469,28 +469,39 @@ This document defines the complete API specification for [APP_NAME] MVP backend.
 - Uses conversation history as context for blog creation
 - Supports additional context instructions
 - Returns blog content with `is_blog: true` flag
-- **Blog content follows delimiter format**: `TITLE:` and `CONTENT:` delimiters for frontend parsing
+- **Blog content follows JSON format** with title, content, and tags
+- **Layered fallback system** ensures reliable generation
 
 **Blog Content Format**:
-All generated blog content follows a structured delimiter pattern for reliable frontend parsing:
+All generated blog content is stored as valid JSON with the following structure:
+```json
+{
+  "title": "Engaging Blog Title",
+  "content": "Complete blog content with markdown formatting...",
+  "tags": ["tag1", "tag2", "tag3"]
+}
 ```
-TITLE: The Blog Title Here
 
-CONTENT:
-The blog content starts here and continues...
-with multiple paragraphs and formatting as needed.
-```
+**Tagging System**:
+- Uses predefined tag set (50+ categories: technology, science, health, etc.)
+- Primary strategy: 2-5 validated tags from predefined list
+- Fallback strategy: Empty array `[]` for reliability
+
+**Fallback System**:
+1. **Primary**: Single-call JSON generation (fast, full tags)
+2. **Fallback**: Two-call strategy (content + title, empty tags)
+3. **Emergency**: Template-based summary (always succeeds, empty tags)
 
 ### SSE Blog Generation Format:
 ```
 event: blog_response
-data: {"success": true, "data": {"content": "TITLE: Renewable Energy Revolution\n\nCONTENT:\nRenewable energy is transforming...", "is_complete": false, "message_id": "uuid", "is_blog": true}, "message": "Streaming blog generation"}
+data: {"success": true, "data": {"content": "{\"title\": \"Renewable Energy Revolution\", \"content\": \"## Introduction\\n\\nRenewable energy is transforming...\", \"tags\": [\"renewable-energy\", \"environment\"]}", "is_complete": false, "message_id": "uuid", "is_blog": true}, "message": "Streaming blog generation"}
 
 event: blog_complete
-data: {"success": true, "data": {"content": "TITLE: Renewable Energy Revolution\n\nCONTENT:\nRenewable energy is transforming our world by providing clean, sustainable power sources that reduce our dependence on fossil fuels...", "is_complete": true, "message_id": "uuid", "is_blog": true}, "message": "Blog generation complete"}
+data: {"success": true, "data": {"content": "{\"title\": \"Renewable Energy Revolution\", \"content\": \"## Introduction\\n\\nRenewable energy is transforming our world by providing clean, sustainable power sources...\", \"tags\": [\"renewable-energy\", \"environment\", \"technology\"]}", "is_complete": true, "message_id": "uuid", "is_blog": true}, "message": "Blog generation complete"}
 ```
 
-**Important**: When saved to the database with `is_blog: true`, the message content will always contain both `TITLE:` and `CONTENT:` delimiters to ensure consistent frontend parsing.
+**Important**: When saved to the database with `is_blog: true`, the message content will always contain valid JSON for reliable frontend parsing. Frontend should parse the JSON and display title/content separately.
 
 ---
 

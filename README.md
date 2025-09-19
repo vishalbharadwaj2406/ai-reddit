@@ -46,7 +46,7 @@ Technical documentation is available in the [`docs/`](./docs/) folder:
 - **Database Layer**: Complete (13 models, 181 tests passing)
 - **Database Tables**: 13 tables created in PostgreSQL (Supabase)
 - **Authentication System**: Google OAuth + JWT implementation complete
-- **AI Integration**: LangChain + Gemini 2.5 Flash complete - streaming responses, blog generation, 61 comprehensive tests
+- **AI Integration**: LangChain + Gemini 2.5 Flash complete - streaming responses, JSON blog generation with tags, 66 comprehensive tests
 - **API Layer**: All core endpoints implemented with comprehensive testing
 - **Social Features**: Complete user management, following, privacy controls, reactions, comments
 - **Analytics**: View/share tracking and engagement metrics implemented

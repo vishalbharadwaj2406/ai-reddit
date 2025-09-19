@@ -66,6 +66,24 @@ Expected output:
 ✅ All imports successful
 ```
 
+### Blog Generation Test
+
+Test the new JSON blog generation with tags:
+
+```bash
+cd backend
+python debug_blog_output.py
+```
+
+Expected output shows JSON structure:
+```json
+{
+  "title": "Engaging Blog Title",
+  "content": "Complete markdown content...",
+  "tags": ["tag1", "tag2", "tag3"]
+}
+```
+
 ### Run AI Test Suite
 
 **Total: 61 comprehensive AI integration tests**
@@ -74,6 +92,7 @@ Expected output:
 - 10 real API integration tests
 - 9 conversation endpoint integration tests  
 - 10 end-to-end workflow tests
+- **5 blog generation tests** (including fallback validation)
 
 ```bash
 # Unit tests (fast)
@@ -193,6 +212,33 @@ finally:
 2. **API Error**: Graceful error response via SSE
 3. **Network Timeout**: Retry with exponential backoff
 4. **Rate Limit**: Queue request or return error
+
+### Blog Generation System
+
+**Features**:
+- **JSON Output**: Structured `{title, content, tags}` format
+- **Tag Validation**: 50+ predefined categories (technology, science, health, etc.)
+- **Layered Fallback**: 3-tier strategy for maximum reliability
+
+**Fallback Strategy**:
+1. **Primary**: Single-call JSON generation (fast, full tags)
+2. **Fallback**: Two-call strategy (content + title, empty tags)
+3. **Emergency**: Template-based summary (always succeeds, empty tags)
+
+**Tag Categories**:
+- Technology: `technology`, `ai`, `programming`, `web-development`
+- Science: `science`, `renewable-energy`, `environment`, `sustainability`
+- Health: `health`, `fitness`, `nutrition`, `mental-health`
+- Business: `business`, `entrepreneurship`, `finance`, `productivity`
+- Education: `education`, `learning`, `career`, `skills`
+- *...and 35+ more categories*
+
+**Quality Assurance**:
+- JSON structure validation
+- Required field verification
+- Tag validation against predefined list
+- Content length validation
+- Error logging with raw response capture
 
 ## Troubleshooting
 
