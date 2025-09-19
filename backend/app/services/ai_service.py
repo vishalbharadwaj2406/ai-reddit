@@ -405,13 +405,251 @@ class AIService:
                     "model": settings.AI_MODEL_NAME
                 }
 
+    async def generate_content_only(
+        self,
+        conversation_content: str,
+        additional_context: Optional[str] = None
+    ) -> str:
+        """
+        Generate blog content only (without title) for fallback strategy.
+        
+        Args:
+            conversation_content: The conversation to transform into a blog
+            additional_context: Additional instructions or context
+            
+        Returns:
+            Clean blog content as string
+        """
+        content_prompt = f"""Transform the following conversation into well-structured blog content.
+
+DO NOT include a title - just provide the content body.
+
+Conversation Content:
+{conversation_content}
+
+Requirements:
+1. Organize content into logical sections with clear headings (use ### for sections)
+2. Maintain the key insights and information from the conversation
+3. Write in a clear, accessible style suitable for a general audience
+4. Include a conclusion that summarizes key takeaways
+5. Use proper markdown formatting for headers, lists, etc.
+
+{f"Additional Instructions: {additional_context}" if additional_context else ""}
+
+Return only the blog content without any title or wrapper formatting."""
+
+        # Collect the complete response
+        complete_response = ""
+        async for chunk in self.generate_ai_response(content_prompt):
+            if isinstance(chunk, dict) and "content" in chunk:
+                complete_response += chunk["content"]
+            elif isinstance(chunk, str):
+                complete_response += chunk
+                
+        return complete_response.strip()
+
+    async def generate_title_from_content(self, content: str) -> str:
+        """
+        Generate a title based on existing blog content for fallback strategy.
+        
+        Args:
+            content: Blog content to generate title for
+            
+        Returns:
+            Clean title as string
+        """
+        title_prompt = f"""Generate a concise, engaging title for the following blog content.
+
+Blog Content:
+{content[:1000]}...
+
+Requirements:
+1. Keep it concise and descriptive (under 80 characters)
+2. Make it engaging and clickable
+3. Capture the main theme of the content
+4. Use proper title case
+
+Return only the title text, nothing else."""
+
+        # Collect the complete response
+        complete_response = ""
+        async for chunk in self.generate_ai_response(title_prompt):
+            if isinstance(chunk, dict) and "content" in chunk:
+                complete_response += chunk["content"]
+            elif isinstance(chunk, str):
+                complete_response += chunk
+                
+        return complete_response.strip().strip('"').strip("'")
+
+    async def generate_emergency_fallback(
+        self,
+        conversation_content: str,
+        additional_context: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate a simple fallback blog when all AI methods fail.
+        
+        Args:
+            conversation_content: The conversation to transform
+            additional_context: Additional context if available
+            
+        Returns:
+            Simple blog structure with empty tags
+        """
+        try:
+            # Simple template-based approach
+            if isinstance(conversation_content, list):
+                # Extract text from conversation messages
+                text_content = []
+                for msg in conversation_content:
+                    if isinstance(msg, dict) and "content" in msg:
+                        text_content.append(msg["content"])
+                content_text = " ".join(text_content)
+            else:
+                content_text = str(conversation_content)
+            
+            # Create a simple summary
+            words = content_text.split()
+            if len(words) > 100:
+                summary = " ".join(words[:100]) + "..."
+            else:
+                summary = content_text
+                
+            fallback_blog = {
+                "title": "Conversation Summary",
+                "content": f"## Summary\n\n{summary}\n\n*This is a simplified summary due to processing limitations.*",
+                "tags": []  # Empty tags as requested for fallback
+            }
+            
+            return fallback_blog
+            
+        except Exception as e:
+            logger.error(f"Emergency fallback generation failed: {str(e)}")
+            # Absolute last resort
+            return {
+                "title": "Conversation Summary",
+                "content": "## Summary\n\nA conversation summary was requested but could not be generated at this time.",
+                "tags": []
+            }
+
+    async def _generate_blog_single_call(
+        self,
+        conversation_content: str,
+        additional_context: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Primary strategy: Generate blog using single LLM call with full JSON structure.
+        
+        Args:
+            conversation_content: The conversation to transform into a blog
+            additional_context: Additional instructions or context
+            
+        Returns:
+            Dict containing blog data with title, content, and tags
+            
+        Raises:
+            ValidationError: If output doesn't meet format requirements
+        """
+        # Use conversation prompts to format the blog generation request
+        conversation_prompts_instance = conversation_prompts.ConversationPrompts()
+        blog_prompt = conversation_prompts_instance.format_blog_prompt(
+            conversation_content, additional_context
+        )
+
+        # Collect the complete response first
+        complete_response = ""
+        async for chunk in self.generate_ai_response(blog_prompt):
+            if isinstance(chunk, dict) and "content" in chunk:
+                complete_response += chunk["content"]
+            elif isinstance(chunk, str):
+                complete_response += chunk
+
+        # Extract clean JSON from the response
+        clean_json = extract_json_from_markdown(complete_response)
+        
+        # Validate that it's proper JSON with required fields
+        blog_data = json.loads(clean_json)
+        
+        # Verify required fields exist
+        required_fields = ["title", "content", "tags"]
+        for field in required_fields:
+            if field not in blog_data:
+                raise ValueError(f"Missing required field: {field}")
+        
+        # Verify field types
+        if not isinstance(blog_data["title"], str):
+            raise ValueError("Title must be a string")
+        if not isinstance(blog_data["content"], str):
+            raise ValueError("Content must be a string")
+        if not isinstance(blog_data["tags"], list):
+            raise ValueError("Tags must be a list")
+        
+        # Verify non-empty values
+        if not blog_data["title"].strip():
+            raise ValueError("Title cannot be empty")
+        if not blog_data["content"].strip():
+            raise ValueError("Content cannot be empty")
+        if not blog_data["tags"]:
+            raise ValueError("Tags list cannot be empty")
+        
+        # Verify all tags are strings
+        for tag in blog_data["tags"]:
+            if not isinstance(tag, str):
+                raise ValueError(f"All tags must be strings, got {type(tag)}: {tag}")
+        
+        # Verify all tags are from the predefined list
+        for tag in blog_data["tags"]:
+            if tag not in PREDEFINED_BLOG_TAGS:
+                raise ValueError(f"Tag '{tag}' is not in the predefined list. Must be one of: {', '.join(PREDEFINED_BLOG_TAGS)}")
+        
+        # Verify tag count is within range (2-5 tags)
+        if len(blog_data["tags"]) < 2:
+            raise ValueError("Must have at least 2 tags")
+        if len(blog_data["tags"]) > 5:
+            raise ValueError("Must have no more than 5 tags")
+            
+        return blog_data
+
+    async def _generate_blog_two_calls(
+        self,
+        conversation_content: str,
+        additional_context: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Fallback strategy: Generate blog using separate calls for content and title.
+        
+        Args:
+            conversation_content: The conversation to transform into a blog
+            additional_context: Additional instructions or context
+            
+        Returns:
+            Dict containing blog data with title, content, and empty tags
+        """
+        # Step 1: Generate content only
+        content = await self.generate_content_only(conversation_content, additional_context)
+        
+        # Step 2: Generate title from content
+        title = await self.generate_title_from_content(content)
+        
+        # Return with empty tags as requested for fallback
+        return {
+            "title": title,
+            "content": content,
+            "tags": []  # Empty tags for fallback strategy
+        }
+
     async def generate_blog_from_conversation(
         self,
         conversation_content: str,
         additional_context: Optional[str] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Generate blog post from conversation content.
+        Generate blog post from conversation content with layered fallback strategy.
+
+        Strategy:
+        1. Primary: Single-call full JSON generation (fast, efficient)
+        2. Fallback: Two-call strategy (content + title, empty tags)
+        3. Emergency: Template-based simple summary
 
         Args:
             conversation_content: The conversation to transform into a blog
@@ -422,91 +660,51 @@ class AIService:
         """
 
         try:
-            # Use conversation prompts to format the blog generation request
-            conversation_prompts_instance = conversation_prompts.ConversationPrompts()
-            blog_prompt = conversation_prompts_instance.format_blog_prompt(
-                conversation_content, additional_context
-            )
-
-            # Collect the complete response first
-            complete_response = ""
-            final_chunk = None
+            # Primary Strategy: Single-call approach
+            logger.info("Attempting blog generation with single-call strategy")
+            blog_data = await self._generate_blog_single_call(conversation_content, additional_context)
             
-            async for chunk in self.generate_ai_response(blog_prompt):
-                if isinstance(chunk, dict) and "content" in chunk:
-                    complete_response += chunk["content"]
-                    final_chunk = chunk.copy()  # Keep the last chunk structure
-                elif isinstance(chunk, str):
-                    complete_response += chunk
-
-            # Extract clean JSON from the response
+            # Success! Yield the result
+            yield {
+                "content": json.dumps(blog_data),
+                "is_complete": True,
+                "message_id": None
+            }
+            
+        except Exception as primary_error:
+            logger.warning(f"Single-call strategy failed: {str(primary_error)}")
+            
             try:
-                # Debug: Save the raw content for analysis
-                with open("/tmp/debug_raw_content.txt", "w") as f:
-                    f.write(complete_response)
+                # Fallback Strategy: Two-call approach
+                logger.info("Attempting blog generation with two-call fallback strategy")
+                blog_data = await self._generate_blog_two_calls(conversation_content, additional_context)
                 
-                clean_json = extract_json_from_markdown(complete_response)
+                # Success! Yield the result
+                yield {
+                    "content": json.dumps(blog_data),
+                    "is_complete": True,
+                    "message_id": None
+                }
                 
-                # Validate that it's proper JSON with required fields
-                blog_data = json.loads(clean_json)
+            except Exception as fallback_error:
+                logger.error(f"Two-call strategy also failed: {str(fallback_error)}")
                 
-                # Verify required fields exist
-                required_fields = ["title", "content", "tags"]
-                for field in required_fields:
-                    if field not in blog_data:
-                        raise ValueError(f"Missing required field: {field}")
-                
-                # Verify field types
-                if not isinstance(blog_data["title"], str):
-                    raise ValueError("Title must be a string")
-                if not isinstance(blog_data["content"], str):
-                    raise ValueError("Content must be a string")
-                if not isinstance(blog_data["tags"], list):
-                    raise ValueError("Tags must be a list")
-                
-                # Verify non-empty values
-                if not blog_data["title"].strip():
-                    raise ValueError("Title cannot be empty")
-                if not blog_data["content"].strip():
-                    raise ValueError("Content cannot be empty")
-                if not blog_data["tags"]:
-                    raise ValueError("Tags list cannot be empty")
-                
-                # Verify all tags are strings
-                for tag in blog_data["tags"]:
-                    if not isinstance(tag, str):
-                        raise ValueError(f"All tags must be strings, got {type(tag)}: {tag}")
-                
-                # Verify all tags are from the predefined list
-                for tag in blog_data["tags"]:
-                    if tag not in PREDEFINED_BLOG_TAGS:
-                        raise ValueError(f"Tag '{tag}' is not in the predefined list. Must be one of: {', '.join(PREDEFINED_BLOG_TAGS)}")
-                
-                # Verify tag count is within range (2-5 tags)
-                if len(blog_data["tags"]) < 2:
-                    raise ValueError("Must have at least 2 tags")
-                if len(blog_data["tags"]) > 5:
-                    raise ValueError("Must have no more than 5 tags")
-                
-                # Yield the cleaned JSON response
-                if final_chunk:
-                    final_chunk["content"] = clean_json
-                    yield final_chunk
-                else:
+                try:
+                    # Emergency Strategy: Template-based fallback
+                    logger.info("Using emergency fallback strategy")
+                    blog_data = await self.generate_emergency_fallback(conversation_content, additional_context)
+                    
+                    # Always succeeds (has internal error handling)
                     yield {
-                        "content": clean_json,
+                        "content": json.dumps(blog_data),
                         "is_complete": True,
                         "message_id": None
                     }
                     
-            except (json.JSONDecodeError, ValueError) as e:
-                logger.error(f"Blog generation produced invalid JSON: {str(e)}")
-                logger.error(f"Raw response: {complete_response[:500]}...")
-                raise AIServiceError(f"Blog generation produced invalid format: {str(e)}")
-
-        except Exception as e:
-            logger.error(f"Blog generation error: {str(e)}")
-            raise AIServiceError(f"Blog generation failed: {str(e)}")
+                except Exception as emergency_error:
+                    # This should never happen, but just in case
+                    logger.error(f"Even emergency fallback failed: {str(emergency_error)}")
+                    raise AIServiceError(f"All blog generation strategies failed. Primary: {str(primary_error)}, Fallback: {str(fallback_error)}, Emergency: {str(emergency_error)}")
 
 
 # Global AI service instance

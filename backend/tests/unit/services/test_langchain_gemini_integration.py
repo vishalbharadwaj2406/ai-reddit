@@ -204,15 +204,34 @@ class TestLangChainGeminiIntegration:
 
     @pytest.mark.asyncio
     async def test_blog_generation_error(self, ai_service):
-        """Test blog generation error handling"""
-        with patch('app.prompts.conversation_prompts.ConversationPrompts.format_blog_prompt') as mock_format:
+        """Test blog generation error handling with fallback system"""
+        # Mock both single-call and two-call strategies to fail
+        with patch('app.prompts.conversation_prompts.ConversationPrompts.format_blog_prompt') as mock_format, \
+             patch.object(ai_service, 'generate_content_only') as mock_content, \
+             patch.object(ai_service, 'generate_title_from_content') as mock_title:
+            
+            # Make single-call strategy fail
             mock_format.side_effect = Exception("Formatting error")
             
-            with pytest.raises(AIServiceError) as exc_info:
-                async for _ in ai_service.generate_blog_from_conversation("content"):
-                    pass
-                    
-            assert "Blog generation failed" in str(exc_info.value)
+            # Make two-call strategy fail
+            mock_content.side_effect = Exception("Content generation error")
+            mock_title.side_effect = Exception("Title generation error")
+            
+            # Should still succeed due to emergency fallback
+            responses = []
+            async for response in ai_service.generate_blog_from_conversation("content"):
+                responses.append(response)
+                
+            # Verify emergency fallback was used
+            assert len(responses) > 0
+            assert responses[-1]["is_complete"] is True
+            
+            # Parse the emergency fallback content
+            import json
+            emergency_content = json.loads(responses[-1]["content"])
+            assert emergency_content["title"] == "Conversation Summary"
+            assert emergency_content["tags"] == []  # Empty tags for fallback
+            assert "Summary" in emergency_content["content"]
 
     @pytest.mark.asyncio
     async def test_mock_mode_behavior(self):
