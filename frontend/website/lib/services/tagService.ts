@@ -5,7 +5,7 @@
  * normalization, and caching.
  */
 
-import { apiClient, endpoints } from '../api/client';
+import { apiClient } from '../api/client';
 
 export interface Tag {
   tagId: string;

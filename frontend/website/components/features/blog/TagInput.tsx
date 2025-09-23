@@ -9,7 +9,6 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Badge } from '@/components/design-system/Badge';
-import { Button } from '@/components/design-system/Button';
 import { usePortalDropdown } from '@/components/design-system/hooks/usePortalDropdown';
 import { tagService, type Tag } from '@/lib/services/tagService';
 import clsx from 'clsx';
@@ -49,7 +48,6 @@ export function TagInput({
   
   const {
     isOpen,
-    toggle,
     open,
     close,
     triggerRef,

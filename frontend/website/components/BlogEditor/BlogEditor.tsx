@@ -7,7 +7,6 @@ import StarterKit from '@tiptap/starter-kit';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { TextAlign } from '@tiptap/extension-text-align';
-import { Heading } from '@tiptap/extension-heading';
 import { Bold } from '@tiptap/extension-bold';
 import { Italic } from '@tiptap/extension-italic';
 import { Underline } from '@tiptap/extension-underline';
@@ -20,9 +19,10 @@ import { OrderedList } from '@tiptap/extension-ordered-list';
 import { ListItem } from '@tiptap/extension-list-item';
 import { HorizontalRule } from '@tiptap/extension-horizontal-rule';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import TurndownService from 'turndown';
+import { markdownToHtmlSync, htmlToMarkdown } from '@/lib/utils/markdownConverter';
 import { default as BlogEditorToolbar } from './BlogEditorToolbar';
 import { useGlassHeader } from '@/lib/layout/hooks';
+import { CLEARANCES } from '@/lib/layout/tokens';
 
 interface BlogEditorProps {
   initialTitle: string;
@@ -43,24 +43,6 @@ interface DraftData {
   timestamp: number;
 }
 
-/**
- * Convert markdown to HTML for TipTap editor
- */
-const markdownToHtml = (markdown: string): string => {
-  return markdown
-    .replace(/^### (.*$)/gm, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`(.*?)`/g, '<code>$1</code>')
-    .replace(/^\> (.*$)/gm, '<blockquote>$1</blockquote>')
-    .replace(/^\- (.*$)/gm, '<ul><li>$1</li></ul>')
-    .replace(/^(\d+)\. (.*$)/gm, '<ol><li>$2</li></ol>')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-    .replace(/\n/g, '<br>');
-};
-
 const BlogEditor: React.FC<BlogEditorProps> = ({
   initialTitle,
   initialContent,
@@ -80,14 +62,6 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
   
   const layout = useGlassHeader();
   const autoSaveRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Turndown service for HTML to Markdown conversion
-  const turndownService = new TurndownService({
-    headingStyle: 'atx',
-    codeBlockStyle: 'fenced',
-    bulletListMarker: '-',
-    linkStyle: 'inlined'
-  });
 
   // TipTap Editor with full extensions
   const editor = useEditor({
@@ -117,7 +91,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
       ListItem,
       HorizontalRule,
     ],
-    content: markdownToHtml(initialContent),
+    content: markdownToHtmlSync(initialContent),
     editorProps: {
       attributes: {
         class: 'blog-editor-content prose prose-invert prose-lg max-w-none focus:outline-none min-h-[300px]',
@@ -125,15 +99,15 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
     },
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
-      const markdown = turndownService.turndown(html);
+      const markdown = htmlToMarkdown(html);
       setCurrentMarkdown(markdown);
       setIsDirty(true);
       scheduleAutoSave();
     },
   });
 
-  // Draft management
-  const getDraftKey = () => `blog-draft-${messageId}`;
+  // Draft management - memoized to prevent useCallback dependency issues
+  const getDraftKey = useCallback(() => `blog-draft-${messageId}`, [messageId]);
 
   const saveDraft = useCallback(() => {
     const draftData: DraftData = {
@@ -147,7 +121,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
     localStorage.setItem(getDraftKey(), JSON.stringify(draftData));
     setLastSaved(new Date());
     setIsDirty(false);
-  }, [title, currentMarkdown, tags, messageId]);
+  }, [title, currentMarkdown, tags, messageId, getDraftKey]);
 
   const loadDraft = useCallback(() => {
     try {
@@ -167,7 +141,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
       
       // Update editor content
       if (editor) {
-        editor.commands.setContent(markdownToHtml(draftData.content));
+        editor.commands.setContent(markdownToHtmlSync(draftData.content));
       }
       
       setLastSaved(new Date(draftData.timestamp));
@@ -176,7 +150,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
       console.warn('Failed to load draft:', error);
       return false;
     }
-  }, [messageId, editor]);
+  }, [messageId, editor, getDraftKey]);
 
   const resetToOriginal = useCallback(() => {
     setTitle(initialTitle);
@@ -184,7 +158,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
     setCurrentMarkdown(initialContent);
     
     if (editor) {
-      editor.commands.setContent(markdownToHtml(initialContent));
+      editor.commands.setContent(markdownToHtmlSync(initialContent));
     }
     
     // Clear draft
@@ -265,10 +239,30 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
 
   return (
     <div className={layout.panelClass}>
-      {/* Simple scrollable layout */}
-      <div className={`${layout.contentClass} overflow-y-auto`} style={layout.headerClearance}>
-        <div className="px-6 py-4">
-          {/* Header */}
+      {/* 
+        PRODUCTION LAYOUT ARCHITECTURE
+        
+        This layout system provides a professional blog editor with:
+        1. Proper header clearance for glass navigation
+        2. Sticky toolbar positioning exactly at header bottom
+        3. Clean content flow with independent scrolling
+        
+        Layout zones:
+        - Header clearance: Creates space for glass header (no gap)
+        - Form content: Title/tags that scroll normally
+        - Sticky toolbar: Sticks at header bottom when scrolling
+        - Editor content: Rich text editor with continued scrolling
+      */}
+      <div className={layout.contentClass}>
+        {/* 
+          Header Clearance Spacer
+          Uses CLEARANCES.HEADER_WITH_CONTENT for pixel-perfect positioning
+          This ensures sticky toolbar can stick exactly at header bottom
+        */}
+        <div style={{ height: `${CLEARANCES.HEADER_WITH_CONTENT}px` }} />
+        
+        <div className="px-6">
+          {/* Header Section - Normal scroll behavior */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <h3 className="text-lg font-semibold text-white">Edit Blog Post</h3>
@@ -320,59 +314,72 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
             </div>
           </div>
 
-          {/* Title Input */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Title
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter blog title..."
-              className="w-full px-3 py-2 rounded-lg border bg-black/20 backdrop-blur-sm border-white/10 focus:border-white/20 transition-colors text-white placeholder-gray-400 focus:outline-none"
-              disabled={isPublishing}
-            />
-          </div>
+          {/* Form Fields - Normal scroll behavior */}
+          <div className="space-y-4 mb-6">
+            {/* Title Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Title
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Enter blog title..."
+                className="w-full px-3 py-2 rounded-lg border bg-black/20 backdrop-blur-sm border-white/10 focus:border-white/20 transition-colors text-white placeholder-gray-400 focus:outline-none"
+                disabled={isPublishing}
+              />
+            </div>
 
-          {/* Tags Input */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Tags
-            </label>
-            <TagInput
-              value={tags}
-              onChange={setTags}
-              placeholder="Add tags..."
-              maxTags={5}
-              disabled={isPublishing}
-            />
-          </div>
-
-          {/* Toolbar */}
-          <div className="mb-4">
-            <BlogEditorToolbar editor={editor} />
-          </div>
-
-          {/* Editor Content - Simple layout that works */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Content
-            </label>
-            <div className="blog-editor-container">
-              <EditorContent editor={editor} />
+            {/* Tags Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Tags
+              </label>
+              <TagInput
+                value={tags}
+                onChange={setTags}
+                placeholder="Add tags..."
+                maxTags={5}
+                disabled={isPublishing}
+              />
             </div>
           </div>
+        </div>
 
-          {/* Footer Stats */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-800/30 text-xs text-gray-400">
+        {/* 
+          STICKY TOOLBAR ZONE
+          Positioned to stick exactly at header bottom using:
+          - CSS sticky positioning with top: var(--header-height)
+          - Glass effects matching header exactly
+          - Production-grade design token system
+        */}
+        <div className="blog-editor-sticky-toolbar">
+          <BlogEditorToolbar editor={editor} />
+        </div>
+
+        <div className="px-6">
+          {/* Editor Content - Continues normal scrolling */}
+          <div className="space-y-6">
             <div>
-              {currentMarkdown.split(' ').filter(word => word.length > 0).length} words • 
-              {currentMarkdown.split('\n').length} lines • 
-              {tags.length}/5 tags
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Content
+              </label>
+              <div className="blog-editor-container">
+                <EditorContent editor={editor} />
+              </div>
             </div>
-            <div>
-              {canPublish ? 'Ready to publish' : 'Complete title and content to publish'}
+
+            {/* Footer Stats */}
+            <div className="flex items-center justify-between pt-4 border-t border-gray-800/30 text-xs text-gray-400">
+              <div>
+                {currentMarkdown.split(' ').filter(word => word.length > 0).length} words • 
+                {currentMarkdown.split('\n').length} lines • 
+                {tags.length}/5 tags
+              </div>
+              <div>
+                {canPublish ? 'Ready to publish' : 'Complete title and content to publish'}
+              </div>
             </div>
           </div>
         </div>

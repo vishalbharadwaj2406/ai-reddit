@@ -8,11 +8,10 @@
 import { Message } from '@/lib/services/conversationService';
 import MarkdownRenderer from '@/components/Markdown/MarkdownRenderer';
 import { copyText } from '@/lib/utils/copy';
-import { markdownToPlain } from '@/lib/utils/markdown';
+import { getDisplayContent, getMarkdownContent } from '@/lib/utils/messageContentExtractor';
 import { BlogMessageButton } from './BlogMessageButton';
 import { Badge } from '@/components/design-system/Badge';
 import { parseBlogContent } from '@/lib/utils/blogParser';
-import { tagService } from '@/lib/services/tagService';
 import { TEXT_COLORS } from '@/lib/layout/tokens';
 
 interface MessageListProps {
@@ -96,7 +95,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                             
                             {parsedBlog.content.length > 300 && (
                               <p className="text-xs text-gray-400 italic">
-                                Click "View Blog" to see full content
+                                Click &ldquo;View Blog&rdquo; to see full content
                               </p>
                             )}
                           </div>
@@ -140,7 +139,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                      }
                      try {
                        const date = new Date(message.createdAt);
-                       return isNaN(date.getTime()) ? 'Just now' : date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                       return isNaN(date.getTime()) ? 'Just now' : date.toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'});
                      } catch {
                        return 'Just now';
                      }
@@ -152,7 +151,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                     <button
                       className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 backdrop-blur-md px-2 py-1 text-[10px] text-white/80 hover:bg-white/10"
-                      onClick={async () => { await copyText(markdownToPlain(message.content)); }}
+                      onClick={async () => { await copyText(getDisplayContent(message)); }}
                       aria-label="Copy Plain Text"
                       title="Copy Plain Text"
                     >
@@ -164,7 +163,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                     </button>
                     <button
                       className="inline-flex items-center gap-1 rounded-md border border-white/10 bg-white/5 backdrop-blur-md px-2 py-1 text-[10px] text-white/80 hover:bg-white/10"
-                      onClick={async () => { await copyText(message.content); }}
+                      onClick={async () => { await copyText(getMarkdownContent(message)); }}
                       aria-label="Copy Markdown"
                       title="Copy Markdown"
                     >

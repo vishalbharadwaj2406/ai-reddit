@@ -11,6 +11,7 @@ export interface ParsedBlogContent {
   tags: string[];
   isValid: boolean;
   rawContent: string; // Original content for fallback
+  validationErrors?: string[]; // Optional validation errors
 }
 
 /**
@@ -39,7 +40,7 @@ export function parseBlogContent(rawContent: string): ParsedBlogContent {
       const title = typeof parsed.title === 'string' ? parsed.title.trim() : '';
       const content = typeof parsed.content === 'string' ? parsed.content.trim() : '';
       const tags = Array.isArray(parsed.tags) 
-        ? parsed.tags.filter((tag: any) => typeof tag === 'string' && tag.trim())
+        ? parsed.tags.filter((tag: unknown) => typeof tag === 'string' && tag.trim())
         : [];
 
       // Must have at least title or content to be valid

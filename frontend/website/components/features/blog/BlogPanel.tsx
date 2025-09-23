@@ -13,6 +13,7 @@ import { Button } from '@/components/design-system/Button';
 import { Badge } from '@/components/design-system/Badge';
 import { useContentLayout } from '@/lib/layout/hooks';
 import { parseBlogContent, getBlogDisplayData, type ParsedBlogContent } from '@/lib/utils/blogParser';
+import { validateMarkdown } from '@/lib/utils/markdownConverter';
 
 interface BlogPanelProps {
   // Data
@@ -45,7 +46,20 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
   // Parse blog content
   const parsedContent = useMemo(() => {
     if (!activeBlogMessage?.content) return null;
-    return parseBlogContent(activeBlogMessage.content);
+    
+    const parsed = parseBlogContent(activeBlogMessage.content);
+    
+    // Validate and clean the markdown content
+    if (parsed.isValid && parsed.content) {
+      const validation = validateMarkdown(parsed.content);
+      return {
+        ...parsed,
+        content: validation.cleaned,
+        validationErrors: validation.errors
+      };
+    }
+    
+    return parsed;
   }, [activeBlogMessage?.content]);
 
   const displayData = useMemo(() => {
@@ -130,6 +144,18 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({
           <div className="prose prose-invert max-w-none prose-lg">
             <MarkdownRenderer content={parsedContent.content} />
           </div>
+          
+          {/* Validation warnings (dev mode) */}
+          {process.env.NODE_ENV === 'development' && parsedContent.validationErrors && parsedContent.validationErrors.length > 0 && (
+            <div className="mt-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-lg">
+              <h4 className="text-yellow-400 text-sm font-medium mb-2">Markdown Validation Warnings:</h4>
+              <ul className="text-yellow-300 text-xs space-y-1">
+                {parsedContent.validationErrors.map((error: string, index: number) => (
+                  <li key={index}>• {error}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           
           {/* Metadata */}
           <div className="text-xs text-gray-500 pt-4 mt-6 border-t border-gray-800/50 flex justify-between">
